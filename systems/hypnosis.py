@@ -27,7 +27,8 @@ class HypnosisSystem:
         # Check if player knows required hypnosis technique
         if required_technique and not game_state.player.hypnosis_knowledge.knows_technique(required_technique):
             from systems.hypnosis_knowledge import HYPNOSIS_TECHNIQUES
-            technique_name = HYPNOSIS_TECHNIQUES.get(required_technique, {}).get('name', required_technique)
+            technique = HYPNOSIS_TECHNIQUES.get(required_technique)
+            technique_name = technique.name if technique else required_technique
             return False, f"You don't know '{technique_name}' yet. Learn hypnosis techniques first!"
 
         if char.rapport < 6:
