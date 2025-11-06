@@ -214,7 +214,7 @@ TECHNICAL:
         self.print_title()
 
         # Check for API key
-        if not config.OPENROUTER_API_KEY:
+        if not config.DEFAULT_API_KEY:
             print("\n" + "!"*70)
             print("⚠️  WARNING: OpenRouter API key not configured!")
             print("!"*70)
