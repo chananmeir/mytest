@@ -134,6 +134,55 @@ def api_game_state():
     })
 
 
+@app.route('/api/player-profile')
+def api_player_profile():
+    """Get detailed player profile"""
+    game_state = get_game_state()
+    player = game_state.player
+    knowledge = player.hypnosis_knowledge
+
+    # Get techniques by status
+    mastered_techniques = []
+    learning_techniques = []
+
+    for tech_id, technique in HYPNOSIS_TECHNIQUES.items():
+        if knowledge.knows_technique(tech_id):
+            mastered_techniques.append({
+                'id': tech_id,
+                'name': technique.name,
+                'category': technique.category,
+                'sp_reduction': technique.sp_cost_reduction,
+                'success_bonus': technique.success_rate_bonus
+            })
+        elif tech_id in knowledge.learning_progress:
+            learning_techniques.append({
+                'id': tech_id,
+                'name': technique.name,
+                'progress': knowledge.learning_progress[tech_id]
+            })
+
+    sp_reduction, success_bonus = knowledge.get_total_bonuses()
+
+    return jsonify({
+        'name': player.name,
+        'age': player.age,
+        'occupation': player.occupation,
+        'clothing': player.clothing,
+        'suggestion_points': player.suggestion_points,
+        'total_sp_earned': player.total_sp_earned,
+        'skill_level': knowledge.skill_level,
+        'techniques_mastered': len(knowledge.known_techniques),
+        'total_techniques': 11,
+        'mastered_techniques': mastered_techniques,
+        'learning_techniques': learning_techniques,
+        'books_read': len(knowledge.books_read),
+        'practice_sessions': knowledge.practice_sessions,
+        'total_sp_reduction': sp_reduction,
+        'total_success_bonus': success_bonus,
+        'scenes_completed': player.scenes_completed
+    })
+
+
 @app.route('/api/talk', methods=['POST'])
 def api_talk():
     """Handle character conversation"""

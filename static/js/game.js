@@ -672,3 +672,138 @@ function exitGame() {
         window.location.href = '/';
     }
 }
+
+// Open player profile
+function openPlayerProfile() {
+    $.ajax({
+        url: '/api/player-profile',
+        method: 'GET',
+        success: function(player) {
+            let html = `
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">📋 Basic Information</h3>
+                    <div style="line-height: 2;">
+                        <strong>Name:</strong> ${player.name}<br>
+                        <strong>Age:</strong> ${player.age}<br>
+                        <strong>Occupation:</strong> ${player.occupation}<br>
+                        <strong>Appearance:</strong> ${player.clothing}<br>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">💰 Suggestion Points</h3>
+                    <div style="line-height: 2;">
+                        <strong>Current SP:</strong> ${player.suggestion_points}<br>
+                        <strong>Total SP Earned:</strong> ${player.total_sp_earned}<br>
+                        <strong>SP Spent:</strong> ${player.total_sp_earned - player.suggestion_points}<br>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🎓 Hypnosis Mastery</h3>
+                    <div style="line-height: 2;">
+                        <strong>Skill Level:</strong> ${player.skill_level.toUpperCase()}<br>
+                        <strong>Techniques Mastered:</strong> ${player.techniques_mastered}/${player.total_techniques}<br>
+                        <strong>Books Read:</strong> ${player.books_read}<br>
+                        <strong>Practice Sessions:</strong> ${player.practice_sessions}<br>
+                        <strong>Bonuses:</strong> -${player.total_sp_reduction} SP cost, +${player.total_success_bonus}% success<br>
+                    </div>
+                </div>
+            `;
+
+            if (player.mastered_techniques && player.mastered_techniques.length > 0) {
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🟢 Mastered Techniques (${player.mastered_techniques.length})</h3>
+                `;
+
+                // Group by category
+                const categories = {
+                    'basic': [],
+                    'intermediate': [],
+                    'advanced': [],
+                    'master': []
+                };
+
+                player.mastered_techniques.forEach(tech => {
+                    categories[tech.category].push(tech);
+                });
+
+                Object.entries(categories).forEach(([category, techniques]) => {
+                    if (techniques.length > 0) {
+                        html += `<div style="margin-bottom: 1rem;">`;
+                        html += `<div style="font-weight: bold; text-transform: uppercase; margin-bottom: 0.5rem;">${category}</div>`;
+                        techniques.forEach(tech => {
+                            html += `
+                                <div style="background: var(--accent-color); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.5rem;">
+                                    <strong>${tech.name}</strong>
+                                    ${tech.sp_reduction > 0 || tech.success_bonus > 0 ?
+                                        `<span style="color: var(--success-color); font-size: 0.9rem; margin-left: 1rem;">
+                                            ${tech.sp_reduction > 0 ? `-${tech.sp_reduction} SP ` : ''}
+                                            ${tech.success_bonus > 0 ? `+${tech.success_bonus}%` : ''}
+                                        </span>`
+                                        : ''}
+                                </div>
+                            `;
+                        });
+                        html += `</div>`;
+                    }
+                });
+
+                html += '</div>';
+            }
+
+            if (player.learning_techniques && player.learning_techniques.length > 0) {
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🟡 Currently Learning (${player.learning_techniques.length})</h3>
+                `;
+
+                player.learning_techniques.forEach(tech => {
+                    html += `
+                        <div style="background: var(--accent-color); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <strong>${tech.name}</strong>
+                                <span style="color: var(--warning-color);">${tech.progress}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${tech.progress}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            }
+
+            if (player.scenes_completed && player.scenes_completed.length > 0) {
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">✓ Scenes Completed</h3>
+                        <div style="line-height: 1.8;">
+                            ${player.scenes_completed.map(scene => `• ${scene}`).join('<br>')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Add quick actions
+            html += `
+                <div style="margin-top: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <button class="btn btn-primary" onclick="closeModal('playerProfileModal'); openSkillTree();">
+                        🌳 View Skill Tree
+                    </button>
+                    <button class="btn btn-secondary" onclick="closeModal('playerProfileModal'); openStudyMenu();">
+                        📚 Study Hypnosis
+                    </button>
+                </div>
+            `;
+
+            $('#player-profile-content').html(html);
+            openModal('playerProfileModal');
+        },
+        error: function() {
+            alert('Failed to load player profile');
+        }
+    });
+}
