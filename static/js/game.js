@@ -899,3 +899,76 @@ function updateCharacterActivity(characterName, activity) {
         card.removeClass('active-character');
     }, 2000);
 }
+
+// Open add character modal
+function openAddCharacter() {
+    // Clear form
+    $('#new-char-name').val('');
+    $('#new-char-age').val('');
+    $('#new-char-occupation').val('');
+    $('#new-char-personality').val('');
+    $('#new-char-resistance').val('50');
+    $('#new-char-clothing').val('');
+    $('#new-char-clothing-meaning').val('');
+
+    openModal('addCharacterModal');
+}
+
+// Create new character
+function createCharacter() {
+    const name = $('#new-char-name').val().trim();
+    const age = $('#new-char-age').val();
+    const occupation = $('#new-char-occupation').val().trim();
+    const personality = $('#new-char-personality').val().trim();
+    const resistance = $('#new-char-resistance').val();
+    const clothing = $('#new-char-clothing').val().trim() || 'Casual clothing';
+    const clothing_meaning = $('#new-char-clothing-meaning').val().trim();
+
+    // Validate required fields
+    if (!name || !age || !occupation || !personality || !resistance) {
+        alert('Please fill in all required fields (marked with *)');
+        return;
+    }
+
+    // Validate age and resistance
+    if (age < 1 || age > 120) {
+        alert('Age must be between 1 and 120');
+        return;
+    }
+
+    if (resistance < 0 || resistance > 100) {
+        alert('Resistance must be between 0 and 100');
+        return;
+    }
+
+    // Send to API
+    $.ajax({
+        url: '/api/add-character',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            name: name,
+            age: parseInt(age),
+            occupation: occupation,
+            personality: personality,
+            resistance: parseInt(resistance),
+            clothing: clothing,
+            clothing_meaning: clothing_meaning
+        }),
+        success: function(data) {
+            if (data.success) {
+                alert(`✨ ${data.message}`);
+                closeModal('addCharacterModal');
+
+                // Reload the page to show new character
+                window.location.reload();
+            } else {
+                alert(`Failed: ${data.error}`);
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to create character';
+            alert(`Error: ${error}`);
+        }
+    });
+}

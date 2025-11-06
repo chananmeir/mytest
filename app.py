@@ -603,6 +603,57 @@ def api_save_game():
         return jsonify({'success': False, 'message': 'Failed to save game'})
 
 
+@app.route('/api/add-character', methods=['POST'])
+def api_add_character():
+    """Add a new character to the game"""
+    data = request.json
+
+    game_state = get_game_state()
+
+    # Validate required fields
+    required = ['name', 'age', 'occupation', 'personality', 'resistance']
+    for field in required:
+        if field not in data or not data[field]:
+            return jsonify({'success': False, 'error': f'Missing required field: {field}'}), 400
+
+    # Check if character already exists
+    if data['name'] in game_state.characters:
+        return jsonify({'success': False, 'error': f'Character {data["name"]} already exists'}), 400
+
+    # Create new character
+    from models.character import Character
+
+    new_character = Character(
+        name=data['name'],
+        age=int(data['age']),
+        occupation=data['occupation'],
+        clothing=data.get('clothing', 'Casual clothing'),
+        clothing_meaning=data.get('clothing_meaning', ''),
+        personality=data['personality'],
+        resistance=int(data['resistance']),
+        rapport=0,
+        emotional_state='neutral'
+    )
+
+    # Add to game state
+    game_state.characters[data['name']] = new_character
+
+    # Save updated game state
+    save_game_state(game_state)
+
+    return jsonify({
+        'success': True,
+        'message': f'{data["name"]} has been added to the family!',
+        'character': {
+            'name': new_character.name,
+            'age': new_character.age,
+            'occupation': new_character.occupation,
+            'personality': new_character.personality,
+            'resistance': new_character.resistance
+        }
+    })
+
+
 @app.route('/api/books')
 def api_books():
     """Get available books"""
