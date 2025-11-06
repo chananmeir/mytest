@@ -242,6 +242,93 @@ class BaseScene(ABC):
         print("="*60)
         input("\nPress Enter to continue...")
 
+    def view_clothing_details(self, character_name: str):
+        """View detailed clothing information and history for a character"""
+        char = self.game_state.get_character(character_name)
+
+        if not char:
+            print(f"Character {character_name} not found.")
+            return
+
+        print(f"\n{'='*60}")
+        print(f"{char.name}'s CLOTHING")
+        print(f"{'='*60}")
+        print(f"\nCURRENT OUTFIT:")
+        print(f"  {char.clothing}")
+        print(f"  Meaning: {char.clothing_meaning}")
+
+        if char.clothing_history and len(char.clothing_history) > 1:
+            print(f"\nCLOTHING HISTORY:")
+            print("-" * 60)
+            for i, entry in enumerate(reversed(char.clothing_history[-5:]), 1):
+                timestamp = entry.get('timestamp', 'unknown')
+                if timestamp != 'initial':
+                    from datetime import datetime
+                    try:
+                        dt = datetime.fromisoformat(timestamp)
+                        timestamp_str = dt.strftime("%Y-%m-%d %H:%M")
+                    except:
+                        timestamp_str = timestamp
+                else:
+                    timestamp_str = "Initial"
+
+                print(f"{i}. [{timestamp_str}]")
+                print(f"   Outfit: {entry.get('clothing', 'Unknown')}")
+                print(f"   Occasion: {entry.get('occasion', 'unspecified')}")
+                print()
+
+        print("="*60)
+        input("\nPress Enter to continue...")
+
+    def change_character_clothing(self, character_name: str):
+        """Change a character's clothing"""
+        char = self.game_state.get_character(character_name)
+
+        if not char:
+            print(f"Character {character_name} not found.")
+            return
+
+        print(f"\n{'='*60}")
+        print(f"CHANGE {char.name}'S CLOTHING")
+        print(f"{'='*60}")
+        print(f"\nCurrent: {char.clothing}")
+        print(f"Meaning: {char.clothing_meaning}")
+        print()
+
+        new_clothing = input("New clothing description (or 'back' to cancel): ").strip()
+
+        if not new_clothing or new_clothing.lower() == 'back':
+            print("Cancelled.")
+            input("\nPress Enter to continue...")
+            return
+
+        new_meaning = input("What does this outfit signify? (optional): ").strip()
+        occasion = input("Occasion for change? (e.g., 'date night', 'work meeting'): ").strip()
+
+        # Update clothing and record memory
+        old_clothing = char.update_clothing(new_clothing, new_meaning, occasion)
+
+        # Record memory of clothing change
+        self.memory.record_clothing_change(
+            char,
+            old_clothing,
+            new_clothing,
+            occasion,
+            importance=6
+        )
+
+        print(f"\n✓ {char.name}'s clothing updated!")
+        print(f"  Old: {old_clothing}")
+        print(f"  New: {new_clothing}")
+
+        if occasion:
+            print(f"  Occasion: {occasion}")
+
+        # Award SP for attention to detail
+        self.game_state.add_sp(1, f"Noted {char.name}'s appearance change")
+
+        input("\nPress Enter to continue...")
+
     @abstractmethod
     def run(self):
         """Main scene loop"""

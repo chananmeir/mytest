@@ -156,7 +156,8 @@ class GameState:
                     emotional_state=char_data['emotional_state'],
                     active_phs=phs_list,
                     conversation_history=char_data.get('conversation_history', []),
-                    memories=memories_list
+                    memories=memories_list,
+                    clothing_history=char_data.get('clothing_history', [])
                 )
                 self.characters[name] = char
 

@@ -164,6 +164,8 @@ in conversation. The seeds you've planted tonight will grow in the days to come.
                 "Observe the room",
                 "Listen to conversations",
                 "View character details",
+                "View clothing details",
+                "Change someone's clothing",
                 "Advance to next stage",
                 "View your status",
                 "Save game",
@@ -205,23 +207,39 @@ in conversation. The seeds you've planted tonight will grow in the days to come.
                 if char_choice != -1 and char_choice <= len(self.characters_present):
                     self.view_character_status(self.characters_present[char_choice - 1])
 
-            elif choice == 6:  # Advance stage
+            elif choice == 6:  # View clothing details
+                print("\nWhich character's clothing?")
+                char_options = self.characters_present + ["Back"]
+                char_choice = self.display_menu(char_options)
+
+                if char_choice != -1 and char_choice <= len(self.characters_present):
+                    self.view_clothing_details(self.characters_present[char_choice - 1])
+
+            elif choice == 7:  # Change someone's clothing
+                print("\nWhose clothing do you want to change?")
+                char_options = self.characters_present + ["Back"]
+                char_choice = self.display_menu(char_options)
+
+                if char_choice != -1 and char_choice <= len(self.characters_present):
+                    self.change_character_clothing(self.characters_present[char_choice - 1])
+
+            elif choice == 8:  # Advance stage
                 if not self.advance_dinner_stage():
                     print("\nThe dinner has ended.")
                     self.scene_active = False
 
-            elif choice == 7:  # Status
+            elif choice == 9:  # Status
                 self.game_state.display_status()
                 input("\nPress Enter to continue...")
 
-            elif choice == 8:  # Save
+            elif choice == 10:  # Save
                 if self.game_state.save_game():
                     print("\n✓ Game saved successfully!")
                 else:
                     print("\n✗ Failed to save game")
                 input("\nPress Enter to continue...")
 
-            elif choice == 9:  # End scene
+            elif choice == 11:  # End scene
                 print("\nAre you sure you want to end this scene? (yes/no)")
                 confirm = input("> ").strip().lower()
 

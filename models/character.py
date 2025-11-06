@@ -19,10 +19,20 @@ class Character:
     active_phs: List['PostHypnoticSuggestion'] = field(default_factory=list)
     conversation_history: List[Dict[str, str]] = field(default_factory=list)
     memories: List = field(default_factory=list)  # List of Memory objects
+    clothing_history: List[Dict[str, str]] = field(default_factory=list)  # Track clothing changes
 
     def __post_init__(self):
         """Initialize any computed properties"""
         self.max_phs = self._calculate_max_phs()
+
+        # Record initial clothing if history is empty
+        if not self.clothing_history:
+            self.clothing_history.append({
+                'timestamp': 'initial',
+                'clothing': self.clothing,
+                'meaning': self.clothing_meaning,
+                'occasion': 'default'
+            })
 
     def _calculate_max_phs(self) -> int:
         """Calculate maximum active PHS based on resistance"""
@@ -58,6 +68,44 @@ class Character:
             return True
         return False
 
+    def update_clothing(self, new_clothing: str, new_meaning: str = "", occasion: str = "") -> None:
+        """
+        Update character's clothing and record the change
+
+        Args:
+            new_clothing: Description of the new clothing
+            new_meaning: What the clothing signifies (optional)
+            occasion: Why they changed (e.g., "dinner party", "casual day")
+        """
+        from datetime import datetime
+
+        # If no new meaning provided, keep existing or note it's unknown
+        if not new_meaning:
+            new_meaning = f"Changed from: {self.clothing_meaning}"
+
+        # Record the change in history
+        self.clothing_history.append({
+            'timestamp': datetime.now().isoformat(),
+            'clothing': new_clothing,
+            'meaning': new_meaning,
+            'occasion': occasion or 'unspecified'
+        })
+
+        # Update current clothing
+        old_clothing = self.clothing
+        self.clothing = new_clothing
+        self.clothing_meaning = new_meaning
+
+        return old_clothing
+
+    def get_clothing_history(self) -> List[Dict[str, str]]:
+        """Get the history of clothing changes"""
+        return self.clothing_history
+
+    def get_current_clothing_description(self) -> str:
+        """Get a formatted description of current clothing"""
+        return f"{self.clothing} - {self.clothing_meaning}"
+
     def to_dict(self) -> dict:
         """Convert to dictionary for saving"""
         return {
@@ -72,7 +120,8 @@ class Character:
             'emotional_state': self.emotional_state,
             'active_phs': [phs.to_dict() for phs in self.active_phs],
             'conversation_history': self.conversation_history,
-            'memories': [mem.to_dict() if hasattr(mem, 'to_dict') else mem for mem in self.memories]
+            'memories': [mem.to_dict() if hasattr(mem, 'to_dict') else mem for mem in self.memories],
+            'clothing_history': self.clothing_history
         }
 
 

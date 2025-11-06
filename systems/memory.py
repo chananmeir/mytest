@@ -247,3 +247,27 @@ class MemorySystem:
         )
 
         MemorySystem.add_memory_to_character(character, memory)
+
+    @staticmethod
+    def record_clothing_change(
+        character,
+        old_clothing: str,
+        new_clothing: str,
+        occasion: str = "",
+        importance: int = 6
+    ):
+        """Helper to record a clothing change"""
+        content = f"Changed clothes from '{old_clothing}' to '{new_clothing}'"
+        if occasion:
+            content += f" for {occasion}"
+
+        memory = MemorySystem.create_memory(
+            memory_type='important_event',
+            content=content,
+            importance=importance,
+            related_characters=[],
+            emotional_context=character.emotional_state,
+            tags=['clothing', 'appearance', 'change']
+        )
+
+        MemorySystem.add_memory_to_character(character, memory)
