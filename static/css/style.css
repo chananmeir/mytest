@@ -160,6 +160,31 @@ body {
     color: var(--highlight-color);
 }
 
+.time-display {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1rem;
+    background: rgba(83, 52, 131, 0.2);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.time-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.time-icon {
+    font-size: 1.2rem;
+}
+
+.time-value {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
 .game-actions {
     display: flex;
     gap: 1rem;

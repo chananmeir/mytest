@@ -15,6 +15,9 @@ $(document).ready(function() {
     // Load initial game state
     updateGameState();
 
+    // Load character schedules
+    updateCharacterSchedules();
+
     // Start ambient events polling (every 15-25 seconds for variety)
     startAmbientEvents();
 });
@@ -143,6 +146,63 @@ function updateGameState() {
             $('#sp-display').text(data.player.suggestion_points);
             $('#skill-level').text(data.player.skill_level.toUpperCase());
             $('#techniques-count').text(`${data.player.techniques_mastered}/${data.player.total_techniques}`);
+        }
+    });
+
+    // Also update time display
+    updateTimeDisplay();
+}
+
+// Update time display
+function updateTimeDisplay() {
+    $.ajax({
+        url: '/api/current-time',
+        method: 'GET',
+        success: function(data) {
+            $('#current-time').text(data.time);
+            $('#current-date').text(`${data.day_name}, ${data.date.split(', ')[1]}`);
+            $('#current-period').text(data.period);
+        }
+    });
+}
+
+// Advance time by specified minutes
+function advanceTime(minutes) {
+    $.ajax({
+        url: '/api/advance-time',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ minutes: minutes }),
+        success: function(data) {
+            // Update time display
+            $('#current-time').text(data.time);
+            $('#current-date').text(`${data.events.current_period}, ${data.date.split(', ')[1]}`);
+            $('#current-period').text(data.period);
+
+            // Show time advancement message
+            let timeMessage = `⏱️ Time advanced by ${minutes} minutes → ${data.time}`;
+            addSystemMessage(timeMessage);
+
+            // Show any event messages (new day, new period)
+            if (data.messages && data.messages.length > 0) {
+                data.messages.forEach(msg => addSystemMessage(msg));
+            }
+
+            // If schedules changed, show character updates
+            if (data.schedule_updates) {
+                data.schedule_updates.forEach(update => {
+                    const charCard = $(`.character-card[data-character="${update.character}"]`);
+                    // Update the character's activity indicator if it exists
+                    updateCharacterActivity(update.character, update.activity);
+                });
+            }
+
+            // Update game state and character schedules
+            updateGameState();
+            updateCharacterSchedules();
+        },
+        error: function() {
+            addSystemMessage('⚠️ Failed to advance time.');
         }
     });
 }
@@ -898,6 +958,19 @@ function updateCharacterActivity(characterName, activity) {
     setTimeout(() => {
         card.removeClass('active-character');
     }, 2000);
+}
+
+// Update all character schedules
+function updateCharacterSchedules() {
+    $.ajax({
+        url: '/api/characters',
+        method: 'GET',
+        success: function(data) {
+            data.characters.forEach(char => {
+                updateCharacterActivity(char.name, char.current_activity);
+            });
+        }
+    });
 }
 
 // Open add character modal

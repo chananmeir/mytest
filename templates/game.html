@@ -20,6 +20,21 @@
         </div>
     </div>
 
+    <div class="time-display">
+        <div class="time-item">
+            <span class="time-icon">🕐</span>
+            <span class="time-value" id="current-time">6:00 PM</span>
+        </div>
+        <div class="time-item">
+            <span class="time-icon">📅</span>
+            <span class="time-value" id="current-date">Monday, January 15</span>
+        </div>
+        <div class="time-item">
+            <span class="time-icon">🌆</span>
+            <span class="time-value" id="current-period">Evening</span>
+        </div>
+    </div>
+
     <div class="game-actions">
         <button class="btn btn-small" onclick="saveGame()">💾 Save</button>
         <button class="btn btn-small" onclick="exitGame()">🚪 Exit</button>
@@ -92,6 +107,16 @@
         </button>
 
         <div style="margin-top: 2rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-align: center;">⏱️ Time Control</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <button class="btn btn-small" onclick="advanceTime(15)" title="Skip 15 minutes">+15 min</button>
+                <button class="btn btn-small" onclick="advanceTime(60)" title="Skip 1 hour">+1 hour</button>
+                <button class="btn btn-small" onclick="advanceTime(180)" title="Skip 3 hours">+3 hours</button>
+                <button class="btn btn-small" onclick="advanceTime(480)" title="Skip to next period">Next Period</button>
+            </div>
+        </div>
+
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
             <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Selected Character:</div>
             <div style="font-size: 1.1rem; font-weight: bold;" id="selected-character">None</div>
         </div>

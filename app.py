@@ -138,18 +138,26 @@ def api_game_state():
 def api_ambient_events():
     """Get ambient events and character activities"""
     import random
+    from systems.time_system import get_character_schedule, is_character_available
 
     game_state = get_game_state()
+    current_period = game_state.game_time.period
 
-    # Define possible activities for each character
-    activities = {
-        'Ruth': ['Setting the table', 'Checking on dinner', 'Pouring drinks', 'Adjusting her hair', 'Looking at old photos'],
-        'Tom': ['Reading the newspaper', 'Checking his phone', 'Sipping coffee', 'Looking out the window', 'Organizing papers'],
-        'Lisa': ['Texting friends', 'Doing homework', 'Scrolling social media', 'Listening to music', 'Doodling in notebook'],
-        'Marcus': ['Lifting weights mentally', 'Checking his reflection', 'Flexing subtly', 'Adjusting his shirt', 'Checking fitness app'],
-        'Sophie': ['Reading a book', 'Taking notes', 'Adjusting her glasses', 'Thinking deeply', 'Reviewing documents'],
-        'Rachel': ['Dancing to imaginary music', 'Making silly faces', 'Drawing', 'Playing with toys', 'Telling jokes'],
-        'James': ['Daydreaming', 'Watching TV', 'Playing video games', 'Yawning', 'Snacking']
+    # Get schedule-based activities first
+    schedule_activities = {}
+    for char_name in game_state.characters.keys():
+        schedule = get_character_schedule(char_name, current_period)
+        schedule_activities[char_name] = schedule['activity']
+
+    # Define additional possible activities for each character (time-independent)
+    extra_activities = {
+        'Ruth': ['Adjusting her hair', 'Looking at old photos', 'Checking her phone'],
+        'Tom': ['Checking his phone', 'Looking out the window', 'Organizing papers'],
+        'Lisa': ['Texting friends', 'Scrolling social media', 'Doodling in notebook'],
+        'Marcus': ['Checking his reflection', 'Flexing subtly', 'Checking fitness app'],
+        'Sophie': ['Adjusting her glasses', 'Thinking deeply', 'Reviewing documents'],
+        'Rachel': ['Making silly faces', 'Drawing', 'Telling jokes'],
+        'James': ['Daydreaming', 'Yawning', 'Snacking']
     }
 
     # Define ambient dialogue for each character
@@ -206,10 +214,20 @@ def api_ambient_events():
     if event_type == 'activity':
         # Random character changes activity
         char_name = random.choice(list(game_state.characters.keys()))
-        new_activity = random.choice(activities.get(char_name, ['Sitting quietly']))
+
+        # 60% chance to show schedule-based activity, 40% extra activity
+        if random.random() < 0.6:
+            new_activity = schedule_activities.get(char_name, 'Doing something')
+        else:
+            new_activity = random.choice(extra_activities.get(char_name, ['Sitting quietly']))
+
         result['character'] = char_name
         result['activity'] = new_activity
-        result['message'] = f"{char_name} is {new_activity.lower()}"
+
+        # Include location from schedule
+        schedule = get_character_schedule(char_name, current_period)
+        result['location'] = schedule['location']
+        result['message'] = f"{char_name} is {new_activity.lower()} in the {schedule['location'].lower()}"
 
     elif event_type == 'dialogue':
         # Random character says something
@@ -353,10 +371,15 @@ def api_talk():
 @app.route('/api/characters')
 def api_characters():
     """Get all characters"""
+    from systems.time_system import get_character_schedule
+
     game_state = get_game_state()
+    current_period = game_state.game_time.period
 
     characters = []
     for char in game_state.characters.values():
+        schedule = get_character_schedule(char.name, current_period)
+
         characters.append({
             'name': char.name,
             'age': char.age,
@@ -367,7 +390,9 @@ def api_characters():
             'resistance': char.resistance,
             'clothing': char.clothing,
             'active_phs': len(char.active_phs),
-            'max_phs': char.max_phs
+            'max_phs': char.max_phs,
+            'current_location': schedule['location'],
+            'current_activity': schedule['activity']
         })
 
     return jsonify({'characters': characters})
@@ -686,6 +711,67 @@ def api_books():
         })
 
     return jsonify({'books': books})
+
+
+@app.route('/api/current-time')
+def api_current_time():
+    """Get current game time"""
+    game_state = get_game_state()
+
+    return jsonify({
+        'time': game_state.game_time.get_formatted_time(),
+        'date': game_state.game_time.get_formatted_date(),
+        'period': game_state.game_time.period.capitalize(),
+        'day_name': game_state.game_time.day_name,
+        'hour': game_state.game_time.hour,
+        'minute': game_state.game_time.minute,
+        'is_weekend': game_state.game_time.is_weekend
+    })
+
+
+@app.route('/api/advance-time', methods=['POST'])
+def api_advance_time():
+    """Advance game time by specified minutes"""
+    game_state = get_game_state()
+    data = request.json
+
+    minutes = data.get('minutes', 15)
+
+    # Advance time
+    events = game_state.game_time.advance_minutes(minutes)
+
+    # Save the updated game state
+    save_game_state(game_state)
+
+    # Prepare response
+    response = {
+        'success': True,
+        'time': game_state.game_time.get_formatted_time(),
+        'date': game_state.game_time.get_formatted_date(),
+        'period': game_state.game_time.period.capitalize(),
+        'events': events,
+        'messages': []
+    }
+
+    # Add event messages
+    if events['messages']:
+        response['messages'] = events['messages']
+
+    # Check if any characters' schedules changed
+    if events['new_period'] or events['new_day']:
+        schedule_updates = []
+        for char_name in game_state.characters.keys():
+            from systems.time_system import get_character_schedule
+            schedule = get_character_schedule(char_name, game_state.game_time.period)
+            schedule_updates.append({
+                'character': char_name,
+                'location': schedule['location'],
+                'activity': schedule['activity'],
+                'mood': schedule['mood_modifier']
+            })
+        response['schedule_updates'] = schedule_updates
+
+    return jsonify(response)
 
 
 if __name__ == '__main__':
