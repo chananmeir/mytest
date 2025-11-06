@@ -166,6 +166,8 @@ in conversation. The seeds you've planted tonight will grow in the days to come.
                 "View character details",
                 "View clothing details",
                 "Change someone's clothing",
+                "View skill tree",
+                "Study hypnosis",
                 "Advance to next stage",
                 "View your status",
                 "Save game",
@@ -223,23 +225,29 @@ in conversation. The seeds you've planted tonight will grow in the days to come.
                 if char_choice != -1 and char_choice <= len(self.characters_present):
                     self.change_character_clothing(self.characters_present[char_choice - 1])
 
-            elif choice == 8:  # Advance stage
+            elif choice == 8:  # View skill tree
+                self.view_skill_tree()
+
+            elif choice == 9:  # Study hypnosis
+                self.study_hypnosis()
+
+            elif choice == 10:  # Advance stage
                 if not self.advance_dinner_stage():
                     print("\nThe dinner has ended.")
                     self.scene_active = False
 
-            elif choice == 9:  # Status
+            elif choice == 11:  # Status
                 self.game_state.display_status()
                 input("\nPress Enter to continue...")
 
-            elif choice == 10:  # Save
+            elif choice == 12:  # Save
                 if self.game_state.save_game():
                     print("\n✓ Game saved successfully!")
                 else:
                     print("\n✗ Failed to save game")
                 input("\nPress Enter to continue...")
 
-            elif choice == 11:  # End scene
+            elif choice == 13:  # End scene
                 print("\nAre you sure you want to end this scene? (yes/no)")
                 confirm = input("> ").strip().lower()
 

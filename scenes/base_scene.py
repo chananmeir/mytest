@@ -536,6 +536,324 @@ class BaseScene(ABC):
 
         input("\nPress Enter to continue...")
 
+    def view_skill_tree(self):
+        """View hypnosis skill tree and learning progress"""
+        from systems.hypnosis_knowledge import HYPNOSIS_TECHNIQUES
+
+        knowledge = self.game_state.player.hypnosis_knowledge
+
+        print(f"\n{'='*70}")
+        print(f"HYPNOSIS SKILL TREE")
+        print(f"{'='*70}")
+        print(f"\nSkill Level: {knowledge.skill_level.upper()}")
+        print(f"Techniques Mastered: {len(knowledge.known_techniques)}/11")
+
+        # Get total bonuses
+        sp_reduction, success_bonus = knowledge.get_total_bonuses()
+        print(f"Total Bonuses: -{sp_reduction} SP cost, +{success_bonus}% success rate")
+
+        # Organize techniques by category
+        categories = {
+            'basic': [],
+            'intermediate': [],
+            'advanced': [],
+            'master': []
+        }
+
+        for name, technique in HYPNOSIS_TECHNIQUES.items():
+            categories[technique.category].append((name, technique))
+
+        # Display each category
+        for category in ['basic', 'intermediate', 'advanced', 'master']:
+            print(f"\n{category.upper()} TECHNIQUES")
+            print("-" * 70)
+
+            for tech_name, technique in categories[category]:
+                # Check if known
+                if knowledge.knows_technique(tech_name):
+                    status = "✓ MASTERED"
+                    icon = "🟢"
+                elif tech_name in knowledge.learning_progress:
+                    progress = knowledge.learning_progress[tech_name]
+                    status = f"📚 LEARNING ({progress}%)"
+                    icon = "🟡"
+                else:
+                    can_learn, reason = knowledge.can_learn_technique(tech_name)
+                    if can_learn:
+                        status = "🔓 AVAILABLE"
+                        icon = "⚪"
+                    else:
+                        status = f"🔒 {reason}"
+                        icon = "🔴"
+
+                print(f"\n{icon} {technique.name}")
+                print(f"   Status: {status}")
+                print(f"   Effect: ", end="")
+
+                effects = []
+                if technique.sp_cost_reduction > 0:
+                    effects.append(f"-{technique.sp_cost_reduction} SP")
+                if technique.success_rate_bonus > 0:
+                    effects.append(f"+{technique.success_rate_bonus}% success")
+                print(", ".join(effects) if effects else "Foundation skill")
+
+                print(f"   {technique.description}")
+
+                if technique.prerequisites:
+                    prereq_names = [HYPNOSIS_TECHNIQUES[p].name for p in technique.prerequisites]
+                    print(f"   Prerequisites: {', '.join(prereq_names)}")
+
+        print("\n" + "="*70)
+        print("\nLEGEND:")
+        print("  🟢 Mastered - You know this technique")
+        print("  🟡 Learning - Currently studying this")
+        print("  ⚪ Available - Ready to learn")
+        print("  🔴 Locked - Learn prerequisites first")
+        print("="*70)
+
+        input("\nPress Enter to continue...")
+
+    def study_hypnosis(self):
+        """Study hypnosis through books or practice"""
+        from systems.hypnosis_knowledge import LEARNING_RESOURCES, HYPNOSIS_TECHNIQUES
+
+        knowledge = self.game_state.player.hypnosis_knowledge
+
+        print(f"\n{'='*70}")
+        print(f"STUDY HYPNOSIS")
+        print(f"{'='*70}")
+        print(f"\nCurrent Skill Level: {knowledge.skill_level.upper()}")
+        print(f"Techniques Mastered: {len(knowledge.known_techniques)}/11")
+
+        print(f"\nWhat would you like to do?")
+        print("1. Read a book")
+        print("2. Practice a technique")
+        print("3. Research online")
+        print("4. Back")
+
+        choice = input("\nChoice: ").strip()
+
+        if choice == "1":
+            self._read_book()
+        elif choice == "2":
+            self._practice_technique()
+        elif choice == "3":
+            self._research_online()
+        # else: back
+
+    def _read_book(self):
+        """Read a book to learn techniques"""
+        from systems.hypnosis_knowledge import LEARNING_RESOURCES, HYPNOSIS_TECHNIQUES
+
+        knowledge = self.game_state.player.hypnosis_knowledge
+
+        print(f"\n{'='*70}")
+        print(f"AVAILABLE BOOKS")
+        print(f"{'='*70}")
+
+        # Show available books
+        available_books = []
+        for book_id, book in LEARNING_RESOURCES.items():
+            # Check if already read
+            already_read = book_id in knowledge.books_read
+
+            # Check what it teaches
+            teaches_something_new = False
+            for tech in book['teaches']:
+                if tech not in knowledge.known_techniques:
+                    teaches_something_new = True
+                    break
+
+            if teaches_something_new or not already_read:
+                available_books.append((book_id, book, already_read))
+
+        if not available_books:
+            print("\nYou've mastered everything these books can teach!")
+            input("\nPress Enter to continue...")
+            return
+
+        for i, (book_id, book, already_read) in enumerate(available_books, 1):
+            status = "📖 READ" if already_read else "📕 UNREAD"
+            print(f"\n{i}. [{status}] {book['title']}")
+            print(f"   {book['description']}")
+
+            # Show what it teaches
+            teaches = []
+            for tech_name in book['teaches']:
+                tech = HYPNOSIS_TECHNIQUES[tech_name]
+                if knowledge.knows_technique(tech_name):
+                    teaches.append(f"✓ {tech.name}")
+                else:
+                    teaches.append(f"• {tech.name}")
+            print(f"   Teaches: {', '.join(teaches)}")
+            print(f"   Location: {book['location']}")
+
+        print(f"\n{len(available_books) + 1}. Back")
+
+        try:
+            choice = int(input("\nWhich book? ").strip())
+            if 1 <= choice <= len(available_books):
+                book_id, book, already_read = available_books[choice - 1]
+                self._read_specific_book(book_id, book)
+        except ValueError:
+            pass
+
+    def _read_specific_book(self, book_id: str, book: dict):
+        """Read a specific book and gain progress"""
+        from systems.hypnosis_knowledge import HYPNOSIS_TECHNIQUES
+
+        knowledge = self.game_state.player.hypnosis_knowledge
+
+        print(f"\n{'='*70}")
+        print(f"READING: {book['title']}")
+        print(f"{'='*70}")
+        print(f"\n{book['description']}\n")
+        print("You spend time carefully reading and absorbing the material...")
+        print()
+
+        # Track if we learned anything new
+        learned_new = False
+        progress_made = []
+
+        # Add progress to each technique the book teaches
+        for tech_name in book['teaches']:
+            if tech_name not in knowledge.known_techniques:
+                progress = knowledge.add_learning_progress(tech_name, book['progress_per_read'])
+
+                tech = HYPNOSIS_TECHNIQUES[tech_name]
+
+                if progress >= 100:
+                    print(f"🎓 TECHNIQUE MASTERED: {tech.name}!")
+                    print(f"   {tech.description}")
+                    learned_new = True
+                else:
+                    print(f"📚 Learning '{tech.name}': {progress}%")
+                    progress_made.append(tech.name)
+
+        # Mark book as read
+        if book_id not in knowledge.books_read:
+            knowledge.books_read.append(book_id)
+
+        # Award SP for studying
+        if learned_new:
+            self.game_state.add_sp(2, "Mastered new hypnosis technique")
+        elif progress_made:
+            self.game_state.add_sp(1, "Studied hypnosis")
+
+        print()
+        print("="*70)
+        input("\nPress Enter to continue...")
+
+    def _practice_technique(self):
+        """Practice techniques to gain proficiency"""
+        from systems.hypnosis_knowledge import HYPNOSIS_TECHNIQUES
+
+        knowledge = self.game_state.player.hypnosis_knowledge
+
+        # Get techniques currently being learned
+        in_progress = [(name, progress) for name, progress in knowledge.learning_progress.items()]
+
+        if not in_progress:
+            print(f"\n{'='*70}")
+            print("PRACTICE")
+            print("="*70)
+            print("\nYou're not currently learning any techniques.")
+            print("Read books to start learning new techniques!")
+            input("\nPress Enter to continue...")
+            return
+
+        print(f"\n{'='*70}")
+        print(f"PRACTICE TECHNIQUES")
+        print(f"{'='*70}")
+        print("\nWhich technique would you like to practice?")
+
+        for i, (tech_name, progress) in enumerate(in_progress, 1):
+            tech = HYPNOSIS_TECHNIQUES[tech_name]
+            bar = "█" * (progress // 10) + "░" * ((100 - progress) // 10)
+            print(f"{i}. {tech.name} [{bar}] {progress}%")
+
+        print(f"{len(in_progress) + 1}. Back")
+
+        try:
+            choice = int(input("\nChoice: ").strip())
+            if 1 <= choice <= len(in_progress):
+                tech_name, current_progress = in_progress[choice - 1]
+                self._practice_specific_technique(tech_name)
+        except ValueError:
+            pass
+
+    def _practice_specific_technique(self, tech_name: str):
+        """Practice a specific technique"""
+        from systems.hypnosis_knowledge import HYPNOSIS_TECHNIQUES
+
+        knowledge = self.game_state.player.hypnosis_knowledge
+        tech = HYPNOSIS_TECHNIQUES[tech_name]
+
+        print(f"\n{'='*70}")
+        print(f"PRACTICING: {tech.name}")
+        print(f"{'='*70}")
+        print(f"\n{tech.description}\n")
+        print("You spend time practicing the technique...")
+
+        # Gain progress (less than reading a book)
+        progress_gain = 15 + (5 if knowledge.practice_sessions > 10 else 0)  # Get better at practicing
+        final_progress = knowledge.add_learning_progress(tech_name, progress_gain)
+
+        knowledge.practice_sessions += 1
+
+        if final_progress >= 100:
+            print(f"\n🎓 TECHNIQUE MASTERED: {tech.name}!")
+            print(f"   Through dedicated practice, you've mastered this technique!")
+            self.game_state.add_sp(2, f"Mastered {tech.name} through practice")
+        else:
+            print(f"\n📚 Progress: {final_progress}%")
+            print(f"   +{progress_gain}% from practice session")
+            self.game_state.add_sp(1, "Practiced hypnosis")
+
+        print()
+        print("="*70)
+        input("\nPress Enter to continue...")
+
+    def _research_online(self):
+        """Research hypnosis online"""
+        from systems.hypnosis_knowledge import HYPNOSIS_TECHNIQUES
+
+        knowledge = self.game_state.player.hypnosis_knowledge
+
+        print(f"\n{'='*70}")
+        print(f"ONLINE RESEARCH")
+        print(f"{'='*70}")
+        print("\nYou spend time researching hypnosis online...")
+        print("Forums, videos, articles... absorbing knowledge from many sources.")
+
+        # Can research any available technique
+        available = knowledge.get_available_techniques()
+
+        if not available:
+            print("\nYou've learned all the basics you can find online!")
+            print("You'll need books or direct practice for advanced techniques.")
+            input("\nPress Enter to continue...")
+            return
+
+        # Pick a random available technique to make progress on
+        import random
+        tech = random.choice(available)
+
+        progress_gain = 10  # Less efficient than books
+        final_progress = knowledge.add_learning_progress(tech.name, progress_gain)
+
+        if final_progress >= 100:
+            print(f"\n🎓 TECHNIQUE LEARNED: {tech.name}!")
+            print(f"   {tech.description}")
+            self.game_state.add_sp(2, f"Learned {tech.name} through research")
+        else:
+            print(f"\n📚 You made progress learning '{tech.name}': {final_progress}%")
+            self.game_state.add_sp(1, "Researched hypnosis online")
+
+        print()
+        print("="*70)
+        input("\nPress Enter to continue...")
+
     @abstractmethod
     def run(self):
         """Main scene loop"""
