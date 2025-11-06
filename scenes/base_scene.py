@@ -210,36 +210,243 @@ class BaseScene(ABC):
         input("\nPress Enter to continue...")
 
     def view_character_status(self, character_name: str):
-        """View detailed status of a character"""
+        """View comprehensive character profile with all learned information"""
         char = self.game_state.get_character(character_name)
 
         if not char:
             print(f"Character {character_name} not found.")
             return
 
-        print(f"\n{'='*60}")
-        print(f"{char.name} - {char.age} years old")
-        print(f"{'='*60}")
-        print(f"Occupation: {char.occupation}")
-        print(f"Appearance: {char.clothing}")
-        print(f"            ({char.clothing_meaning})")
-        print(f"\nPersonality: {char.personality}")
-        print(f"\nCurrent State: {char.emotional_state}")
-        print(f"Rapport: {char.rapport}/20")
-        print(f"Resistance: {char.resistance}%")
-        print(f"Active PHS: {len(char.active_phs)}/{char.max_phs}")
+        # === HEADER ===
+        print(f"\n{'='*70}")
+        print(f"CHARACTER PROFILE: {char.name.upper()}")
+        print(f"{'='*70}")
 
+        # === BASIC INFO ===
+        print(f"\n📋 BASIC INFORMATION")
+        print("-" * 70)
+        print(f"  Name: {char.name}")
+        print(f"  Age: {char.age} years old")
+        print(f"  Occupation: {char.occupation}")
+        print(f"  Personality: {char.personality}")
+
+        # === CURRENT STATUS ===
+        print(f"\n📊 CURRENT STATUS")
+        print("-" * 70)
+        rapport_bar = "█" * char.rapport + "░" * (20 - char.rapport)
+        rapport_desc = self._get_rapport_description(char.rapport)
+        print(f"  Rapport: [{rapport_bar}] {char.rapport}/20 - {rapport_desc}")
+        print(f"  Emotional State: {char.emotional_state.upper()}")
+        print(f"  Resistance to Influence: {char.resistance}%")
+
+        # === APPEARANCE ===
+        print(f"\n👔 CURRENT APPEARANCE")
+        print("-" * 70)
+        print(f"  Wearing: {char.clothing}")
+        print(f"  Meaning: {char.clothing_meaning}")
+
+        if char.clothing_history and len(char.clothing_history) > 1:
+            print(f"  (Changed outfit {len(char.clothing_history) - 1} time(s))")
+
+        # === ACTIVE HYPNOTIC TRIGGERS ===
+        print(f"\n🎯 HYPNOTIC INFLUENCES")
+        print("-" * 70)
         if char.active_phs:
-            print(f"\nACTIVE POST-HYPNOTIC SUGGESTIONS:")
-            print("-" * 60)
+            print(f"  Active Suggestions: {len(char.active_phs)}/{char.max_phs}")
+            print()
             for i, phs in enumerate(char.active_phs, 1):
                 chance = phs.calculate_activation_chance()
-                print(f"{i}. Trigger: {phs.trigger}")
-                print(f"   Response: {phs.response}")
-                print(f"   Activation Chance: {chance}% (reinforced {phs.reinforcements}x)")
+                status = "🟢 STRONG" if chance >= 70 else "🟡 MODERATE" if chance >= 50 else "🔴 WEAK"
+                print(f"  {i}. [{status}] {chance}% chance")
+                print(f"     Trigger: \"{phs.trigger}\"")
+                print(f"     Response: \"{phs.response}\"")
+                print(f"     Reinforced: {phs.reinforcements} time(s)")
                 print()
+        else:
+            print(f"  No active suggestions planted yet.")
+            if char.rapport >= 6:
+                print(f"  ✓ Rapport sufficient to plant suggestions (≥6 required)")
+            else:
+                print(f"  ✗ Need {6 - char.rapport} more rapport to plant suggestions")
 
-        print("="*60)
+        # === WHAT YOU'VE LEARNED (MEMORIES) ===
+        print(f"\n🧠 WHAT YOU'VE LEARNED")
+        print("-" * 70)
+
+        if hasattr(char, 'memories') and char.memories:
+            # Get important memories
+            important_memories = [m for m in char.memories if m.importance >= 6]
+            recent_memories = sorted(char.memories, key=lambda m: m.timestamp, reverse=True)[:5]
+
+            if important_memories:
+                print(f"  Key Insights ({len(important_memories)} significant memories):")
+                print()
+                for i, mem in enumerate(important_memories[:5], 1):
+                    mem_type_icon = self._get_memory_icon(mem.memory_type)
+                    print(f"  {i}. {mem_type_icon} {mem.content}")
+                    if mem.emotional_context:
+                        print(f"     (They were feeling: {mem.emotional_context})")
+                    print()
+
+            if len(important_memories) > 5:
+                print(f"  ... and {len(important_memories) - 5} more significant memories")
+                print()
+        else:
+            print(f"  You haven't had any significant interactions yet.")
+            print(f"  Talk to them to learn more!")
+
+        # === CONVERSATION SUMMARY ===
+        if hasattr(char, 'conversation_history') and char.conversation_history:
+            total_exchanges = len([m for m in char.conversation_history if m.get('role') == 'user'])
+            print(f"\n💬 CONVERSATION HISTORY")
+            print("-" * 70)
+            print(f"  Total exchanges: {total_exchanges}")
+
+            # Show last 3 player messages
+            user_messages = [m for m in char.conversation_history if m.get('role') == 'user']
+            if user_messages:
+                print(f"  Recent topics discussed:")
+                for msg in user_messages[-3:]:
+                    preview = msg['content'][:60] + "..." if len(msg['content']) > 60 else msg['content']
+                    print(f"    • \"{preview}\"")
+
+        # === RELATIONSHIP ANALYSIS ===
+        print(f"\n💭 RELATIONSHIP ANALYSIS")
+        print("-" * 70)
+        print(f"  {self._get_relationship_analysis(char)}")
+
+        print("\n" + "="*70)
+
+        # Interactive options
+        print("\nWhat would you like to do?")
+        print("1. Talk to them")
+        print("2. Plant a suggestion")
+        print("3. View clothing history")
+        print("4. View all memories")
+        print("5. Back to main menu")
+
+        choice = input("\nChoice: ").strip()
+
+        if choice == "1":
+            self.talk_to_character(character_name)
+        elif choice == "2":
+            self.plant_suggestion_menu(character_name)
+        elif choice == "3":
+            self.view_clothing_details(character_name)
+        elif choice == "4":
+            self.view_all_memories(character_name)
+        # else: back to menu
+
+    def _get_rapport_description(self, rapport: int) -> str:
+        """Get a text description of rapport level"""
+        if rapport >= 18:
+            return "Deep trust and connection"
+        elif rapport >= 15:
+            return "Strong bond"
+        elif rapport >= 12:
+            return "Good relationship"
+        elif rapport >= 9:
+            return "Developing trust"
+        elif rapport >= 6:
+            return "Cautious acceptance"
+        elif rapport >= 3:
+            return "Distant"
+        else:
+            return "Barely know each other"
+
+    def _get_memory_icon(self, memory_type: str) -> str:
+        """Get icon for memory type"""
+        icons = {
+            'conversation': '💬',
+            'emotional_moment': '💝',
+            'important_event': '⭐',
+            'phs_planted': '🎯',
+            'phs_triggered': '✨'
+        }
+        return icons.get(memory_type, '📝')
+
+    def _get_relationship_analysis(self, char) -> str:
+        """Generate relationship analysis based on stats"""
+        analysis = []
+
+        if char.rapport >= 15:
+            analysis.append(f"{char.name} trusts you deeply and is highly receptive to your influence.")
+        elif char.rapport >= 10:
+            analysis.append(f"{char.name} feels comfortable around you and values your input.")
+        elif char.rapport >= 6:
+            analysis.append(f"{char.name} is open to conversations but still cautious.")
+        else:
+            analysis.append(f"{char.name} sees you as someone on the periphery of their life.")
+
+        if char.emotional_state == "open":
+            analysis.append("They're currently open and receptive.")
+        elif char.emotional_state == "relaxed":
+            analysis.append("They're relaxed and comfortable.")
+        elif char.emotional_state == "defensive":
+            analysis.append("They're guarded and protective right now.")
+        elif char.emotional_state == "tense":
+            analysis.append("There's tension that needs to be addressed.")
+
+        if char.active_phs:
+            analysis.append(f"Your suggestions are subtly shaping their behavior.")
+
+        if char.resistance >= 70:
+            analysis.append("Very resistant to influence - proceed carefully.")
+        elif char.resistance >= 50:
+            analysis.append("Moderately resistant to influence.")
+        else:
+            analysis.append("More susceptible to subtle suggestions.")
+
+        return " ".join(analysis)
+
+    def view_all_memories(self, character_name: str):
+        """View all memories for a character"""
+        char = self.game_state.get_character(character_name)
+
+        if not char:
+            print(f"Character {character_name} not found.")
+            return
+
+        print(f"\n{'='*70}")
+        print(f"ALL MEMORIES: {char.name.upper()}")
+        print(f"{'='*70}")
+
+        if not hasattr(char, 'memories') or not char.memories:
+            print("\nNo memories recorded yet.")
+            input("\nPress Enter to continue...")
+            return
+
+        # Sort by importance and timestamp
+        sorted_memories = sorted(char.memories, key=lambda m: (m.importance, m.timestamp), reverse=True)
+
+        print(f"\nTotal memories: {len(sorted_memories)}")
+        print()
+
+        for i, mem in enumerate(sorted_memories, 1):
+            icon = self._get_memory_icon(mem.memory_type)
+            importance_bar = "★" * mem.importance + "☆" * (10 - mem.importance)
+
+            print(f"{i}. {icon} [{importance_bar}] {mem.memory_type.upper()}")
+            print(f"   {mem.content}")
+
+            if mem.emotional_context:
+                print(f"   Emotional context: {mem.emotional_context}")
+
+            if mem.related_characters:
+                print(f"   Related: {', '.join(mem.related_characters)}")
+
+            # Parse and format timestamp
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(mem.timestamp)
+                time_str = dt.strftime("%Y-%m-%d %H:%M")
+                print(f"   Time: {time_str}")
+            except:
+                pass
+
+            print()
+
+        print("="*70)
         input("\nPress Enter to continue...")
 
     def view_clothing_details(self, character_name: str):
