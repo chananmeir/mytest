@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Family Dynamics RPG - Game{% endblock %}
+
+{% block content %}
+<!-- Game Header -->
+<div class="game-header">
+    <div class="player-stats">
+        <div class="stat-item">
+            <span class="stat-label">Suggestion Points</span>
+            <span class="stat-value" id="sp-display">{{ game_state.player.suggestion_points }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Skill Level</span>
+            <span class="stat-value" id="skill-level">{{ game_state.player.hypnosis_knowledge.skill_level|upper }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Techniques</span>
+            <span class="stat-value" id="techniques-count">{{ game_state.player.hypnosis_knowledge.known_techniques|length }}/11</span>
+        </div>
+    </div>
+
+    <div class="game-actions">
+        <button class="btn btn-small" onclick="saveGame()">💾 Save</button>
+        <button class="btn btn-small" onclick="exitGame()">🚪 Exit</button>
+    </div>
+</div>
+
+<!-- Main Game Content -->
+<div class="game-content">
+    <!-- Left: Character List -->
+    <div class="character-list">
+        <h2>Family Members</h2>
+        <div id="character-cards">
+            {% for character in game_state.characters.values() %}
+            <div class="character-card" data-character="{{ character.name }}" onclick="selectCharacter('{{ character.name }}')">
+                <div class="character-name">{{ character.name }}</div>
+                <div class="character-info">{{ character.age }} - {{ character.occupation }}</div>
+                <div class="rapport-bar">
+                    <div class="rapport-fill" style="width: {{ (character.rapport / 20 * 100)|int }}%"></div>
+                </div>
+                <div class="character-info" style="margin-top: 0.3rem;">
+                    Rapport: {{ character.rapport }}/20 | {{ character.emotional_state|title }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Center: Dialogue/Content Area -->
+    <div class="main-content">
+        <div class="dialogue-box" id="dialogue-box">
+            <div class="dialogue-message">
+                <div class="system-message">
+                    Welcome to the Family Dinner. Select a character to talk to, or use the actions panel to study hypnosis and view your skills.
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="message-input" placeholder="Type your message..." disabled>
+            <button class="btn" id="send-btn" onclick="sendMessage()" disabled>Send</button>
+        </div>
+    </div>
+
+    <!-- Right: Actions Panel -->
+    <div class="action-panel">
+        <h2>Actions</h2>
+
+        <button class="action-button" id="plant-suggestion-btn" onclick="openPlantSuggestion()" disabled>
+            🎯 Plant Suggestion
+        </button>
+
+        <button class="action-button" onclick="openCharacterProfile()">
+            👤 View Profile
+        </button>
+
+        <button class="action-button" onclick="openSkillTree()">
+            🌳 Skill Tree
+        </button>
+
+        <button class="action-button" onclick="openStudyMenu()">
+            📚 Study Hypnosis
+        </button>
+
+        <button class="action-button" onclick="openBooks()">
+            📖 Read Books
+        </button>
+
+        <div style="margin-top: 2rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Selected Character:</div>
+            <div style="font-size: 1.1rem; font-weight: bold;" id="selected-character">None</div>
+        </div>
+    </div>
+</div>
+
+<!-- Skill Tree Modal -->
+<div id="skillTreeModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Hypnosis Skill Tree</h2>
+            <button class="close-modal" onclick="closeModal('skillTreeModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div style="font-size: 1.2rem;">
+                    <span id="modal-skill-level"></span> |
+                    <span id="modal-techniques-count"></span> Techniques Mastered
+                </div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                    Bonuses: <span id="modal-bonuses"></span>
+                </div>
+            </div>
+
+            <div id="skill-tree-content" class="skill-tree">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Character Profile Modal -->
+<div id="profileModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="profile-character-name"></h2>
+            <button class="close-modal" onclick="closeModal('profileModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="profile-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Plant Suggestion Modal -->
+<div id="plantSuggestionModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Plant Suggestion</h2>
+            <button class="close-modal" onclick="closeModal('plantSuggestionModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="plant-suggestion-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Study Menu Modal -->
+<div id="studyModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Study Hypnosis</h2>
+            <button class="close-modal" onclick="closeModal('studyModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="action-button" onclick="openBooks()">
+                📖 Read a Book
+            </div>
+            <div class="action-button" onclick="practiceMenu()">
+                🎓 Practice Techniques
+            </div>
+            <div class="action-button" onclick="researchOnline()">
+                🌐 Research Online
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Books Modal -->
+<div id="booksModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Available Books</h2>
+            <button class="close-modal" onclick="closeModal('booksModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="books-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/game.js') }}"></script>
+{% endblock %}
