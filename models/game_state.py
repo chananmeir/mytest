@@ -81,28 +81,32 @@ class GameState:
         if scene_name not in self.player.scenes_completed:
             self.player.scenes_completed.append(scene_name)
 
+    def to_dict(self) -> dict:
+        """Convert game state to dictionary for serialization"""
+        return {
+            'player': {
+                'name': self.player.name,
+                'age': self.player.age,
+                'occupation': self.player.occupation,
+                'clothing': self.player.clothing,
+                'suggestion_points': self.player.suggestion_points,
+                'total_sp_earned': self.player.total_sp_earned,
+                'current_scene': self.player.current_scene,
+                'scenes_completed': self.player.scenes_completed,
+                'hypnosis_knowledge': self.player.hypnosis_knowledge.to_dict()
+            },
+            'characters': {
+                name: char.to_dict()
+                for name, char in self.characters.items()
+            },
+            'scene_history': self.scene_history,
+            'current_scene_name': self.current_scene_name
+        }
+
     def save_game(self, filename: str = config.SAVE_FILE) -> bool:
         """Save game state to JSON file"""
         try:
-            save_data = {
-                'player': {
-                    'name': self.player.name,
-                    'age': self.player.age,
-                    'occupation': self.player.occupation,
-                    'clothing': self.player.clothing,
-                    'suggestion_points': self.player.suggestion_points,
-                    'total_sp_earned': self.player.total_sp_earned,
-                    'current_scene': self.player.current_scene,
-                    'scenes_completed': self.player.scenes_completed,
-                    'hypnosis_knowledge': self.player.hypnosis_knowledge.to_dict()
-                },
-                'characters': {
-                    name: char.to_dict()
-                    for name, char in self.characters.items()
-                },
-                'scene_history': self.scene_history,
-                'current_scene_name': self.current_scene_name
-            }
+            save_data = self.to_dict()
 
             with open(filename, 'w') as f:
                 json.dump(save_data, f, indent=2)
