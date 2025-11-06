@@ -144,33 +144,116 @@ class BaseScene(ABC):
 
     def plant_suggestion_menu(self, character_name: str):
         """Menu for planting post-hypnotic suggestions"""
+        from systems.hypnosis_knowledge import HYPNOSIS_TECHNIQUES
+
         char = self.game_state.get_character(character_name)
 
         if not char:
             print(f"Character {character_name} not found.")
             return
 
-        can_plant, message = self.hypnosis.can_plant_phs(self.game_state, character_name)
+        knowledge = self.game_state.player.hypnosis_knowledge
 
-        print(f"\n--- Plant Suggestion on {character_name} ---")
-        print(f"Status: {message}")
+        print(f"\n{'='*70}")
+        print(f"PLANT SUGGESTION ON {character_name.upper()}")
+        print(f"{'='*70}")
         print(f"Available SP: {self.game_state.player.suggestion_points}")
+        print()
 
-        if not can_plant:
-            print("\nCannot plant suggestion at this time.")
+        # Check technique requirements for each type
+        technique_reqs = {
+            'emotional_nudge': 'emotional_anchoring',
+            'behavioral_prompt': 'embedded_commands',
+            'strong_anchor': 'post_hypnotic_suggestion'
+        }
+
+        has_emotional = knowledge.knows_technique(technique_reqs['emotional_nudge'])
+        has_behavioral = knowledge.knows_technique(technique_reqs['behavioral_prompt'])
+        has_strong = knowledge.knows_technique(technique_reqs['strong_anchor'])
+
+        # Check if ANY technique is known
+        if not has_emotional and not has_behavioral and not has_strong:
+            print("❌ YOU DON'T KNOW ANY HYPNOSIS TECHNIQUES YET!")
+            print()
+            print("You need to learn hypnosis techniques before planting suggestions.")
+            print()
+            print("What you need to learn:")
+            print(f"  • {HYPNOSIS_TECHNIQUES['emotional_anchoring'].name} → Emotional Nudge (2 SP)")
+            print(f"  • {HYPNOSIS_TECHNIQUES['embedded_commands'].name} → Behavioral Prompt (3 SP)")
+            print(f"  • {HYPNOSIS_TECHNIQUES['post_hypnotic_suggestion'].name} → Strong Anchor (4-6 SP)")
+            print()
+            print("💡 TIP: Choose 'Study hypnosis' from the main menu to learn techniques!")
+            print("="*70)
             input("\nPress Enter to continue...")
             return
 
-        options = [
-            f"Emotional Nudge ({self.hypnosis.EMOTIONAL_NUDGE_COST} SP)",
-            f"Behavioral Prompt ({self.hypnosis.BEHAVIORAL_PROMPT_COST} SP)",
-            f"Strong Anchor ({self.hypnosis.STRONG_ANCHOR_COST_MIN}-{self.hypnosis.STRONG_ANCHOR_COST_MAX} SP)",
-            "Back"
-        ]
+        # Check general requirements (rapport, emotional state)
+        can_plant_general, general_message = self.hypnosis.can_plant_phs(self.game_state, character_name)
 
-        choice = self.display_menu(options, "Choose suggestion type:")
+        print("AVAILABLE SUGGESTION TYPES:")
+        print("-" * 70)
 
-        if choice == 4 or choice == -1:
+        # Show each option with technique status
+        print(f"\n1. Emotional Nudge ({self.hypnosis.EMOTIONAL_NUDGE_COST} SP)")
+        print(f"   Requires: {HYPNOSIS_TECHNIQUES['emotional_anchoring'].name}")
+        if has_emotional:
+            print(f"   Status: ✓ You know this technique")
+        else:
+            print(f"   Status: ✗ Learn this technique first!")
+
+        print(f"\n2. Behavioral Prompt ({self.hypnosis.BEHAVIORAL_PROMPT_COST} SP)")
+        print(f"   Requires: {HYPNOSIS_TECHNIQUES['embedded_commands'].name}")
+        if has_behavioral:
+            print(f"   Status: ✓ You know this technique")
+        else:
+            print(f"   Status: ✗ Learn this technique first!")
+
+        print(f"\n3. Strong Anchor ({self.hypnosis.STRONG_ANCHOR_COST_MIN}-{self.hypnosis.STRONG_ANCHOR_COST_MAX} SP)")
+        print(f"   Requires: {HYPNOSIS_TECHNIQUES['post_hypnotic_suggestion'].name}")
+        if has_strong:
+            print(f"   Status: ✓ You know this technique")
+        else:
+            print(f"   Status: ✗ Learn this technique first!")
+
+        print(f"\n4. Back")
+
+        # Show general status
+        print()
+        print("-" * 70)
+        if not can_plant_general:
+            print(f"⚠️  General Status: {general_message}")
+        else:
+            print(f"✓ General Status: {general_message}")
+        print("="*70)
+
+        choice = input("\nChoice: ").strip()
+
+        try:
+            choice_num = int(choice)
+        except ValueError:
+            return
+
+        if choice_num == 4 or choice_num < 1 or choice_num > 4:
+            return
+
+        # Check if they have the required technique
+        if choice_num == 1 and not has_emotional:
+            print(f"\n✗ You need to learn '{HYPNOSIS_TECHNIQUES['emotional_anchoring'].name}' first!")
+            input("\nPress Enter to continue...")
+            return
+        elif choice_num == 2 and not has_behavioral:
+            print(f"\n✗ You need to learn '{HYPNOSIS_TECHNIQUES['embedded_commands'].name}' first!")
+            input("\nPress Enter to continue...")
+            return
+        elif choice_num == 3 and not has_strong:
+            print(f"\n✗ You need to learn '{HYPNOSIS_TECHNIQUES['post_hypnotic_suggestion'].name}' first!")
+            input("\nPress Enter to continue...")
+            return
+
+        # Check general requirements
+        if not can_plant_general:
+            print(f"\n✗ Cannot plant suggestion: {general_message}")
+            input("\nPress Enter to continue...")
             return
 
         print("\nDefine the post-hypnotic suggestion:")
@@ -189,15 +272,15 @@ class BaseScene(ABC):
         success = False
         result_message = ""
 
-        if choice == 1:  # Emotional Nudge
+        if choice_num == 1:  # Emotional Nudge
             success, result_message = self.hypnosis.plant_emotional_nudge(
                 self.game_state, character_name, trigger, response
             )
-        elif choice == 2:  # Behavioral Prompt
+        elif choice_num == 2:  # Behavioral Prompt
             success, result_message = self.hypnosis.plant_behavioral_prompt(
                 self.game_state, character_name, trigger, response
             )
-        elif choice == 3:  # Strong Anchor
+        elif choice_num == 3:  # Strong Anchor
             try:
                 sp_cost = int(input(f"SP to invest ({self.hypnosis.STRONG_ANCHOR_COST_MIN}-{self.hypnosis.STRONG_ANCHOR_COST_MAX}): "))
                 success, result_message = self.hypnosis.plant_strong_anchor(
