@@ -14,6 +14,9 @@ $(document).ready(function() {
 
     // Load initial game state
     updateGameState();
+
+    // Start ambient events polling (every 15-25 seconds for variety)
+    startAmbientEvents();
 });
 
 // Select a character to talk to
@@ -806,4 +809,93 @@ function openPlayerProfile() {
             alert('Failed to load player profile');
         }
     });
+}
+
+// Ambient events system
+let ambientEventTimer;
+let characterActivities = {}; // Track what each character is doing
+
+function startAmbientEvents() {
+    // Poll for ambient events
+    function pollAmbientEvent() {
+        $.ajax({
+            url: '/api/ambient-events',
+            method: 'GET',
+            success: function(event) {
+                if (event.type !== 'none') {
+                    displayAmbientEvent(event);
+                }
+            }
+        });
+
+        // Schedule next event (randomize between 15-25 seconds)
+        const delay = 15000 + Math.random() * 10000;
+        ambientEventTimer = setTimeout(pollAmbientEvent, delay);
+    }
+
+    // Start first poll after 5 seconds
+    setTimeout(pollAmbientEvent, 5000);
+}
+
+function displayAmbientEvent(event) {
+    const dialogueBox = $('#dialogue-box');
+
+    if (event.type === 'activity') {
+        // Update character's activity status
+        characterActivities[event.character] = event.activity;
+        updateCharacterActivity(event.character, event.activity);
+
+        // Show in dialogue
+        const messageHtml = `
+            <div class="dialogue-message">
+                <div class="ambient-message">
+                    <span class="ambient-icon">👀</span> ${event.message}
+                </div>
+            </div>
+        `;
+        dialogueBox.append(messageHtml);
+    } else if (event.type === 'dialogue') {
+        // Character says something
+        const messageHtml = `
+            <div class="dialogue-message">
+                <div class="ambient-dialogue">
+                    <span class="dialogue-speaker">${event.character}</span>
+                    <div class="dialogue-text">${event.dialogue}</div>
+                </div>
+            </div>
+        `;
+        dialogueBox.append(messageHtml);
+    } else if (event.type === 'interaction') {
+        // Characters interact
+        const messageHtml = `
+            <div class="dialogue-message">
+                <div class="ambient-message">
+                    <span class="ambient-icon">💬</span> ${event.message}
+                </div>
+            </div>
+        `;
+        dialogueBox.append(messageHtml);
+    }
+
+    scrollToBottom();
+}
+
+function updateCharacterActivity(characterName, activity) {
+    // Find the character card and update it
+    const card = $(`.character-card[data-character="${characterName}"]`);
+
+    // Remove old activity indicator if exists
+    card.find('.activity-indicator').remove();
+
+    // Add new activity indicator
+    const activityHtml = `
+        <div class="activity-indicator">${activity}</div>
+    `;
+    card.find('.character-info').last().after(activityHtml);
+
+    // Add pulse effect to show character is active
+    card.addClass('active-character');
+    setTimeout(() => {
+        card.removeClass('active-character');
+    }, 2000);
 }

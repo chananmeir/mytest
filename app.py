@@ -134,6 +134,108 @@ def api_game_state():
     })
 
 
+@app.route('/api/ambient-events')
+def api_ambient_events():
+    """Get ambient events and character activities"""
+    import random
+
+    game_state = get_game_state()
+
+    # Define possible activities for each character
+    activities = {
+        'Ruth': ['Setting the table', 'Checking on dinner', 'Pouring drinks', 'Adjusting her hair', 'Looking at old photos'],
+        'Tom': ['Reading the newspaper', 'Checking his phone', 'Sipping coffee', 'Looking out the window', 'Organizing papers'],
+        'Lisa': ['Texting friends', 'Doing homework', 'Scrolling social media', 'Listening to music', 'Doodling in notebook'],
+        'Marcus': ['Lifting weights mentally', 'Checking his reflection', 'Flexing subtly', 'Adjusting his shirt', 'Checking fitness app'],
+        'Sophie': ['Reading a book', 'Taking notes', 'Adjusting her glasses', 'Thinking deeply', 'Reviewing documents'],
+        'Rachel': ['Dancing to imaginary music', 'Making silly faces', 'Drawing', 'Playing with toys', 'Telling jokes'],
+        'James': ['Daydreaming', 'Watching TV', 'Playing video games', 'Yawning', 'Snacking']
+    }
+
+    # Define ambient dialogue for each character
+    ambient_dialogue = {
+        'Ruth': [
+            '*sighs while setting plates* "Another family dinner..."',
+            '*mutters* "I hope everyone behaves tonight."',
+            '*checks watch* "Tom should be home by now."',
+            '*quietly* "So much to do, so little time."'
+        ],
+        'Tom': [
+            '*without looking up* "Hmm, interesting article here."',
+            '*clears throat* "When\'s dinner ready?"',
+            '*stretches* "Long day at work."',
+            '*to himself* "Market\'s looking good."'
+        ],
+        'Lisa': [
+            '*giggles at phone* "OMG, this is hilarious!"',
+            '*rolls eyes* "This is so boring."',
+            '*to herself* "I can\'t wait to go out later."',
+            '*sighs dramatically* "Why do we have to do this?"'
+        ],
+        'Marcus': [
+            '*flexes arm casually* "Did arm day this morning."',
+            '*confidently* "Looking good, feeling good."',
+            '*to mirror* "Yeah, that\'s right."',
+            '*stretches* "Gotta maintain the physique."'
+        ],
+        'Sophie': [
+            '*thoughtfully* "The geopolitical implications are fascinating..."',
+            '*adjusts glasses* "According to my research..."',
+            '*mutters* "If only they understood economics."',
+            '*to herself* "These statistics are concerning."'
+        ],
+        'Rachel': [
+            '*sings quietly* "La la la la!"',
+            '*giggles* "That cloud looks like a bunny!"',
+            '*excitedly* "Can we have dessert?!"',
+            '*bounces* "This is fun! Well, kinda!"'
+        ],
+        'James': [
+            '*yawns* "I\'m kinda tired..."',
+            '*distracted* "What? Oh, nothing."',
+            '*quietly* "I wonder what\'s on TV later."',
+            '*to himself* "Maybe I\'ll just stay in my room."'
+        ]
+    }
+
+    # Generate random event
+    event_type = random.choice(['activity', 'dialogue', 'interaction', 'none', 'none'])
+
+    result = {'type': event_type}
+
+    if event_type == 'activity':
+        # Random character changes activity
+        char_name = random.choice(list(game_state.characters.keys()))
+        new_activity = random.choice(activities.get(char_name, ['Sitting quietly']))
+        result['character'] = char_name
+        result['activity'] = new_activity
+        result['message'] = f"{char_name} is {new_activity.lower()}"
+
+    elif event_type == 'dialogue':
+        # Random character says something
+        char_name = random.choice(list(game_state.characters.keys()))
+        char = game_state.characters[char_name]
+        dialogue = random.choice(ambient_dialogue.get(char_name, ['*looks around*']))
+        result['character'] = char_name
+        result['dialogue'] = dialogue
+        result['message'] = f"{char_name}: {dialogue}"
+
+    elif event_type == 'interaction':
+        # Two characters interact
+        chars = random.sample(list(game_state.characters.keys()), 2)
+        interactions = [
+            f"{chars[0]} glances at {chars[1]}",
+            f"{chars[1]} nods at {chars[0]}",
+            f"{chars[0]} and {chars[1]} exchange a look",
+            f"{chars[1]} whispers something to {chars[0]}",
+            f"{chars[0]} smiles at {chars[1]}"
+        ]
+        result['characters'] = chars
+        result['message'] = random.choice(interactions)
+
+    return jsonify(result)
+
+
 @app.route('/api/player-profile')
 def api_player_profile():
     """Get detailed player profile"""
