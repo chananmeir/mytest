@@ -6,6 +6,7 @@ from typing import Dict, Optional
 from dataclasses import dataclass, field
 from models.character import Character, PostHypnoticSuggestion, CHARACTERS
 from systems.hypnosis_knowledge import HypnosisKnowledge
+from systems.time_system import GameTime
 import config
 
 
@@ -31,6 +32,7 @@ class GameState:
         self.characters: Dict[str, Character] = {}
         self.scene_history: list = []
         self.current_scene_name: str = "start"
+        self.game_time: GameTime = GameTime()  # Time system
 
         # Initialize characters from database
         self._initialize_characters()
@@ -100,7 +102,8 @@ class GameState:
                 for name, char in self.characters.items()
             },
             'scene_history': self.scene_history,
-            'current_scene_name': self.current_scene_name
+            'current_scene_name': self.current_scene_name,
+            'game_time': self.game_time.to_dict()
         }
 
     def save_game(self, filename: str = config.SAVE_FILE) -> bool:
@@ -178,6 +181,12 @@ class GameState:
 
             self.scene_history = save_data.get('scene_history', [])
             self.current_scene_name = save_data.get('current_scene_name', 'start')
+
+            # Restore game time (with backwards compatibility)
+            if 'game_time' in save_data:
+                self.game_time = GameTime.from_dict(save_data['game_time'])
+            else:
+                self.game_time = GameTime()  # Default time for old saves
 
             return True
         except FileNotFoundError:
