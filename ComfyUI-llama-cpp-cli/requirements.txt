@@ -1,11 +1,24 @@
-# Optional dependencies for Advanced Audio Transcription Node
-# Basic Audio Transcription Node works without these (uses whisper.cpp CLI)
+# HIPAA-Compliant Audio Transcription Requirements
+# For healthcare Protected Health Information (PHI) processing
 
-# For Advanced Audio Transcription with better speaker diarization:
-openai-whisper>=20231117
-pyannote.audio>=3.1.0
-torch>=2.0.0
-torchaudio>=2.0.0
+# NO EXTERNAL DEPENDENCIES REQUIRED for basic HIPAA-compliant transcription
+# The system uses whisper.cpp (local binary) for all processing
 
-# Note: pyannote.audio requires accepting user conditions and a HuggingFace token
-# Visit: https://huggingface.co/pyannote/speaker-diarization-3.1
+# Optional: Enhanced encryption (REQUIRED for production healthcare use)
+# Uncomment and install after configuring key management:
+# cryptography>=41.0.0
+
+# Optional: For implementing more sophisticated local speaker diarization
+# Note: If using pyannote.audio, models must be downloaded once and stored locally
+# DO NOT use HuggingFace API tokens - only local inference is HIPAA-compliant
+# torch>=2.0.0
+# torchaudio>=2.0.0
+# pyannote.audio>=3.1.0  # Use with LOCAL models only, no API calls
+
+# ⚠️ IMPORTANT: DO NOT INSTALL OR USE:
+# - openai-whisper (uses cloud models)
+# - Any package that requires internet connectivity during PHI processing
+# - Any package that sends data to external APIs
+
+# For HIPAA compliance, all processing MUST be local.
+# See HIPAA_COMPLIANCE.md for complete requirements.
