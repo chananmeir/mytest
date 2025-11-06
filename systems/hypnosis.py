@@ -17,12 +17,18 @@ class HypnosisSystem:
     STRONG_ANCHOR_COST_MAX = 6
 
     @staticmethod
-    def can_plant_phs(game_state: GameState, target_name: str) -> Tuple[bool, str]:
+    def can_plant_phs(game_state: GameState, target_name: str, required_technique: str = None) -> Tuple[bool, str]:
         """Check if a PHS can be planted on the target"""
         char = game_state.get_character(target_name)
 
         if not char:
             return False, "Character not found."
+
+        # Check if player knows required hypnosis technique
+        if required_technique and not game_state.player.hypnosis_knowledge.knows_technique(required_technique):
+            from systems.hypnosis_knowledge import HYPNOSIS_TECHNIQUES
+            technique_name = HYPNOSIS_TECHNIQUES.get(required_technique, {}).get('name', required_technique)
+            return False, f"You don't know '{technique_name}' yet. Learn hypnosis techniques first!"
 
         if char.rapport < 6:
             return False, f"Rapport too low ({char.rapport}/6 required). Build more trust first."
@@ -43,19 +49,24 @@ class HypnosisSystem:
         trigger: str,
         response: str
     ) -> Tuple[bool, str]:
-        """Plant an emotional nudge PHS (2 SP)"""
-        can_plant, message = HypnosisSystem.can_plant_phs(game_state, target_name)
+        """Plant an emotional nudge PHS (2 SP) - Requires 'emotional_anchoring' technique"""
+        # Check for required technique
+        can_plant, message = HypnosisSystem.can_plant_phs(game_state, target_name, 'emotional_anchoring')
 
         if not can_plant:
             return False, message
 
-        if not game_state.spend_sp(HypnosisSystem.EMOTIONAL_NUDGE_COST):
-            return False, f"Not enough SP (need {HypnosisSystem.EMOTIONAL_NUDGE_COST}, have {game_state.player.suggestion_points})"
+        # Get technique bonuses
+        sp_reduction, success_bonus = game_state.player.hypnosis_knowledge.get_total_bonuses()
+        actual_cost = max(1, HypnosisSystem.EMOTIONAL_NUDGE_COST - sp_reduction)
+
+        if not game_state.spend_sp(actual_cost):
+            return False, f"Not enough SP (need {actual_cost}, have {game_state.player.suggestion_points})"
 
         char = game_state.get_character(target_name)
 
         # Calculate base success rate based on rapport and resistance
-        base_success = 50 + (char.rapport * 2) - (char.resistance // 2)
+        base_success = 50 + (char.rapport * 2) - (char.resistance // 2) + success_bonus
         base_success = max(10, min(90, base_success))  # Clamp between 10-90
 
         phs = PostHypnoticSuggestion(
@@ -76,19 +87,23 @@ class HypnosisSystem:
         trigger: str,
         response: str
     ) -> Tuple[bool, str]:
-        """Plant a behavioral prompt PHS (3 SP)"""
-        can_plant, message = HypnosisSystem.can_plant_phs(game_state, target_name)
+        """Plant a behavioral prompt PHS (3 SP) - Requires 'embedded_commands' technique"""
+        can_plant, message = HypnosisSystem.can_plant_phs(game_state, target_name, 'embedded_commands')
 
         if not can_plant:
             return False, message
 
-        if not game_state.spend_sp(HypnosisSystem.BEHAVIORAL_PROMPT_COST):
-            return False, f"Not enough SP (need {HypnosisSystem.BEHAVIORAL_PROMPT_COST}, have {game_state.player.suggestion_points})"
+        # Get technique bonuses
+        sp_reduction, success_bonus = game_state.player.hypnosis_knowledge.get_total_bonuses()
+        actual_cost = max(1, HypnosisSystem.BEHAVIORAL_PROMPT_COST - sp_reduction)
+
+        if not game_state.spend_sp(actual_cost):
+            return False, f"Not enough SP (need {actual_cost}, have {game_state.player.suggestion_points})"
 
         char = game_state.get_character(target_name)
 
         # Behavioral prompts have slightly lower base success
-        base_success = 40 + (char.rapport * 2) - (char.resistance // 2)
+        base_success = 40 + (char.rapport * 2) - (char.resistance // 2) + success_bonus
         base_success = max(5, min(85, base_success))
 
         phs = PostHypnoticSuggestion(
@@ -110,23 +125,27 @@ class HypnosisSystem:
         response: str,
         sp_cost: int = 4
     ) -> Tuple[bool, str]:
-        """Plant a strong anchored reaction PHS (4-6 SP)"""
+        """Plant a strong anchored reaction PHS (4-6 SP) - Requires 'post_hypnotic_suggestion' technique"""
         if sp_cost < HypnosisSystem.STRONG_ANCHOR_COST_MIN or sp_cost > HypnosisSystem.STRONG_ANCHOR_COST_MAX:
             return False, f"SP cost must be between {HypnosisSystem.STRONG_ANCHOR_COST_MIN} and {HypnosisSystem.STRONG_ANCHOR_COST_MAX}"
 
-        can_plant, message = HypnosisSystem.can_plant_phs(game_state, target_name)
+        can_plant, message = HypnosisSystem.can_plant_phs(game_state, target_name, 'post_hypnotic_suggestion')
 
         if not can_plant:
             return False, message
 
-        if not game_state.spend_sp(sp_cost):
-            return False, f"Not enough SP (need {sp_cost}, have {game_state.player.suggestion_points})"
+        # Get technique bonuses
+        sp_reduction, success_bonus = game_state.player.hypnosis_knowledge.get_total_bonuses()
+        actual_cost = max(1, sp_cost - sp_reduction)
+
+        if not game_state.spend_sp(actual_cost):
+            return False, f"Not enough SP (need {actual_cost}, have {game_state.player.suggestion_points})"
 
         char = game_state.get_character(target_name)
 
         # Strong anchors have better base success, scales with SP investment
         bonus = (sp_cost - HypnosisSystem.STRONG_ANCHOR_COST_MIN) * 5
-        base_success = 45 + bonus + (char.rapport * 2) - (char.resistance // 2)
+        base_success = 45 + bonus + (char.rapport * 2) - (char.resistance // 2) + success_bonus
         base_success = max(10, min(90, base_success))
 
         phs = PostHypnoticSuggestion(

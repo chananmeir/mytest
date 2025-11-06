@@ -5,6 +5,7 @@ import json
 from typing import Dict, Optional
 from dataclasses import dataclass, field
 from models.character import Character, PostHypnoticSuggestion, CHARACTERS
+from systems.hypnosis_knowledge import HypnosisKnowledge
 import config
 
 
@@ -19,6 +20,7 @@ class PlayerState:
     total_sp_earned: int = 0
     current_scene: str = "start"
     scenes_completed: list = field(default_factory=list)
+    hypnosis_knowledge: HypnosisKnowledge = field(default_factory=HypnosisKnowledge)
 
 
 class GameState:
@@ -91,7 +93,8 @@ class GameState:
                     'suggestion_points': self.player.suggestion_points,
                     'total_sp_earned': self.player.total_sp_earned,
                     'current_scene': self.player.current_scene,
-                    'scenes_completed': self.player.scenes_completed
+                    'scenes_completed': self.player.scenes_completed,
+                    'hypnosis_knowledge': self.player.hypnosis_knowledge.to_dict()
                 },
                 'characters': {
                     name: char.to_dict()
@@ -117,6 +120,13 @@ class GameState:
 
             # Restore player state
             player_data = save_data['player']
+
+            # Restore hypnosis knowledge
+            if 'hypnosis_knowledge' in player_data:
+                hypnosis_knowledge = HypnosisKnowledge.from_dict(player_data['hypnosis_knowledge'])
+            else:
+                hypnosis_knowledge = HypnosisKnowledge()  # Default for old saves
+
             self.player = PlayerState(
                 name=player_data['name'],
                 age=player_data['age'],
@@ -125,7 +135,8 @@ class GameState:
                 suggestion_points=player_data['suggestion_points'],
                 total_sp_earned=player_data['total_sp_earned'],
                 current_scene=player_data['current_scene'],
-                scenes_completed=player_data['scenes_completed']
+                scenes_completed=player_data['scenes_completed'],
+                hypnosis_knowledge=hypnosis_knowledge
             )
 
             # Restore characters
