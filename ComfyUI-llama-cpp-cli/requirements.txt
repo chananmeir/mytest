@@ -1,0 +1,11 @@
+# Optional dependencies for Advanced Audio Transcription Node
+# Basic Audio Transcription Node works without these (uses whisper.cpp CLI)
+
+# For Advanced Audio Transcription with better speaker diarization:
+openai-whisper>=20231117
+pyannote.audio>=3.1.0
+torch>=2.0.0
+torchaudio>=2.0.0
+
+# Note: pyannote.audio requires accepting user conditions and a HuggingFace token
+# Visit: https://huggingface.co/pyannote/speaker-diarization-3.1
