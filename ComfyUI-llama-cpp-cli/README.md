@@ -9,21 +9,40 @@ A ComfyUI node pack with two main features:
 
 This audio transcription system is specifically designed for **healthcare applications** with Protected Health Information (PHI).
 
-**Key HIPAA Features:**
+**Two HIPAA-Compliant Options:**
+
+### Option 1: Local Processing (Whisper.cpp)
 - ✅ 100% Local Processing (no cloud services)
+- ✅ Zero ongoing costs
+- ✅ No Business Associate Agreement needed
+- ✅ Works offline
+- ✅ Complete data control
+
+### Option 2: Azure AI Cloud (Microsoft Azure)
+- ✅ Enterprise-grade accuracy (95-98%)
+- ✅ Advanced speaker diarization
+- ✅ HIPAA-compliant with BAA
+- ✅ Minimal setup required
+- ✅ Microsoft-managed infrastructure
+- ⚠️ Requires Business Associate Agreement (BAA)
+- 💰 $1 per hour of audio
+
+**Both options include:**
 - ✅ Audit Logging for PHI access
 - ✅ Encrypted output storage
 - ✅ Secure file deletion
-- ✅ No external API calls
 - ✅ Access control integration
 
-**For healthcare users, see [HIPAA_COMPLIANCE.md](ComfyUI-llama-cpp-cli/HIPAA_COMPLIANCE.md) before deployment.**
+**Documentation:**
+- Local processing: [HIPAA_COMPLIANCE.md](ComfyUI-llama-cpp-cli/HIPAA_COMPLIANCE.md)
+- Azure AI: [AZURE_HIPAA_SETUP.md](ComfyUI-llama-cpp-cli/AZURE_HIPAA_SETUP.md)
 
 Features:
-- No pip packages required for basic functionality
+- No pip packages required for local processing
+- Optional Azure AI for best accuracy (requires BAA)
 - Works in sandboxed environments (e.g., MimicPC)
 - Install via **ComfyUI-Manager → Custom Nodes → Install from Git** (or ZIP)
-- HIPAA-compliant local processing for healthcare PHI
+- Choose local or cloud based on your needs
 
 ## Install (from Git)
 
@@ -64,7 +83,11 @@ Features:
 
 ⚠️ **For Healthcare PHI Processing**
 
-#### HIPAA-Compliant Audio Transcription Node
+Choose between **Local Processing** (free, local control) or **Azure AI** (best accuracy, requires BAA):
+
+---
+
+#### Option 1: Local Processing Node (No Cloud, No Cost)
 
 **Node:** "Audio Transcription • HIPAA Compliant"
 
@@ -98,6 +121,64 @@ enable_audit_logging: True (REQUIRED)
 save_encrypted_output: True (REQUIRED)
 ```
 
+**Setup:** See [AUDIO_TRANSCRIPTION_SETUP.md](AUDIO_TRANSCRIPTION_SETUP.md) for whisper.cpp installation
+
+---
+
+#### Option 2: Azure AI Cloud Node (Best Accuracy, Requires BAA)
+
+**Node:** "Audio Transcription • Azure AI HIPAA"
+
+**⚠️ CRITICAL:** You MUST sign a Business Associate Agreement (BAA) with Microsoft before using this node.
+
+**Advantages:**
+- ✅ 95-98% accuracy (better than local)
+- ✅ Advanced speaker diarization
+- ✅ Medical terminology support
+- ✅ Enterprise-grade reliability
+- ✅ Zero infrastructure maintenance
+
+**Requirements:**
+- ✅ Azure account with Speech Service
+- ✅ Signed BAA with Microsoft (required!)
+- ✅ Install: `pip install azure-cognitiveservices-speech`
+
+**Parameters:**
+- `audio_path`: Path to PHI audio file
+- `azure_speech_key`: Your Azure Speech API key
+- `azure_region`: Azure region (e.g., "eastus")
+- `user_id`: Unique identifier (REQUIRED)
+- `baa_confirmed`: Set to True ONLY after BAA is signed
+- `patient_encounter_id`: Patient encounter ID (recommended)
+- `num_speakers`: Number of speakers
+- `enable_audit_logging`: MUST be True for HIPAA compliance
+- `save_encrypted_output`: MUST be True for HIPAA compliance
+
+**Outputs:**
+- `transcription`: Full text transcription
+- `diarized_text`: Text with speaker labels
+- `json_output`: Structured JSON with timestamps
+- `security_info`: Security and compliance status
+
+**Example:**
+```
+audio_path: /secure/phi_audio/encounter_001.wav
+azure_speech_key: YOUR_AZURE_KEY
+azure_region: eastus
+user_id: dr_smith
+baa_confirmed: True (ONLY after signing BAA!)
+patient_encounter_id: ENC123456
+num_speakers: 2
+enable_audit_logging: True (REQUIRED)
+save_encrypted_output: True (REQUIRED)
+```
+
+**Cost:** ~$1.00 per hour of audio
+
+**Setup:** See [AZURE_HIPAA_SETUP.md](AZURE_HIPAA_SETUP.md) for complete Azure setup and BAA instructions
+
+---
+
 #### Secure File Deletion Node
 
 **Node:** "Secure File Deletion • HIPAA Compliant"
@@ -110,11 +191,14 @@ Use this node to securely delete PHI files after retention period expires.
 - `confirmation`: Must be True to proceed
 - `overwrite_passes`: Number of overwrite passes (default: 3)
 
-**IMPORTANT:** See [HIPAA_COMPLIANCE.md](ComfyUI-llama-cpp-cli/HIPAA_COMPLIANCE.md) for complete deployment requirements.
+**Works with both local and Azure transcriptions.**
 
-**For detailed setup, see:**
-- [HIPAA_COMPLIANCE.md](ComfyUI-llama-cpp-cli/HIPAA_COMPLIANCE.md) - HIPAA compliance requirements
-- [AUDIO_TRANSCRIPTION_SETUP.md](ComfyUI-llama-cpp-cli/AUDIO_TRANSCRIPTION_SETUP.md) - Technical setup
+---
+
+**Documentation:**
+- Local: [HIPAA_COMPLIANCE.md](HIPAA_COMPLIANCE.md) + [AUDIO_TRANSCRIPTION_SETUP.md](AUDIO_TRANSCRIPTION_SETUP.md)
+- Azure: [AZURE_HIPAA_SETUP.md](AZURE_HIPAA_SETUP.md)
+- Quick Start: [QUICK_START.md](QUICK_START.md)
 
 ---
 

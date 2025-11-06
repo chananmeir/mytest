@@ -1,7 +1,11 @@
 # HIPAA-Compliant Audio Transcription Requirements
 # For healthcare Protected Health Information (PHI) processing
 
-# NO EXTERNAL DEPENDENCIES REQUIRED for basic HIPAA-compliant transcription
+# ===================================================================
+# OPTION 1: LOCAL PROCESSING (No cloud services)
+# ===================================================================
+
+# NO EXTERNAL DEPENDENCIES REQUIRED for local HIPAA-compliant transcription
 # The system uses whisper.cpp (local binary) for all processing
 
 # Optional: Enhanced encryption (REQUIRED for production healthcare use)
@@ -15,10 +19,44 @@
 # torchaudio>=2.0.0
 # pyannote.audio>=3.1.0  # Use with LOCAL models only, no API calls
 
-# ⚠️ IMPORTANT: DO NOT INSTALL OR USE:
-# - openai-whisper (uses cloud models)
-# - Any package that requires internet connectivity during PHI processing
-# - Any package that sends data to external APIs
 
-# For HIPAA compliance, all processing MUST be local.
-# See HIPAA_COMPLIANCE.md for complete requirements.
+# ===================================================================
+# OPTION 2: AZURE AI CLOUD PROCESSING (Requires BAA with Microsoft)
+# ===================================================================
+
+# Azure AI Speech Service - HIPAA-compliant when used with BAA
+# Install this to enable Azure AI transcription node:
+# azure-cognitiveservices-speech>=1.31.0
+
+# ⚠️ CRITICAL: You MUST sign a Business Associate Agreement (BAA) with Microsoft
+# before processing PHI with Azure AI Speech Service.
+# See AZURE_HIPAA_SETUP.md for complete setup instructions.
+
+
+# ===================================================================
+# IMPORTANT NOTES
+# ===================================================================
+
+# ⚠️ DO NOT INSTALL OR USE (not HIPAA-compliant without BAA):
+# - openai-whisper (uses cloud models without BAA)
+# - Any package that requires internet connectivity during PHI processing
+#   (unless you have a signed BAA with the provider)
+# - Any package that sends data to external APIs without BAA
+
+# For HIPAA compliance documentation:
+# - Local processing: See HIPAA_COMPLIANCE.md
+# - Azure AI: See AZURE_HIPAA_SETUP.md
+
+
+# ===================================================================
+# INSTALLATION OPTIONS
+# ===================================================================
+
+# For LOCAL-ONLY (no cloud, no cost):
+#   No pip installation needed! Just use whisper.cpp binary
+
+# For AZURE AI (cloud-based, best accuracy):
+#   pip install azure-cognitiveservices-speech
+
+# For BOTH (maximum flexibility):
+#   pip install azure-cognitiveservices-speech
