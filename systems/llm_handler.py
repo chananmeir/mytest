@@ -5,6 +5,7 @@ import requests
 import json
 from typing import Dict, List, Optional
 from models.character import Character
+from systems.memory import MemorySystem
 import config
 
 
@@ -12,14 +13,19 @@ class LLMHandler:
     """Handles communication with OpenRouter API for NPC dialogue"""
 
     def __init__(self):
-        self.api_key = config.OPENROUTER_API_KEY
-        self.model = config.OPENROUTER_MODEL
         self.api_url = config.OPENROUTER_API_URL
+        self.memory_system = MemorySystem()
 
-        if not self.api_key:
+        if not config.DEFAULT_API_KEY:
             print("\n⚠️  WARNING: OPENROUTER_API_KEY not set!")
             print("Please create a .env file with your API key.")
             print("See .env.example for the format.\n")
+
+    def _get_character_api_config(self, character: Character) -> tuple:
+        """Get API key and model for a specific character"""
+        api_key = config.CHARACTER_API_KEYS.get(character.name, config.DEFAULT_API_KEY)
+        model = config.CHARACTER_MODELS.get(character.name, config.DEFAULT_MODEL)
+        return api_key, model
 
     def _build_character_context(self, character: Character) -> str:
         """Build context string for the character"""
@@ -46,6 +52,16 @@ IMPORTANT BEHAVIORAL NOTES:
 - Keep responses conversational and realistic (2-4 sentences typically)
 """
 
+        # Add relevant memories
+        relevant_memories = self.memory_system.retrieve_relevant_memories(
+            character,
+            count=config.MEMORY_RETRIEVAL_COUNT,
+            min_importance=config.MEMORY_IMPORTANCE_THRESHOLD
+        )
+
+        if relevant_memories:
+            context += "\n" + self.memory_system.format_memories_for_llm(relevant_memories) + "\n"
+
         # Add context about active PHS if any
         if character.active_phs:
             context += "\nSUBTLE BEHAVIORAL INFLUENCES (roleplay these naturally):\n"
@@ -62,14 +78,18 @@ IMPORTANT BEHAVIORAL NOTES:
         self,
         character: Character,
         player_message: str,
-        scene_context: str = ""
+        scene_context: str = "",
+        record_memory: bool = True
     ) -> Optional[str]:
         """Get a response from the character via LLM"""
 
-        if not self.api_key:
+        # Get character-specific API config
+        api_key, model = self._get_character_api_config(character)
+
+        if not api_key:
             return f"[{character.name} would respond, but API key is not configured]"
 
-        # Build the system prompt with character context
+        # Build the system prompt with character context (includes memories)
         system_prompt = self._build_character_context(character)
 
         if scene_context:
@@ -89,7 +109,7 @@ IMPORTANT BEHAVIORAL NOTES:
 
         # Prepare request
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
 
@@ -97,10 +117,10 @@ IMPORTANT BEHAVIORAL NOTES:
             headers["HTTP-Referer"] = config.SITE_URL
 
         if config.SITE_NAME:
-            headers["X-Title"] = config.SITE_NAME
+            headers["X-Title"] = f"{config.SITE_NAME} - {character.name}"
 
         data = {
-            "model": self.model,
+            "model": model,
             "messages": messages,
             "temperature": 0.8,  # Add some personality variation
             "max_tokens": 300  # Keep responses concise
@@ -122,6 +142,23 @@ IMPORTANT BEHAVIORAL NOTES:
             # Store in conversation history
             character.conversation_history.append({"role": "user", "content": player_message})
             character.conversation_history.append({"role": "assistant", "content": assistant_message})
+
+            # Record memory if enabled
+            if record_memory:
+                # Determine importance based on rapport and emotional state
+                importance = 5  # Base importance
+                if character.emotional_state in ['open', 'relaxed']:
+                    importance += 1
+                if character.rapport > 10:
+                    importance += 1
+
+                self.memory_system.record_conversation(
+                    character,
+                    speaker="You",
+                    message=player_message,
+                    importance=importance,
+                    emotional_state=character.emotional_state
+                )
 
             return assistant_message
 

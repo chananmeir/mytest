@@ -16,12 +16,38 @@ This is not magic. This is **slow power**.
 
 ## 🎯 Game Features
 
+### Core Mechanics
 - **Dynamic NPC Conversations** powered by LLM (via OpenRouter)
 - **Complex Character System** with individual resistance levels and personalities
 - **Post-Hypnotic Suggestion Mechanics** with trigger-based activation
 - **Rapport & Emotional State Tracking** for each family member
 - **Save/Load System** to preserve your progress
 - **Multiple Dinner Stages** that evolve as the evening progresses
+
+### Advanced Systems (NEW!)
+
+#### 🧠 Memory System
+Each character now maintains **persistent memories** of interactions:
+- **Automatic Memory Recording** - Conversations, emotional moments, PHS events
+- **Memory Retrieval** - Characters recall past interactions during conversations
+- **Importance Scoring** - More significant moments are remembered better
+- **Memory Types** - Conversation, emotional moments, PHS planted/triggered, important events
+- Characters reference their memories, making interactions feel more realistic
+
+#### 🎭 GM/Narrator System
+An intelligent **Game Master** oversees the experience:
+- **Dynamic Analysis** - GM analyzes conversation impact on rapport and emotions
+- **PHS Trigger Detection** - Intelligently determines when suggestions should activate
+- **Consequence Evaluation** - Suggests narrative outcomes of player actions
+- **Scene Summarization** - Creates evocative summaries of completed scenes
+- **Quality Evaluation** - Assesses PHS quality and provides improvement suggestions
+
+#### 🔑 Per-Character API Keys
+Configure different LLM models/keys for each character:
+- **Separate API Keys** - Each character can use their own OpenRouter key
+- **Model Selection** - Use expensive models for complex characters, cheaper for simpler ones
+- **Cost Optimization** - Simpler characters (Tom, Derek, Karen) default to cheaper models
+- **Isolated Conversations** - Track API usage per character
 
 ## 📋 Requirements
 
@@ -37,16 +63,34 @@ This is not magic. This is **slow power**.
    pip install -r requirements.txt
    ```
 
-3. **Configure your API key:**
+3. **Configure your API keys:**
    ```bash
    cp .env.example .env
    ```
 
-   Then edit `.env` and add your OpenRouter API key:
+   **Basic Setup** - Edit `.env` and add your OpenRouter API key:
    ```
    OPENROUTER_API_KEY=your_api_key_here
    OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
    ```
+
+   **Advanced Setup** (Optional) - Configure per-character and GM keys:
+   ```
+   # GM/Narrator System
+   GM_API_KEY=your_gm_api_key_here
+   GM_MODEL=anthropic/claude-3.5-sonnet
+
+   # Per-Character API Keys (optional)
+   RUTH_API_KEY=your_key_for_ruth
+   RUTH_MODEL=anthropic/claude-3.5-sonnet
+
+   TOM_API_KEY=your_key_for_tom
+   TOM_MODEL=openai/gpt-4o-mini
+
+   # ... see .env.example for all characters
+   ```
+
+   **Note:** If character-specific keys aren't set, the default `OPENROUTER_API_KEY` is used for all characters.
 
 4. **Run the game:**
    ```bash
@@ -69,8 +113,9 @@ Engage in dynamic conversations powered by AI. The LLM will roleplay each charac
 - Current emotional state
 - Rapport level with you
 - Active post-hypnotic suggestions
+- **Their memories of past interactions** (NEW!)
 
-Your words are analyzed to determine rapport changes and emotional shifts.
+Each conversation is automatically recorded as a memory. Characters will reference past events, creating a more persistent and realistic relationship. The GM analyzes each interaction to determine rapport changes and emotional shifts.
 
 #### Plant Suggestions
 
@@ -135,17 +180,19 @@ Rapport decreases through:
 ```
 family-dynamics-rpg/
 ├── main.py                 # Game entry point
-├── config.py              # Configuration management
+├── config.py              # Configuration (API keys, game settings)
 ├── requirements.txt       # Python dependencies
 ├── .env.example          # Example environment file
 ├── models/
-│   ├── character.py      # Character & PHS classes
-│   └── game_state.py     # Game state management
+│   ├── character.py      # Character & PHS classes (with memories)
+│   └── game_state.py     # Game state management & save/load
 ├── systems/
 │   ├── hypnosis.py       # Suggestion & PHS mechanics
-│   └── llm_handler.py    # OpenRouter API integration
+│   ├── llm_handler.py    # OpenRouter API integration (per-character keys)
+│   ├── memory.py         # Memory system (NEW!)
+│   └── game_master.py    # GM/Narrator system (NEW!)
 └── scenes/
-    ├── base_scene.py     # Base scene class
+    ├── base_scene.py     # Base scene class (with GM integration)
     └── family_dinner.py  # First playable scene
 ```
 
@@ -198,9 +245,31 @@ family-dynamics-rpg/
 Edit `config.py` or `.env` to customize:
 
 ```python
-# OpenRouter settings
-OPENROUTER_API_KEY = "your-key"
-OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet"
+# Default OpenRouter settings
+DEFAULT_API_KEY = "your-key"
+DEFAULT_MODEL = "anthropic/claude-3.5-sonnet"
+
+# GM/Narrator System
+GM_API_KEY = "your-gm-key"  # Falls back to DEFAULT_API_KEY
+GM_MODEL = "anthropic/claude-3.5-sonnet"
+
+# Per-Character API Keys (see config.py for all characters)
+CHARACTER_API_KEYS = {
+    'Ruth': "your-ruth-key",
+    'Tom': "your-tom-key",
+    # ... etc
+}
+
+CHARACTER_MODELS = {
+    'Ruth': "anthropic/claude-3.5-sonnet",
+    'Tom': "openai/gpt-4o-mini",  # Cheaper model for simpler character
+    # ... etc
+}
+
+# Memory System Configuration
+MAX_MEMORIES_PER_CHARACTER = 50  # Max stored memories
+MEMORY_RETRIEVAL_COUNT = 10      # Memories to retrieve for context
+MEMORY_IMPORTANCE_THRESHOLD = 3   # Min importance to auto-save
 
 # Game settings
 STARTING_SP = 3

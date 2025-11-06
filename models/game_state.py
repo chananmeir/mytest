@@ -137,6 +137,13 @@ class GameState:
                     for phs_data in char_data.get('active_phs', [])
                 ]
 
+                # Reconstruct Memory objects
+                from systems.memory import Memory
+                memories_list = [
+                    Memory.from_dict(mem_data)
+                    for mem_data in char_data.get('memories', [])
+                ]
+
                 char = Character(
                     name=char_data['name'],
                     age=char_data['age'],
@@ -148,7 +155,8 @@ class GameState:
                     rapport=char_data['rapport'],
                     emotional_state=char_data['emotional_state'],
                     active_phs=phs_list,
-                    conversation_history=char_data.get('conversation_history', [])
+                    conversation_history=char_data.get('conversation_history', []),
+                    memories=memories_list
                 )
                 self.characters[name] = char
 

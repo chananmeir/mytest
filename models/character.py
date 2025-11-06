@@ -18,6 +18,7 @@ class Character:
     emotional_state: str = "neutral"  # neutral, relaxed, tense, defensive, open, etc.
     active_phs: List['PostHypnoticSuggestion'] = field(default_factory=list)
     conversation_history: List[Dict[str, str]] = field(default_factory=list)
+    memories: List = field(default_factory=list)  # List of Memory objects
 
     def __post_init__(self):
         """Initialize any computed properties"""
@@ -70,7 +71,8 @@ class Character:
             'rapport': self.rapport,
             'emotional_state': self.emotional_state,
             'active_phs': [phs.to_dict() for phs in self.active_phs],
-            'conversation_history': self.conversation_history
+            'conversation_history': self.conversation_history,
+            'memories': [mem.to_dict() if hasattr(mem, 'to_dict') else mem for mem in self.memories]
         }
 
 

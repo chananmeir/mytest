@@ -6,6 +6,8 @@ from typing import List, Optional
 from models.game_state import GameState
 from systems.llm_handler import LLMHandler
 from systems.hypnosis import HypnosisSystem
+from systems.game_master import GameMaster
+from systems.memory import MemorySystem
 
 
 class BaseScene(ABC):
@@ -15,6 +17,8 @@ class BaseScene(ABC):
         self.game_state = game_state
         self.llm = llm_handler
         self.hypnosis = HypnosisSystem()
+        self.gm = GameMaster()
+        self.memory = MemorySystem()
         self.scene_active = True
 
     @abstractmethod
@@ -93,20 +97,22 @@ class BaseScene(ABC):
                 print(f"\nYou end the conversation with {character_name}.\n")
                 break
 
-            # Get response from LLM
+            # Get response from LLM (automatically records memory)
             print(f"\n{character_name}: ", end="", flush=True)
             response = self.llm.get_character_response(
                 char,
                 player_input,
-                scene_context=self.get_description()
+                scene_context=self.get_description(),
+                record_memory=True
             )
             print(response)
 
-            # Analyze the interaction
-            analysis = self.llm.analyze_player_action(
-                player_input,
-                char,
-                context=f"In response to: {response}"
+            # Analyze the interaction using GM
+            analysis = self.gm.analyze_conversation_impact(
+                character=char,
+                player_message=player_input,
+                character_response=response,
+                scene_context=self.get_description()
             )
 
             # Apply changes
