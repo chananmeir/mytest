@@ -20,6 +20,7 @@ class Character:
     conversation_history: List[Dict[str, str]] = field(default_factory=list)
     memories: List = field(default_factory=list)  # List of Memory objects
     clothing_history: List[Dict[str, str]] = field(default_factory=list)  # Track clothing changes
+    outfit: Dict[str, str] = field(default_factory=dict)  # Visual outfit: {slot: item_id}
 
     def __post_init__(self):
         """Initialize any computed properties"""
@@ -33,6 +34,11 @@ class Character:
                 'meaning': self.clothing_meaning,
                 'occasion': 'default'
             })
+
+        # Initialize outfit if empty
+        if not self.outfit:
+            from data.clothing_items import DEFAULT_OUTFITS
+            self.outfit = DEFAULT_OUTFITS.get(self.name, {'expression': 'neutral'}).copy()
 
     def _calculate_max_phs(self) -> int:
         """Calculate maximum active PHS based on resistance"""
@@ -106,6 +112,14 @@ class Character:
         """Get a formatted description of current clothing"""
         return f"{self.clothing} - {self.clothing_meaning}"
 
+    def update_outfit_item(self, slot: str, item_id: str) -> None:
+        """Update a single outfit slot"""
+        self.outfit[slot] = item_id
+
+    def get_outfit_item(self, slot: str) -> Optional[str]:
+        """Get the item ID for a specific slot"""
+        return self.outfit.get(slot)
+
     def to_dict(self) -> dict:
         """Convert to dictionary for saving"""
         return {
@@ -121,7 +135,8 @@ class Character:
             'active_phs': [phs.to_dict() for phs in self.active_phs],
             'conversation_history': self.conversation_history,
             'memories': [mem.to_dict() if hasattr(mem, 'to_dict') else mem for mem in self.memories],
-            'clothing_history': self.clothing_history
+            'clothing_history': self.clothing_history,
+            'outfit': self.outfit
         }
 
 

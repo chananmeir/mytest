@@ -18,9 +18,36 @@ $(document).ready(function() {
     // Load character schedules
     updateCharacterSchedules();
 
+    // Load character sprites
+    loadCharacterSprites();
+
     // Start ambient events polling (every 15-25 seconds for variety)
     startAmbientEvents();
 });
+
+// Load all character sprites
+function loadCharacterSprites() {
+    // Get all character names from character cards
+    $('.character-card').each(function() {
+        const characterName = $(this).data('character');
+        const spriteContainerId = `sprite-${characterName}`;
+
+        // Fetch character outfit
+        $.ajax({
+            url: `/api/character/${characterName}`,
+            method: 'GET',
+            success: function(data) {
+                // Render sprite
+                renderCharacterSprite(characterName, data.outfit, spriteContainerId, {
+                    width: 80,
+                    height: 120,
+                    clickable: false,
+                    showPlaceholder: true
+                });
+            }
+        });
+    });
+}
 
 // Select a character to talk to
 function selectCharacter(characterName) {

@@ -441,6 +441,7 @@ def api_character(name):
         'resistance': char.resistance,
         'clothing': char.clothing,
         'clothing_meaning': char.clothing_meaning,
+        'outfit': char.outfit,
         'active_phs': phs_list,
         'memories': memories
     })
@@ -772,6 +773,86 @@ def api_advance_time():
         response['schedule_updates'] = schedule_updates
 
     return jsonify(response)
+
+
+@app.route('/api/clothing-items')
+def api_clothing_items():
+    """Get all available clothing items"""
+    from data.clothing_items import ALL_CLOTHING_ITEMS
+
+    items = []
+    for item_id, item in ALL_CLOTHING_ITEMS.items():
+        items.append({
+            'id': item.id,
+            'name': item.name,
+            'category': item.category,
+            'slot': item.slot,
+            'image_path': item.image_path,
+            'description': item.description,
+            'tags': item.tags,
+            'coverage': item.coverage,
+            'formality': item.formality
+        })
+
+    return jsonify({'items': items})
+
+
+@app.route('/api/update-outfit', methods=['POST'])
+def api_update_outfit():
+    """Update a character's outfit"""
+    game_state = get_game_state()
+    data = request.json
+
+    character_name = data.get('character')
+    slot = data.get('slot')
+    item_id = data.get('item_id')
+
+    if not character_name or not slot:
+        return jsonify({'success': False, 'error': 'Missing character or slot'}), 400
+
+    character = game_state.characters.get(character_name)
+    if not character:
+        return jsonify({'success': False, 'error': 'Character not found'}), 404
+
+    # Update the outfit
+    character.update_outfit_item(slot, item_id)
+
+    # Update text clothing description based on visual outfit
+    from data.clothing_items import get_clothing_item
+    outfit_description = []
+    for slot_name, item_id in character.outfit.items():
+        if slot_name != 'expression' and item_id:
+            item = get_clothing_item(item_id)
+            if item:
+                outfit_description.append(item.name)
+
+    if outfit_description:
+        character.clothing = ', '.join(outfit_description)
+
+    # Save game state
+    save_game_state(game_state)
+
+    return jsonify({
+        'success': True,
+        'outfit': character.outfit,
+        'clothing_description': character.clothing
+    })
+
+
+@app.route('/api/character/<name>/outfit')
+def api_character_outfit(name):
+    """Get a character's current outfit"""
+    game_state = get_game_state()
+
+    character = game_state.characters.get(name)
+    if not character:
+        return jsonify({'error': 'Character not found'}), 404
+
+    return jsonify({
+        'name': character.name,
+        'outfit': character.outfit,
+        'expression': character.outfit.get('expression', 'neutral')
+    })
 
 
 if __name__ == '__main__':

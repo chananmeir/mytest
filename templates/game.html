@@ -48,8 +48,11 @@
         <h2>Family Members</h2>
         <div id="character-cards">
             {% for character in game_state.characters.values() %}
-            <div class="character-card" data-character="{{ character.name }}" onclick="selectCharacter('{{ character.name }}')">
-                <div class="character-name">{{ character.name }}</div>
+            <div class="character-card" data-character="{{ character.name }}">
+                <!-- Character Sprite Preview -->
+                <div id="sprite-{{ character.name }}" class="character-sprite-small" style="margin: 0 auto 0.5rem auto;"></div>
+
+                <div class="character-name" onclick="selectCharacter('{{ character.name }}')">{{ character.name }}</div>
                 <div class="character-info">{{ character.age }} - {{ character.occupation }}</div>
                 <div class="rapport-bar">
                     <div class="rapport-fill" style="width: {{ (character.rapport / 20 * 100)|int }}%"></div>
@@ -57,6 +60,12 @@
                 <div class="character-info" style="margin-top: 0.3rem;">
                     Rapport: {{ character.rapport }}/20 | {{ character.emotional_state|title }}
                 </div>
+
+                <!-- Dress-up button -->
+                <button class="btn btn-small" onclick="event.stopPropagation(); openCharacterDressUp('{{ character.name }}', {{ character.outfit|tojson }})"
+                        style="width: 100%; margin-top: 0.5rem; font-size: 0.8rem;">
+                    👗 Change Outfit
+                </button>
             </div>
             {% endfor %}
         </div>
@@ -284,5 +293,34 @@
     </div>
 </div>
 
+<!-- Dress-Up Modal -->
+<div id="dressUpModal" class="modal">
+    <div class="modal-content" style="max-width: 1200px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+            <h2 class="modal-title">👗 Dress-Up: <span id="dressup-character-name"></span></h2>
+            <button class="close-modal" onclick="closeDressUpModal()">&times;</button>
+        </div>
+        <div class="modal-body" style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem;">
+            <!-- Left: Character Preview -->
+            <div>
+                <h3 style="margin-bottom: 1rem; text-align: center;">Preview</h3>
+                <div id="dressup-preview" style="margin: 0 auto;"></div>
+            </div>
+
+            <!-- Right: Clothing Options -->
+            <div>
+                <h3 style="margin-bottom: 1rem;">Select Clothing</h3>
+                <div id="dressup-clothing-options" style="max-height: 600px; overflow-y: auto;">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid var(--border-color);">
+            <button class="btn btn-primary" onclick="closeDressUpModal()">Done</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/sprite_renderer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/game.js') }}"></script>
 {% endblock %}
