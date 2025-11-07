@@ -52,7 +52,7 @@
                 <!-- Character Sprite Preview -->
                 <div id="sprite-{{ character.name }}" class="character-sprite-small" style="margin: 0 auto 0.5rem auto;"></div>
 
-                <div class="character-name" onclick="selectCharacter('{{ character.name }}')">{{ character.name }}</div>
+                <div class="character-name">{{ character.name }}</div>
                 <div class="character-info">{{ character.age }} - {{ character.occupation }}</div>
                 <div class="rapport-bar">
                     <div class="rapport-fill" style="width: {{ (character.rapport / 20 * 100)|int }}%"></div>
@@ -61,11 +61,25 @@
                     Rapport: {{ character.rapport }}/20 | {{ character.emotional_state|title }}
                 </div>
 
-                <!-- Dress-up button -->
-                <button class="btn btn-small" onclick="event.stopPropagation(); openCharacterDressUp('{{ character.name }}', {{ character.outfit|tojson }})"
-                        style="width: 100%; margin-top: 0.5rem; font-size: 0.8rem;">
-                    👗 Change Outfit
-                </button>
+                <!-- Character Actions -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 0.8rem;">
+                    <button class="btn btn-small" onclick="selectCharacter('{{ character.name }}')"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="Start conversation">
+                        💬 Talk
+                    </button>
+                    <button class="btn btn-small" onclick="openCharacterProfile('{{ character.name }}')"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="View full profile">
+                        👤 Profile
+                    </button>
+                    <button class="btn btn-small" onclick="openPlantSuggestionFor('{{ character.name }}')"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="Plant hypnotic suggestion">
+                        🎯 Suggest
+                    </button>
+                    <button class="btn btn-small" onclick="openCharacterDressUp('{{ character.name }}', {{ character.outfit|tojson }})"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="Change outfit">
+                        👗 Outfit
+                    </button>
+                </div>
             </div>
             {% endfor %}
         </div>
@@ -91,7 +105,7 @@
     <div class="action-panel">
         <h2>Actions</h2>
 
-        <button class="action-button" id="plant-suggestion-btn" onclick="openPlantSuggestion()" disabled>
+        <button class="action-button" id="plant-suggestion-btn" onclick="openPlantSuggestionFor()" disabled>
             🎯 Plant Suggestion
         </button>
 

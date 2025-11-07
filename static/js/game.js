@@ -72,6 +72,29 @@ function selectCharacter(characterName) {
     addSystemMessage(`Now talking with ${characterName}. Type your message below.`);
 }
 
+// Wrapper functions for direct character actions (called from character cards)
+function openCharacterProfile(characterName) {
+    if (characterName) {
+        // Called from character card button - select character first
+        selectedCharacter = characterName;
+        $('#selected-character').text(characterName);
+    }
+
+    // Now call the internal profile opening logic
+    _openCharacterProfileModal();
+}
+
+function openPlantSuggestionFor(characterName) {
+    if (characterName) {
+        // Called from character card button - select character first
+        selectedCharacter = characterName;
+        $('#selected-character').text(characterName);
+    }
+
+    // Now call the internal plant suggestion logic
+    _openPlantSuggestionModal();
+}
+
 // Send message to character
 function sendMessage() {
     if (!selectedCharacter || isWaitingForResponse) return;
@@ -338,8 +361,8 @@ function openSkillTree() {
     });
 }
 
-// Open character profile
-function openCharacterProfile() {
+// Open character profile modal (internal function)
+function _openCharacterProfileModal() {
     if (!selectedCharacter) {
         addSystemMessage('Please select a character first.');
         return;
@@ -441,8 +464,8 @@ function openCharacterProfile() {
     });
 }
 
-// Open plant suggestion modal
-function openPlantSuggestion() {
+// Open plant suggestion modal (internal function)
+function _openPlantSuggestionModal() {
     if (!selectedCharacter) {
         addSystemMessage('Please select a character first.');
         return;
