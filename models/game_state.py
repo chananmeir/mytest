@@ -222,6 +222,7 @@ class GameState:
                     resistance=char_data['resistance'],
                     rapport=char_data['rapport'],
                     emotional_state=char_data['emotional_state'],
+                    gender=char_data.get('gender', 'male'),  # Default for old saves
                     active_phs=phs_list,
                     conversation_history=char_data.get('conversation_history', []),
                     memories=memories_list,

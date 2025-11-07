@@ -37,12 +37,14 @@ function loadCharacterSprites() {
             url: `/api/character/${characterName}`,
             method: 'GET',
             success: function(data) {
-                // Render sprite
+                // Render sprite with template fallback support
                 renderCharacterSprite(characterName, data.outfit, spriteContainerId, {
                     width: 80,
                     height: 120,
                     clickable: false,
-                    showPlaceholder: true
+                    showPlaceholder: true,
+                    age: data.age,
+                    gender: data.gender
                 });
             }
         });
@@ -1026,6 +1028,7 @@ function openAddCharacter() {
 function createCharacter() {
     const name = $('#new-char-name').val().trim();
     const age = $('#new-char-age').val();
+    const gender = $('#new-char-gender').val();
     const occupation = $('#new-char-occupation').val().trim();
     const personality = $('#new-char-personality').val().trim();
     const resistance = $('#new-char-resistance').val();
@@ -1057,6 +1060,7 @@ function createCharacter() {
         data: JSON.stringify({
             name: name,
             age: parseInt(age),
+            gender: gender,
             occupation: occupation,
             personality: personality,
             resistance: parseInt(resistance),

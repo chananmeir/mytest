@@ -16,6 +16,7 @@ class Character:
     resistance: int  # 0-100, how resistant to hypnotic suggestions
     rapport: int = 0  # 0-20, your influence level with them
     emotional_state: str = "neutral"  # neutral, relaxed, tense, defensive, open, etc.
+    gender: str = "male"  # male/female - used for template fallback images
     active_phs: List['PostHypnoticSuggestion'] = field(default_factory=list)
     conversation_history: List[Dict[str, str]] = field(default_factory=list)
     memories: List = field(default_factory=list)  # List of Memory objects
@@ -132,6 +133,7 @@ class Character:
             'resistance': self.resistance,
             'rapport': self.rapport,
             'emotional_state': self.emotional_state,
+            'gender': self.gender,
             'active_phs': [phs.to_dict() for phs in self.active_phs],
             'conversation_history': self.conversation_history,
             'memories': [mem.to_dict() if hasattr(mem, 'to_dict') else mem for mem in self.memories],
@@ -182,7 +184,8 @@ CHARACTERS = {
         clothing='Casual but coordinated. Soft colors.',
         clothing_meaning='Tries to look "put together." Likes appearing stable.',
         personality='Guilt-driven, loyal, tries to please everyone',
-        resistance=55
+        resistance=55,
+        gender='female'
     ),
     'Melanie': Character(
         name='Melanie',
@@ -191,7 +194,8 @@ CHARACTERS = {
         clothing='Scrubs or athletic-wear, hair tied high, smartwatch',
         clothing_meaning='Efficiency, self-importance',
         personality='Proud, competent, dismissive of weakness',
-        resistance=75
+        resistance=75,
+        gender='female'
     ),
     'Tom': Character(
         name='Tom',
@@ -200,7 +204,8 @@ CHARACTERS = {
         clothing='Plain polo and jeans. Practical shoes.',
         clothing_meaning='Tries not to stand out',
         personality='Conflict-avoidant, eager to please, insecure',
-        resistance=30
+        resistance=30,
+        gender='male'
     ),
     'Dawn': Character(
         name='Dawn',
@@ -209,7 +214,8 @@ CHARACTERS = {
         clothing='Floral prints, pearls, tidy cardigan',
         clothing_meaning='Tradition + control',
         personality='Matriarch, values harmony, passive-aggressive',
-        resistance=45
+        resistance=45,
+        gender='female'
     ),
     'Vanessa': Character(
         name='Vanessa',
@@ -218,7 +224,8 @@ CHARACTERS = {
         clothing='Trendy blazer, expensive shoes',
         clothing_meaning='Wants everyone to notice success',
         personality='Status-conscious, competitive, insecure beneath',
-        resistance=50
+        resistance=50,
+        gender='female'
     ),
     'Derek': Character(
         name='Derek',
@@ -227,7 +234,8 @@ CHARACTERS = {
         clothing='Fitted t-shirt, gym shorts, branded sneakers',
         clothing_meaning='Body pride = identity',
         personality='Ego-driven, physical confidence, intellectually insecure',
-        resistance=65
+        resistance=65,
+        gender='male'
     ),
     'Karen': Character(
         name='Karen',
@@ -236,7 +244,8 @@ CHARACTERS = {
         clothing='Clean, structured, modest blouse & slacks',
         clothing_meaning='Rules. Order. Judgment.',
         personality='Rigid, judgmental, needs control, responds to authority',
-        resistance=35
+        resistance=35,
+        gender='female'
     ),
 }
 

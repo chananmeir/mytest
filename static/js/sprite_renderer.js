@@ -2,11 +2,37 @@
 // Renders layered character sprites based on outfit configuration
 
 /**
+ * Get template path based on character age and gender
+ * @param {number} age - Character's age
+ * @param {string} gender - Character's gender (male/female)
+ * @returns {string} Path to template folder
+ */
+function getTemplatePath(age, gender = 'male') {
+    // Determine age bracket
+    let ageBracket;
+    if (age < 20) {
+        ageBracket = 'teens';
+    } else if (age >= 20 && age < 30) {
+        ageBracket = '20s';
+    } else if (age >= 30 && age < 40) {
+        ageBracket = '30s';
+    } else if (age >= 40 && age < 50) {
+        ageBracket = '40s';
+    } else if (age >= 50 && age < 60) {
+        ageBracket = '50s';
+    } else {
+        ageBracket = '60s';
+    }
+
+    return `/static/images/templates/${gender}/${ageBracket}/`;
+}
+
+/**
  * Render a character sprite
  * @param {string} characterName - Name of the character
  * @param {object} outfit - Outfit configuration {slot: item_id}
  * @param {string} containerId - ID of the container element
- * @param {object} options - Rendering options (size, clickable, etc.)
+ * @param {object} options - Rendering options (size, clickable, age, gender for templates, etc.)
  */
 function renderCharacterSprite(characterName, outfit, containerId, options = {}) {
     const container = document.getElementById(containerId);
@@ -69,14 +95,25 @@ function renderCharacterSprite(characterName, outfit, containerId, options = {})
             // Determine image path
             let imagePath;
             let fallbackPath;
+            let templatePath;
 
             if (slot === 'base') {
-                // Base body is always character-specific
+                // Base body: try character-specific first, then template
                 imagePath = baseImagePath + 'base/body.png';
+
+                // Template fallback based on age and gender
+                if (opts.age && opts.gender) {
+                    templatePath = getTemplatePath(opts.age, opts.gender) + 'base/body.png';
+                }
             } else if (slot === 'expression') {
-                // Expressions are always character-specific
+                // Expressions: try character-specific first, then template
                 const expression = outfit.expression || 'neutral';
                 imagePath = baseImagePath + `expressions/${expression}.png`;
+
+                // Template fallback based on age and gender
+                if (opts.age && opts.gender) {
+                    templatePath = getTemplatePath(opts.age, opts.gender) + `expressions/${expression}.png`;
+                }
             } else if (itemId) {
                 // For clothing items: try shared folder first, then character-specific
                 const clothingPath = getClothingItemPath(itemId);
@@ -93,14 +130,22 @@ function renderCharacterSprite(characterName, outfit, containerId, options = {})
                 layer.dataset.slot = slot;
                 layer.dataset.itemId = itemId || '';
                 layer.dataset.fallbackPath = fallbackPath || '';
+                layer.dataset.templatePath = templatePath || '';
 
-                // Handle image load errors with fallback
+                // Handle image load errors with multi-level fallback
                 layer.onerror = function() {
-                    // If shared image not found, try character-specific override
+                    // Level 1: Try fallback path (for clothing: character-specific)
                     if (this.dataset.fallbackPath && this.src !== this.dataset.fallbackPath) {
-                        console.log(`Shared image not found, trying character-specific: ${this.dataset.fallbackPath}`);
+                        console.log(`Image not found, trying fallback: ${this.dataset.fallbackPath}`);
                         this.src = this.dataset.fallbackPath;
-                    } else {
+                    }
+                    // Level 2: Try template path (for base/expression: age-based template)
+                    else if (this.dataset.templatePath && this.src !== this.dataset.templatePath) {
+                        console.log(`Character-specific not found, trying template: ${this.dataset.templatePath}`);
+                        this.src = this.dataset.templatePath;
+                    }
+                    // Level 3: Give up
+                    else {
                         // No fallback or fallback also failed
                         if (opts.showPlaceholder) {
                             this.style.display = 'none';

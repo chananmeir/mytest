@@ -395,6 +395,7 @@ def api_characters():
         characters.append({
             'name': char.name,
             'age': char.age,
+            'gender': char.gender,
             'occupation': char.occupation,
             'personality': char.personality,
             'rapport': char.rapport,
@@ -404,7 +405,8 @@ def api_characters():
             'active_phs': len(char.active_phs),
             'max_phs': char.max_phs,
             'current_location': schedule['location'],
-            'current_activity': schedule['activity']
+            'current_activity': schedule['activity'],
+            'outfit': char.outfit
         })
 
     return jsonify({
@@ -449,6 +451,7 @@ def api_character(name):
     return jsonify({
         'name': char.name,
         'age': char.age,
+        'gender': char.gender,
         'occupation': char.occupation,
         'personality': char.personality,
         'rapport': char.rapport,
@@ -667,6 +670,7 @@ def api_add_character():
     new_character = Character(
         name=data['name'],
         age=int(data['age']),
+        gender=data.get('gender', 'male'),  # Default to male if not provided
         occupation=data['occupation'],
         clothing=data.get('clothing', 'Casual clothing'),
         clothing_meaning=data.get('clothing_meaning', ''),
