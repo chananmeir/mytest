@@ -214,8 +214,146 @@ function updateCharacterCard(characterName, state) {
     const card = $(`.character-card[data-character="${characterName}"]`);
     const rapportPercent = (state.rapport / 20 * 100);
 
+    // Get old rapport value to detect changes
+    const oldRapport = parseInt(card.find('.rapport-value').text()) || 0;
+    const newRapport = state.rapport;
+
+    // Update rapport bar with animation
     card.find('.rapport-fill').css('width', rapportPercent + '%');
-    card.find('.character-info').last().text(`Rapport: ${state.rapport}/20 | ${state.emotional_state}`);
+    card.find('.rapport-value').text(newRapport);
+    card.find('.character-info').last().html(`Rapport: <span class="rapport-value" data-character="${characterName}">${newRapport}</span>/20 | ${state.emotional_state}`);
+
+    // If rapport increased, add visual effects
+    if (newRapport > oldRapport) {
+        // Add sparkle particles
+        createSparkleEffect(card);
+
+        // Add pulse effect to card
+        card.addClass('rapport-pulse');
+        setTimeout(() => card.removeClass('rapport-pulse'), 600);
+
+        // Check if we hit a milestone
+        checkRapportMilestone(characterName, oldRapport, newRapport);
+    }
+
+    // Update milestone indicator
+    updateMilestoneIndicator(characterName, newRapport);
+}
+
+// Create sparkle particle effects
+function createSparkleEffect(element) {
+    const sparkles = ['✨', '⭐', '💫', '🌟'];
+    const card = element;
+    const cardOffset = card.offset();
+    const cardWidth = card.width();
+    const cardHeight = card.height();
+
+    // Create 3-5 sparkles
+    const count = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+            const sparkle = $('<div class="sparkle-particle"></div>');
+            sparkle.text(sparkles[Math.floor(Math.random() * sparkles.length)]);
+
+            // Random position within card
+            const x = Math.random() * cardWidth;
+            const y = Math.random() * cardHeight;
+
+            sparkle.css({
+                left: x + 'px',
+                top: y + 'px'
+            });
+
+            card.css('position', 'relative').append(sparkle);
+
+            // Remove after animation
+            setTimeout(() => sparkle.remove(), 1000);
+        }, i * 100);
+    }
+}
+
+// Check if rapport milestone was reached
+function checkRapportMilestone(characterName, oldRapport, newRapport) {
+    const milestones = [5, 10, 15, 20];
+
+    for (const milestone of milestones) {
+        if (oldRapport < milestone && newRapport >= milestone) {
+            // Milestone reached!
+            showMilestoneCelebration(characterName, milestone);
+
+            // Flash SP counter if SP was gained
+            if (milestone <= 20) {
+                flashSPCounter();
+            }
+            break;
+        }
+    }
+}
+
+// Show milestone celebration modal
+function showMilestoneCelebration(characterName, milestone) {
+    let title = '';
+    let message = '';
+
+    if (milestone === 5) {
+        title = '🎊 Acquaintance!';
+        message = `${characterName} is starting to warm up to you!`;
+    } else if (milestone === 10) {
+        title = '🎉 Friend!';
+        message = `${characterName} now considers you a friend!`;
+    } else if (milestone === 15) {
+        title = '💖 Close Friend!';
+        message = `${characterName} trusts you deeply!`;
+    } else if (milestone === 20) {
+        title = '✨ Maximum Rapport!';
+        message = `${characterName} has complete trust in you!`;
+    }
+
+    const html = `
+        <div style="text-align: center; padding: 2rem;">
+            <div style="font-size: 4rem; margin-bottom: 1rem; animation: pulse 1s infinite;">🎉</div>
+            <h2 style="color: var(--highlight-color); margin-bottom: 1rem;">${title}</h2>
+            <p style="font-size: 1.2rem; margin-bottom: 1rem;">${message}</p>
+            <div style="background: rgba(255, 215, 0, 0.2); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <strong style="color: var(--warning-color); font-size: 1.1rem;">+1 SP Earned!</strong><br>
+                <span style="font-size: 0.9rem; color: var(--text-secondary);">Rapport milestone reached: ${milestone}/20</span>
+            </div>
+            <button class="btn btn-primary" onclick="closeModal('rapportMilestoneModal')">Continue</button>
+        </div>
+    `;
+
+    // Create modal if it doesn't exist
+    if ($('#rapportMilestoneModal').length === 0) {
+        $('body').append(`
+            <div id="rapportMilestoneModal" class="modal">
+                <div class="modal-content" style="max-width: 500px;">
+                    <div id="rapportMilestoneContent"></div>
+                </div>
+            </div>
+        `);
+    }
+
+    $('#rapportMilestoneContent').html(html);
+    openModal('rapportMilestoneModal');
+}
+
+// Flash SP counter
+function flashSPCounter() {
+    const spDisplay = $('#sp-display');
+    spDisplay.addClass('flash-effect');
+    setTimeout(() => spDisplay.removeClass('flash-effect'), 500);
+}
+
+// Update milestone indicator on character card
+function updateMilestoneIndicator(characterName, rapport) {
+    const indicator = $(`.milestone-indicator[data-character="${characterName}"]`);
+
+    if (rapport >= 20) {
+        indicator.html('✨ Maximum rapport!').css('color', 'var(--success-color)');
+    } else {
+        const nextMilestone = Math.ceil(rapport / 5) * 5;
+        indicator.html(`⭐ Next milestone: ${nextMilestone}/20 (+1 SP)`).css('color', 'var(--warning-color)');
+    }
 }
 
 // Update game state display

@@ -58,8 +58,19 @@
                     <div class="rapport-fill" style="width: {{ (character.rapport / 20 * 100)|int }}%"></div>
                 </div>
                 <div class="character-info" style="margin-top: 0.3rem;">
-                    Rapport: {{ character.rapport }}/20 | {{ character.emotional_state|title }}
+                    Rapport: <span class="rapport-value" data-character="{{ character.name }}">{{ character.rapport }}</span>/20 | {{ character.emotional_state|title }}
                 </div>
+                <!-- Milestone indicator -->
+                {% set next_milestone = (((character.rapport // 5) + 1) * 5) if character.rapport < 20 else 20 %}
+                {% if character.rapport < 20 %}
+                <div class="milestone-indicator" data-character="{{ character.name }}" style="font-size: 0.75rem; color: var(--warning-color); margin-top: 0.3rem; text-align: center;">
+                    ⭐ Next milestone: {{ next_milestone }}/20 (+1 SP)
+                </div>
+                {% else %}
+                <div class="milestone-indicator" data-character="{{ character.name }}" style="font-size: 0.75rem; color: var(--success-color); margin-top: 0.3rem; text-align: center;">
+                    ✨ Maximum rapport!
+                </div>
+                {% endif %}
 
                 <!-- Character Actions -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 0.8rem;">

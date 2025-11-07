@@ -613,6 +613,55 @@ body {
     to { transform: rotate(360deg); }
 }
 
+/* ===== RAPPORT FEEDBACK EFFECTS ===== */
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0) translateY(0);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1) translateY(-20px);
+    }
+}
+
+@keyframes flash {
+    0%, 100% {
+        background: transparent;
+        transform: scale(1);
+    }
+    50% {
+        background: rgba(255, 215, 0, 0.3);
+        transform: scale(1.1);
+    }
+}
+
+@keyframes rapportPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 rgba(233, 69, 96, 0);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(233, 69, 96, 0.8);
+        transform: scale(1.05);
+    }
+}
+
+.sparkle-particle {
+    position: absolute;
+    pointer-events: none;
+    font-size: 1.5rem;
+    animation: sparkle 1s ease-out forwards;
+}
+
+.flash-effect {
+    animation: flash 0.5s ease-out;
+}
+
+.rapport-pulse {
+    animation: rapportPulse 0.6s ease-out;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
     .game-content {
