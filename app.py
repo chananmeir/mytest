@@ -486,6 +486,12 @@ def api_talk():
         )
         changes.append({'type': 'emotional_state', 'message': message})
 
+    # Track conversation for goals
+    from systems.goal_system import GoalSystem
+    goal_messages = GoalSystem.track_conversation(game_state)
+    for goal_msg in goal_messages:
+        changes.append({'type': 'goal', 'message': goal_msg})
+
     # Add PHS activations to changes and handle suspicion
     from systems.suspicion_system import SuspicionSystem
 
@@ -493,6 +499,11 @@ def api_talk():
         formatted_msg = format_activation_message(activation)
         if formatted_msg:
             changes.append({'type': 'phs_activation', 'message': formatted_msg})
+
+        # Track activation for goals
+        activation_goal_messages = GoalSystem.track_suggestion_activated(game_state)
+        for goal_msg in activation_goal_messages:
+            changes.append({'type': 'goal', 'message': goal_msg})
 
         # Check if this PHS activation should affect suspicion
         phs = activation.get('phs')
@@ -858,6 +869,13 @@ def api_plant_suggestion():
             game_state, character_name, trigger, response_text, sp_cost
         )
 
+    # Track suggestion planting for goals
+    if success:
+        from systems.goal_system import GoalSystem
+        goal_messages = GoalSystem.track_suggestion_planted(game_state, character_name)
+        if goal_messages:
+            message += "\n" + "\n".join(goal_messages)
+
     save_game_state(game_state)
 
     return jsonify({
@@ -1031,6 +1049,14 @@ def api_advance_time():
     # Advance time
     events = game_state.game_time.advance_minutes(minutes)
 
+    # Track time advancement for goals
+    from systems.goal_system import GoalSystem
+    time_goal_messages = GoalSystem.track_time_advance(game_state, minutes)
+
+    # Check for goal resets (daily/weekly)
+    reset_messages = GoalSystem.check_daily_reset(game_state)
+    reset_messages.extend(GoalSystem.check_weekly_reset(game_state))
+
     # Apply suspicion decay based on time passed
     from systems.suspicion_system import SuspicionSystem
     hours_passed = minutes / 60
@@ -1071,6 +1097,14 @@ def api_advance_time():
     # Add suspicion decay messages
     if suspicion_messages:
         response['messages'].extend(suspicion_messages)
+
+    # Add goal messages
+    if time_goal_messages:
+        response['messages'].extend(time_goal_messages)
+
+    # Add reset messages
+    if reset_messages:
+        response['messages'].extend(reset_messages)
 
     # Check if any characters' schedules changed
     if events['new_period'] or events['new_day']:
@@ -1449,6 +1483,52 @@ def api_progression():
         },
         'pending_events': pending_events,
         'completed_events_count': len(game_state.completed_events)
+    })
+
+
+@app.route('/api/goals')
+def api_goals():
+    """Get all goals, achievements, and progress"""
+    from systems.goal_system import GoalSystem
+
+    game_state = get_game_state()
+
+    # Initialize goals if not already done
+    GoalSystem.initialize_goals(game_state)
+
+    # Get complete goals summary
+    goals_summary = GoalSystem.get_goals_summary(game_state)
+
+    # Calculate completion percentages
+    daily_completed = sum(1 for g in goals_summary['daily_goals'] if g['completed'])
+    daily_total = len(goals_summary['daily_goals'])
+    daily_progress = (daily_completed / daily_total * 100) if daily_total > 0 else 0
+
+    weekly_completed = sum(1 for g in goals_summary['weekly_goals'] if g['completed'])
+    weekly_total = len(goals_summary['weekly_goals'])
+    weekly_progress = (weekly_completed / weekly_total * 100) if weekly_total > 0 else 0
+
+    achievements_completed = sum(1 for a in goals_summary['achievements'] if a['completed'])
+    achievements_total = len(goals_summary['achievements'])
+    achievement_progress = (achievements_completed / achievements_total * 100) if achievements_total > 0 else 0
+
+    return jsonify({
+        'daily_goals': goals_summary['daily_goals'],
+        'weekly_goals': goals_summary['weekly_goals'],
+        'achievements': goals_summary['achievements'],
+        'character_progress': goals_summary['character_progress'],
+        'stats': goals_summary['stats'],
+        'summary': {
+            'daily_progress': round(daily_progress, 1),
+            'daily_completed': daily_completed,
+            'daily_total': daily_total,
+            'weekly_progress': round(weekly_progress, 1),
+            'weekly_completed': weekly_completed,
+            'weekly_total': weekly_total,
+            'achievement_progress': round(achievement_progress, 1),
+            'achievements_completed': achievements_completed,
+            'achievements_total': achievements_total
+        }
     })
 
 

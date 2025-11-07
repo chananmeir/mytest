@@ -231,6 +231,11 @@ class HypnosisSystem:
         if reason:
             message += f" ({reason})"
 
+        # Track rapport gain for goals
+        from systems.goal_system import GoalSystem
+        goal_messages = GoalSystem.track_rapport_gain(game_state, amount)
+        goal_messages.extend(GoalSystem.track_rapport_milestone(game_state, target_name, new_rapport))
+
         # Award SP for rapport milestones
         milestones = [5, 10, 15, 20]
         for milestone in milestones:
@@ -242,6 +247,10 @@ class HypnosisSystem:
         unlock_messages = UnlockSystem.check_rapport_unlock_triggers(target_name, new_rapport, game_state)
         if unlock_messages:
             message += "\n" + "\n".join(unlock_messages)
+
+        # Add goal completion messages
+        if goal_messages:
+            message += "\n" + "\n".join(goal_messages)
 
         return message
 
