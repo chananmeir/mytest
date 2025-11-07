@@ -1040,6 +1040,16 @@ def api_advance_time():
         decay_msgs = SuspicionSystem.decay_suspicion_over_time(char, int(hours_passed))
         suspicion_messages.extend(decay_msgs)
 
+    # Check for time-triggered events (character introductions, etc.)
+    from systems.event_system import EventSystem
+    triggered_events = EventSystem.check_time_triggered_events(game_state)
+    event_data_list = []
+
+    for event in triggered_events:
+        success, event_data = EventSystem.trigger_event(event.event_id, game_state)
+        if success:
+            event_data_list.append(event_data)
+
     # Save the updated game state
     save_game_state(game_state)
 
@@ -1050,7 +1060,8 @@ def api_advance_time():
         'date': game_state.game_time.get_formatted_date(),
         'period': game_state.game_time.period.capitalize(),
         'events': events,
-        'messages': []
+        'messages': [],
+        'triggered_events': event_data_list  # Add story events
     }
 
     # Add event messages
@@ -1371,6 +1382,8 @@ def api_unlocks():
 @app.route('/api/trigger-event', methods=['POST'])
 def api_trigger_event():
     """Manually trigger an event (for testing or story progression)"""
+    from systems.event_system import EventSystem
+
     game_state = get_game_state()
     data = request.get_json()
 
@@ -1379,16 +1392,63 @@ def api_trigger_event():
     if not event_id:
         return jsonify({'error': 'event_id required'}), 400
 
-    # Add event to completed events
-    if event_id not in game_state.completed_events:
-        game_state.completed_events.append(event_id)
+    # Trigger the event
+    success, event_data = EventSystem.trigger_event(event_id, game_state)
+
+    if not success:
+        return jsonify(event_data), 400
 
     save_game_state(game_state)
 
     return jsonify({
         'success': True,
-        'message': f'Event {event_id} triggered',
-        'completed_events': game_state.completed_events
+        'event_data': event_data
+    })
+
+
+@app.route('/api/progression')
+def api_progression():
+    """Get progression status - unlocks, events, etc."""
+    from systems.unlock_system import UnlockSystem
+    from systems.event_system import EventSystem
+
+    game_state = get_game_state()
+
+    # Get unlock counts
+    all_locations = UnlockSystem.get_available_locations(game_state)
+    unlocked_locations = [l for l in all_locations if l['is_unlocked']]
+    locked_locations = [l for l in all_locations if not l['is_unlocked']]
+
+    all_characters = UnlockSystem.get_available_characters(game_state)
+    unlocked_characters = [c for c in all_characters if c['is_unlocked']]
+    locked_characters = [c for c in all_characters if not c['is_unlocked']]
+
+    # Get pending events
+    pending_events = EventSystem.get_pending_events(game_state)
+
+    # Calculate progression percentage
+    total_locations = len(all_locations)
+    total_characters = len(all_characters)
+    location_progress = (len(unlocked_locations) / total_locations * 100) if total_locations > 0 else 0
+    character_progress = (len(unlocked_characters) / total_characters * 100) if total_characters > 0 else 0
+
+    return jsonify({
+        'game_day': game_state.game_time.day,
+        'game_week': game_state.game_time.day // 7 + 1,
+        'locations': {
+            'unlocked': len(unlocked_locations),
+            'total': total_locations,
+            'progress': round(location_progress, 1),
+            'locked_list': locked_locations
+        },
+        'characters': {
+            'unlocked': len(unlocked_characters),
+            'total': total_characters,
+            'progress': round(character_progress, 1),
+            'locked_list': locked_characters
+        },
+        'pending_events': pending_events,
+        'completed_events_count': len(game_state.completed_events)
     })
 
 
