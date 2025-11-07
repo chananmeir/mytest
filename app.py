@@ -139,6 +139,7 @@ def api_ambient_events():
     """Get ambient events and character activities"""
     import random
     from systems.time_system import get_character_schedule, is_character_available
+    from systems.trigger_detection import TriggerDetector, format_activation_message
 
     game_state = get_game_state()
     current_period = game_state.game_time.period
@@ -229,6 +230,18 @@ def api_ambient_events():
         result['location'] = schedule['location']
         result['message'] = f"{char_name} is {new_activity.lower()} in the {schedule['location'].lower()}"
 
+        # Check for PHS triggers from this activity
+        char = game_state.characters[char_name]
+        triggered = TriggerDetector.check_activity_triggers(
+            char, new_activity, schedule['location']
+        )
+        activations = TriggerDetector.attempt_activations(triggered)
+        successful_activations = [a for a in activations if a['success']]
+
+        if successful_activations:
+            result['phs_activations'] = [format_activation_message(a) for a in successful_activations]
+            save_game_state(game_state)
+
     elif event_type == 'dialogue':
         # Random character says something
         char_name = random.choice(list(game_state.characters.keys()))
@@ -287,6 +300,22 @@ def api_ambient_events():
                     conversation['summary'],
                     chosen_location
                 )
+
+                # Check for PHS triggers from NPC-to-NPC conversation
+                # Check both characters for triggers
+                triggered_char1 = TriggerDetector.check_conversation_triggers(
+                    char1, chars[1], conversation['summary'], is_player=False
+                )
+                triggered_char2 = TriggerDetector.check_conversation_triggers(
+                    char2, chars[0], conversation['summary'], is_player=False
+                )
+
+                all_triggered = triggered_char1 + triggered_char2
+                activations = TriggerDetector.attempt_activations(all_triggered)
+                successful_activations = [a for a in activations if a['success']]
+
+                if successful_activations:
+                    result['phs_activations'] = [format_activation_message(a) for a in successful_activations]
 
                 # Save the updated game state
                 save_game_state(game_state)
@@ -377,6 +406,7 @@ def api_player_profile():
 def api_talk():
     """Handle character conversation"""
     from systems.location_system import get_location_context_for_llm
+    from systems.trigger_detection import TriggerDetector, format_activation_message
 
     data = request.json
     character_name = data.get('character')
@@ -403,6 +433,26 @@ def api_talk():
         location_context=location_context,
         record_memory=True
     )
+
+    # Check for PHS triggers from the conversation
+    # Check player's message for triggers (e.g., praise, criticism)
+    triggered_by_player = TriggerDetector.check_conversation_triggers(
+        char, None, player_message, is_player=True
+    )
+
+    # Check character's response for triggers (e.g., "when I talk about X")
+    triggered_by_response = TriggerDetector.check_conversation_triggers(
+        char, None, response, is_player=True
+    )
+
+    # Combine all triggers
+    all_triggered = triggered_by_player + triggered_by_response
+
+    # Attempt activations
+    activations = TriggerDetector.attempt_activations(all_triggered)
+
+    # Filter only successful activations for display
+    successful_activations = [a for a in activations if a['success']]
 
     # Analyze interaction with GM
     analysis = game_master.analyze_conversation_impact(
@@ -435,6 +485,12 @@ def api_talk():
             analysis['reasoning']
         )
         changes.append({'type': 'emotional_state', 'message': message})
+
+    # Add PHS activations to changes
+    for activation in successful_activations:
+        formatted_msg = format_activation_message(activation)
+        if formatted_msg:
+            changes.append({'type': 'phs_activation', 'message': formatted_msg})
 
     save_game_state(game_state)
 

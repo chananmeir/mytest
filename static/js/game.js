@@ -129,7 +129,12 @@ function sendMessage() {
             // Show any changes
             if (data.changes && data.changes.length > 0) {
                 data.changes.forEach(change => {
-                    addSystemMessage(change.message);
+                    if (change.type === 'phs_activation') {
+                        // Special display for PHS activations
+                        addPHSActivationMessage(change.message);
+                    } else {
+                        addSystemMessage(change.message);
+                    }
                 });
             }
 
@@ -171,6 +176,27 @@ function addSystemMessage(text) {
     const messageHtml = `
         <div class="dialogue-message">
             <div class="system-message">${text}</div>
+        </div>
+    `;
+    $('#dialogue-box').append(messageHtml);
+    scrollToBottom();
+}
+
+// Add PHS activation message with special styling
+function addPHSActivationMessage(text) {
+    const messageHtml = `
+        <div class="dialogue-message">
+            <div class="phs-activation-message" style="
+                background: linear-gradient(135deg, rgba(233, 69, 96, 0.2) 0%, rgba(255, 140, 0, 0.2) 100%);
+                border-left: 4px solid var(--highlight-color);
+                padding: 1rem;
+                margin: 0.5rem 0;
+                border-radius: 8px;
+                font-weight: 600;
+                color: #ffcc00;
+                text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+                animation: pulse 2s ease-in-out;
+            ">${text}</div>
         </div>
     `;
     $('#dialogue-box').append(messageHtml);
@@ -1085,6 +1111,15 @@ function displayAmbientEvent(event) {
         }
 
         dialogueBox.append(messageHtml);
+    }
+
+    // Display any PHS activations from this event
+    if (event.phs_activations && event.phs_activations.length > 0) {
+        event.phs_activations.forEach(activation => {
+            if (activation) {
+                addPHSActivationMessage(activation);
+            }
+        });
     }
 
     scrollToBottom();
