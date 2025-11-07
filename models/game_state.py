@@ -23,6 +23,7 @@ class PlayerState:
     scenes_completed: list = field(default_factory=list)
     hypnosis_knowledge: HypnosisKnowledge = field(default_factory=HypnosisKnowledge)
     current_location: str = "home_living_room"  # Player's current location
+    statement_history: list = field(default_factory=list)  # Track player statements for contradiction detection
 
 
 class GameState:
@@ -150,7 +151,16 @@ class GameState:
                 'current_scene': self.player.current_scene,
                 'scenes_completed': self.player.scenes_completed,
                 'hypnosis_knowledge': self.player.hypnosis_knowledge.to_dict(),
-                'current_location': self.player.current_location
+                'current_location': self.player.current_location,
+                'statement_history': [
+                    {
+                        'timestamp': stmt.timestamp,
+                        'character_told': stmt.character_told,
+                        'content': stmt.content,
+                        'topic': stmt.topic,
+                        'keywords': stmt.keywords
+                    } for stmt in self.player.statement_history
+                ] if hasattr(self.player, 'statement_history') else []
             },
             'characters': {
                 name: char.to_dict()
@@ -189,6 +199,20 @@ class GameState:
             else:
                 hypnosis_knowledge = HypnosisKnowledge()  # Default for old saves
 
+            # Restore statement history
+            statement_history = []
+            if 'statement_history' in player_data:
+                from systems.contradiction_tracker import PlayerStatement
+                statement_history = [
+                    PlayerStatement(
+                        timestamp=stmt['timestamp'],
+                        character_told=stmt['character_told'],
+                        content=stmt['content'],
+                        topic=stmt['topic'],
+                        keywords=stmt.get('keywords', [])
+                    ) for stmt in player_data['statement_history']
+                ]
+
             self.player = PlayerState(
                 name=player_data['name'],
                 age=player_data['age'],
@@ -199,7 +223,8 @@ class GameState:
                 current_scene=player_data['current_scene'],
                 scenes_completed=player_data['scenes_completed'],
                 hypnosis_knowledge=hypnosis_knowledge,
-                current_location=player_data.get('current_location', 'home_living_room')  # Default for old saves
+                current_location=player_data.get('current_location', 'home_living_room'),  # Default for old saves
+                statement_history=statement_history
             )
 
             # Restore characters

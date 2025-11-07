@@ -407,6 +407,7 @@ def api_talk():
     """Handle character conversation"""
     from systems.location_system import get_location_context_for_llm
     from systems.trigger_detection import TriggerDetector, format_activation_message
+    from systems.contradiction_tracker import ContradictionTracker
 
     data = request.json
     character_name = data.get('character')
@@ -421,15 +422,28 @@ def api_talk():
     if not char:
         return jsonify({'error': 'Character not found'}), 404
 
+    # Check for contradictions in player's statement
+    contradiction_msg = ContradictionTracker.record_statement(
+        game_state, character_name, player_message
+    )
+
     # Get current location context
     current_location = game_state.get_current_location()
     location_context = get_location_context_for_llm(current_location)
 
-    # Get LLM response with location context
+    # Build scene context with contradiction info if detected
+    scene_context = "Family gathering"
+    if contradiction_msg:
+        contradiction_context = ContradictionTracker.format_contradiction_for_llm(
+            contradiction_msg, char.rapport
+        )
+        scene_context += contradiction_context
+
+    # Get LLM response with location and contradiction context
     response = llm_handler.get_character_response(
         char,
         player_message,
-        scene_context="Family gathering",
+        scene_context=scene_context,
         location_context=location_context,
         record_memory=True
     )
@@ -562,6 +576,241 @@ def api_talk():
         'character_state': {
             'rapport': char.rapport,
             'emotional_state': char.emotional_state
+        }
+    })
+
+
+@app.route('/api/get-dialogue-choices', methods=['POST'])
+def api_get_dialogue_choices():
+    """Get contextual dialogue choices for a character conversation"""
+    from systems.dialogue_system import DialogueSystem
+
+    data = request.json
+    character_name = data.get('character')
+    player_message = data.get('player_message', '')
+
+    game_state = get_game_state()
+    char = game_state.get_character(character_name)
+
+    if not char:
+        return jsonify({'error': 'Character not found'}), 404
+
+    # Check if choices should be offered
+    should_offer = DialogueSystem.should_offer_choices(
+        char,
+        char.conversation_history
+    )
+
+    if not should_offer:
+        return jsonify({
+            'has_choices': False,
+            'choices': []
+        })
+
+    # Detect conversation context
+    context = DialogueSystem.detect_context(
+        char,
+        player_message,
+        char.conversation_history
+    )
+
+    if not context:
+        return jsonify({
+            'has_choices': False,
+            'choices': []
+        })
+
+    # Get contextual choices
+    choices = DialogueSystem.get_contextual_choices(
+        char,
+        context,
+        char.rapport
+    )
+
+    # Convert to dict format
+    choices_data = [choice.to_dict() for choice in choices]
+
+    return jsonify({
+        'has_choices': True,
+        'context': context,
+        'choices': choices_data
+    })
+
+
+@app.route('/api/select-dialogue-choice', methods=['POST'])
+def api_select_dialogue_choice():
+    """Handle selection of a dialogue choice"""
+    from systems.dialogue_system import DialogueSystem
+    from systems.location_system import get_location_context_for_llm
+    from systems.trigger_detection import TriggerDetector, format_activation_message
+    from systems.goal_system import GoalSystem
+    from systems.suspicion_system import SuspicionSystem
+    from systems.contradiction_tracker import ContradictionTracker
+
+    data = request.json
+    character_name = data.get('character')
+    choice_id = data.get('choice_id')
+    context = data.get('context')
+
+    game_state = get_game_state()
+    char = game_state.get_character(character_name)
+
+    if not char:
+        return jsonify({'error': 'Character not found'}), 404
+
+    # Get the selected choice
+    choices = DialogueSystem.get_contextual_choices(char, context, char.rapport)
+    selected_choice = None
+    for choice in choices:
+        if choice.choice_id == choice_id:
+            selected_choice = choice
+            break
+
+    if not selected_choice:
+        return jsonify({'error': 'Invalid choice'}), 400
+
+    # Check SP cost
+    if selected_choice.sp_cost > 0:
+        if game_state.player.skill_points < selected_choice.sp_cost:
+            return jsonify({'error': 'Not enough SP'}), 400
+        game_state.player.skill_points -= selected_choice.sp_cost
+
+    # Apply choice consequences
+    consequences = DialogueSystem.apply_choice_consequences(
+        selected_choice,
+        char,
+        game_state
+    )
+
+    # Generate the dialogue text that the player says
+    player_dialogue = DialogueSystem.generate_choice_prompt(selected_choice, character_name)
+
+    # Check for contradictions in the dialogue choice
+    contradiction_msg = ContradictionTracker.record_statement(
+        game_state, character_name, player_dialogue
+    )
+
+    # Get character's response from LLM with choice context
+    current_location = game_state.get_current_location()
+    location_context = get_location_context_for_llm(current_location)
+
+    # Add choice context to help LLM understand intent
+    choice_context = DialogueSystem.get_character_response_context(selected_choice, char)
+    scene_context = f"Family gathering. {choice_context}"
+
+    # Add contradiction context if detected
+    if contradiction_msg:
+        contradiction_context = ContradictionTracker.format_contradiction_for_llm(
+            contradiction_msg, char.rapport
+        )
+        scene_context += contradiction_context
+
+    response = llm_handler.get_character_response(
+        char,
+        player_dialogue,
+        scene_context=scene_context,
+        location_context=location_context,
+        record_memory=True
+    )
+
+    # Check for PHS triggers
+    triggered_by_player = TriggerDetector.check_conversation_triggers(
+        char, None, player_dialogue, is_player=True
+    )
+    triggered_by_response = TriggerDetector.check_conversation_triggers(
+        char, None, response, is_player=True
+    )
+    all_triggered = triggered_by_player + triggered_by_response
+
+    # If this choice triggers a PHS attempt, modify success rate
+    if selected_choice.triggers_phs_attempt and selected_choice.phs_difficulty_modifier != 0:
+        # Adjust activation chances for this specific attempt
+        for phs, chance in all_triggered:
+            adjusted_chance = max(0, min(100, chance + selected_choice.phs_difficulty_modifier))
+            all_triggered = [(phs, adjusted_chance) for p, c in all_triggered if p == phs]
+
+    activations = TriggerDetector.attempt_activations(all_triggered)
+    successful_activations = [a for a in activations if a['success']]
+
+    # Build response changes
+    changes = consequences['messages'].copy()
+
+    # Track conversation for goals
+    goal_messages = GoalSystem.track_conversation(game_state)
+    for goal_msg in goal_messages:
+        changes.append(goal_msg)
+
+    # Add PHS activations and suspicion checks
+    for activation in successful_activations:
+        formatted_msg = format_activation_message(activation)
+        if formatted_msg:
+            changes.append(formatted_msg)
+
+        activation_goal_messages = GoalSystem.track_suggestion_activated(game_state)
+        changes.extend(activation_goal_messages)
+
+        phs = activation.get('phs')
+        if phs:
+            if phs.phs_type == 'defensive' and phs.defensive_target:
+                target_char = game_state.get_character(phs.defensive_target)
+                if target_char:
+                    defense_msg = SuspicionSystem.apply_defensive_phs(
+                        char, target_char, phs.suspicion_reduction
+                    )
+                    changes.append(defense_msg)
+            else:
+                is_ooc, suspicion_increase = SuspicionSystem.detect_out_of_character_behavior(char, phs)
+                if is_ooc and suspicion_increase > 0:
+                    import random
+                    observers = [c for c in game_state.characters.values()
+                                if c.name != char.name and c.name != 'Player']
+
+                    if observers:
+                        num_observers = min(random.randint(1, 2), len(observers))
+                        selected_observers = random.sample(observers, num_observers)
+
+                        for observer in selected_observers:
+                            suspicion_msg = SuspicionSystem.increase_character_suspicion(
+                                observer, char.name, suspicion_increase
+                            )
+                            changes.append(suspicion_msg)
+
+                            evidence = SuspicionSystem.calculate_evidence_against_player(
+                                game_state, observer
+                            )
+                            if evidence > 0:
+                                player_suspicion_msg, confrontation = SuspicionSystem.increase_player_suspicion(
+                                    observer, evidence, f"({char.name} is acting strange)"
+                                )
+                                changes.append(player_suspicion_msg)
+
+                                if confrontation:
+                                    changes.append(
+                                        f"🚨 GAME OVER: {observer.name} confronts you about manipulating the family!"
+                                    )
+
+    save_game_state(game_state)
+
+    return jsonify({
+        'success': True,
+        'player_said': player_dialogue,
+        'response': response,
+        'changes': changes,
+        'consequences': {
+            'rapport_changed': consequences.get('rapport_changed', False),
+            'resistance_changed': consequences.get('resistance_changed', False),
+            'emotional_state_changed': consequences.get('emotional_state_changed', False),
+            'suspicion_changed': consequences.get('suspicion_changed', False),
+            'new_rapport': consequences.get('new_rapport', char.rapport),
+            'new_resistance': consequences.get('new_resistance', char.resistance),
+            'new_emotional_state': consequences.get('new_emotional_state', char.emotional_state),
+            'new_suspicion': consequences.get('new_suspicion', char.player_suspicion)
+        },
+        'character_state': {
+            'rapport': char.rapport,
+            'emotional_state': char.emotional_state,
+            'resistance': char.resistance,
+            'player_suspicion': char.player_suspicion
         }
     })
 

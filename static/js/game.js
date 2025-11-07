@@ -144,6 +144,9 @@ function sendMessage() {
             // Update game state
             updateGameState();
 
+            // Check for dialogue choices
+            checkForDialogueChoices(message);
+
             // Re-enable input
             isWaitingForResponse = false;
             $('#message-input').prop('disabled', false);
@@ -207,6 +210,150 @@ function addPHSActivationMessage(text) {
 function scrollToBottom() {
     const dialogueBox = document.getElementById('dialogue-box');
     dialogueBox.scrollTop = dialogueBox.scrollHeight;
+}
+
+// Check for dialogue choices after character responds
+function checkForDialogueChoices(playerMessage) {
+    if (!selectedCharacter) return;
+
+    $.ajax({
+        url: '/api/get-dialogue-choices',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            character: selectedCharacter,
+            player_message: playerMessage
+        }),
+        success: function(data) {
+            if (data.has_choices && data.choices.length > 0) {
+                showDialogueChoices(data.context, data.choices);
+            } else {
+                hideDialogueChoices();
+            }
+        },
+        error: function() {
+            hideDialogueChoices();
+        }
+    });
+}
+
+// Show dialogue choice buttons
+function showDialogueChoices(context, choices) {
+    const choicesContainer = $('#choices-container');
+    choicesContainer.empty();
+
+    choices.forEach(choice => {
+        const isDisabled = choice.requires_rapport > 0 || choice.sp_cost > 0;
+        const disabledClass = isDisabled ? '' : ''; // We'll check dynamically
+
+        let choiceHtml = `
+            <div class="choice-btn" data-choice-id="${choice.choice_id}" data-context="${context}">
+                <div class="choice-text">${choice.text}</div>
+                <div class="choice-description">${choice.description}</div>
+        `;
+
+        // Add requirements/costs if any
+        if (choice.requires_rapport > 0) {
+            choiceHtml += `<div class="choice-requirement">Requires ${choice.requires_rapport}+ rapport</div>`;
+        }
+        if (choice.sp_cost > 0) {
+            choiceHtml += `<span class="choice-cost">Cost: ${choice.sp_cost} SP</span>`;
+        }
+
+        choiceHtml += `</div>`;
+
+        const choiceElement = $(choiceHtml);
+
+        // Add click handler
+        choiceElement.on('click', function() {
+            selectDialogueChoice(choice.choice_id, context);
+        });
+
+        choicesContainer.append(choiceElement);
+    });
+
+    // Show the choices panel
+    $('#dialogue-choices').slideDown(300);
+
+    // Disable regular text input while choices are shown
+    $('#message-input').prop('disabled', true).attr('placeholder', 'Choose a response from the options above...');
+    $('#send-btn').prop('disabled', true);
+
+    scrollToBottom();
+}
+
+// Hide dialogue choices
+function hideDialogueChoices() {
+    $('#dialogue-choices').slideUp(300);
+
+    // Re-enable text input
+    if (selectedCharacter && !isWaitingForResponse) {
+        $('#message-input').prop('disabled', false).attr('placeholder', `Talk to ${selectedCharacter}...`);
+        $('#send-btn').prop('disabled', false);
+    }
+}
+
+// Handle dialogue choice selection
+function selectDialogueChoice(choiceId, context) {
+    if (!selectedCharacter || isWaitingForResponse) return;
+
+    // Hide choices and disable input
+    hideDialogueChoices();
+    isWaitingForResponse = true;
+    $('#message-input').prop('disabled', true);
+    $('#send-btn').html('<div class="loading"></div>').prop('disabled', true);
+
+    // Send choice to API
+    $.ajax({
+        url: '/api/select-dialogue-choice',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            character: selectedCharacter,
+            choice_id: choiceId,
+            context: context
+        }),
+        success: function(data) {
+            // Show what the player said
+            addDialogueMessage('You', data.player_said);
+
+            // Show character's response
+            addDialogueMessage(selectedCharacter, data.response);
+
+            // Show changes/consequences
+            if (data.changes && data.changes.length > 0) {
+                data.changes.forEach(change => {
+                    addSystemMessage(change);
+                });
+            }
+
+            // Update character card with new state
+            updateCharacterCard(selectedCharacter, data.character_state);
+
+            // Update game state
+            updateGameState();
+
+            // Check for new dialogue choices
+            checkForDialogueChoices(data.player_said);
+
+            // Re-enable input
+            isWaitingForResponse = false;
+            $('#message-input').prop('disabled', false);
+            $('#send-btn').html('Send').prop('disabled', false);
+            $('#message-input').focus();
+        },
+        error: function(xhr) {
+            const errorMsg = xhr.responseJSON?.error || 'Failed to process choice';
+            addSystemMessage(`Error: ${errorMsg}`);
+
+            isWaitingForResponse = false;
+            $('#message-input').prop('disabled', false);
+            $('#send-btn').html('Send').prop('disabled', false);
+
+            // Re-show choices on error
+            checkForDialogueChoices('');
+        }
+    });
 }
 
 // Update character card
