@@ -219,6 +219,32 @@ body {
     color: var(--highlight-color);
 }
 
+#character-cards {
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.5rem;
+}
+
+/* Scrollbar styling for character cards */
+#character-cards::-webkit-scrollbar {
+    width: 8px;
+}
+
+#character-cards::-webkit-scrollbar-track {
+    background: var(--accent-color);
+    border-radius: 10px;
+}
+
+#character-cards::-webkit-scrollbar-thumb {
+    background: var(--highlight-color);
+    border-radius: 10px;
+}
+
+#character-cards::-webkit-scrollbar-thumb:hover {
+    background: #ff5c7c;
+}
+
 .character-card {
     background: var(--accent-color);
     border: 2px solid var(--border-color);

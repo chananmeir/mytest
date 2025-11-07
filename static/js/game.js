@@ -1120,7 +1120,7 @@ function updateCharacterSchedules() {
             if (data.location) {
                 const header = document.getElementById('character-list-header');
                 if (header) {
-                    header.textContent = `Family Members at ${data.location}`;
+                    header.textContent = `Characters at ${data.location}`;
                 }
             }
 
