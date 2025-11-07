@@ -1042,14 +1042,48 @@ function displayAmbientEvent(event) {
         `;
         dialogueBox.append(messageHtml);
     } else if (event.type === 'interaction') {
-        // Characters interact
-        const messageHtml = `
-            <div class="dialogue-message">
-                <div class="ambient-message">
-                    <span class="ambient-icon">💬</span> ${event.message}
+        // Characters interact - enhanced display for LLM conversations
+        let messageHtml;
+
+        if (event.conversation_type && event.location) {
+            // LLM-generated background conversation
+            const typeEmoji = {
+                'friendly': '😊',
+                'conversation': '💬',
+                'argument': '😠',
+                'help': '🤝',
+                'romantic': '💕',
+                'conflict': '⚡'
+            };
+            const emoji = typeEmoji[event.conversation_type] || '💬';
+
+            messageHtml = `
+                <div class="dialogue-message">
+                    <div class="background-conversation" style="
+                        background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+                        border-left: 3px solid var(--highlight-color);
+                        padding: 0.8rem 1rem;
+                        margin: 0.5rem 0;
+                        border-radius: 8px;
+                        font-style: italic;
+                    ">
+                        <span class="ambient-icon" style="font-size: 1.2rem;">${emoji}</span>
+                        <span style="color: var(--highlight-color); font-weight: 600;">Background:</span>
+                        ${event.message}
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            // Simple interaction (non-LLM)
+            messageHtml = `
+                <div class="dialogue-message">
+                    <div class="ambient-message">
+                        <span class="ambient-icon">💬</span> ${event.message}
+                    </div>
+                </div>
+            `;
+        }
+
         dialogueBox.append(messageHtml);
     }
 

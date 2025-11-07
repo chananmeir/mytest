@@ -239,17 +239,87 @@ def api_ambient_events():
         result['message'] = f"{char_name}: {dialogue}"
 
     elif event_type == 'interaction':
-        # Two characters interact
-        chars = random.sample(list(game_state.characters.keys()), 2)
-        interactions = [
-            f"{chars[0]} glances at {chars[1]}",
-            f"{chars[1]} nods at {chars[0]}",
-            f"{chars[0]} and {chars[1]} exchange a look",
-            f"{chars[1]} whispers something to {chars[0]}",
-            f"{chars[0]} smiles at {chars[1]}"
-        ]
-        result['characters'] = chars
-        result['message'] = random.choice(interactions)
+        # Two characters interact - use LLM for realistic conversations
+        from systems.character_interactions import generate_character_conversation_llm, record_interaction
+        from systems.location_system import get_character_location
+
+        # Rate limiting: Only generate LLM conversation once per minute max
+        last_llm_time = session.get('last_background_conversation_time', 0)
+        current_time = datetime.now().timestamp()
+        time_since_last = current_time - last_llm_time
+
+        # Get characters at same location (excluding any character player is talking to)
+        current_talking_to = session.get('selected_character', None)
+        available_chars = []
+
+        # Group characters by location
+        location_groups = {}
+        for char_name in game_state.characters.keys():
+            if char_name == current_talking_to:
+                continue  # Skip character player is talking to
+
+            char_location = get_character_location(char_name, current_period)
+            if char_location not in location_groups:
+                location_groups[char_location] = []
+            location_groups[char_location].append(char_name)
+
+        # Find locations with 2+ characters
+        valid_locations = [loc for loc, chars in location_groups.items() if len(chars) >= 2]
+
+        if valid_locations and time_since_last >= 60:  # At least 1 minute since last LLM call
+            # Pick a random location with multiple characters
+            chosen_location = random.choice(valid_locations)
+            chars = random.sample(location_groups[chosen_location], 2)
+
+            char1 = game_state.characters[chars[0]]
+            char2 = game_state.characters[chars[1]]
+
+            # Try to generate LLM conversation
+            conversation = generate_character_conversation_llm(
+                char1, char2, chosen_location, llm_handler
+            )
+
+            if conversation:
+                # Record the interaction
+                record_interaction(
+                    char1, char2,
+                    conversation['type'],
+                    conversation['summary'],
+                    chosen_location
+                )
+
+                # Save the updated game state
+                save_game_state(game_state)
+
+                # Update session timestamp
+                session['last_background_conversation_time'] = current_time
+
+                result['characters'] = chars
+                result['location'] = chosen_location
+                result['message'] = f"*In the {chosen_location.replace('_', ' ')}: {conversation['summary']}*"
+                result['conversation_type'] = conversation['type']
+            else:
+                # Fallback to simple interaction
+                chars = random.sample(list(game_state.characters.keys()), 2)
+                interactions = [
+                    f"{chars[0]} glances at {chars[1]}",
+                    f"{chars[1]} nods at {chars[0]}",
+                    f"{chars[0]} and {chars[1]} exchange a look"
+                ]
+                result['characters'] = chars
+                result['message'] = random.choice(interactions)
+        else:
+            # No valid locations or rate limited - use simple interaction
+            chars = random.sample(list(game_state.characters.keys()), 2)
+            interactions = [
+                f"{chars[0]} glances at {chars[1]}",
+                f"{chars[1]} nods at {chars[0]}",
+                f"{chars[0]} and {chars[1]} exchange a look",
+                f"{chars[1]} whispers something to {chars[0]}",
+                f"{chars[0]} smiles at {chars[1]}"
+            ]
+            result['characters'] = chars
+            result['message'] = random.choice(interactions)
 
     return jsonify(result)
 
@@ -311,6 +381,9 @@ def api_talk():
     data = request.json
     character_name = data.get('character')
     player_message = data.get('message')
+
+    # Track which character player is talking to (for ambient events)
+    session['selected_character'] = character_name
 
     game_state = get_game_state()
     char = game_state.get_character(character_name)

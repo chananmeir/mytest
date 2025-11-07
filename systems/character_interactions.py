@@ -170,3 +170,96 @@ def simulate_background_interaction(char1: Character, char2: Character, location
     summary = random.choice(summaries)
 
     record_interaction(char1, char2, interaction_type, summary, location)
+
+
+def generate_character_conversation_llm(char1: Character, char2: Character, location: str, llm_handler) -> Optional[Dict]:
+    """
+    Use LLM to generate a conversation between two characters
+
+    Args:
+        char1: First character
+        char2: Second character
+        location: Where they are
+        llm_handler: LLM handler instance
+
+    Returns:
+        Dictionary with conversation details or None if failed
+    """
+    import config
+    import requests
+
+    relationship_score = char1.relationships.get(char2.name, 5)
+
+    # Build prompt for LLM to generate a brief conversation snippet
+    prompt = f"""You are narrating a brief background conversation between two characters.
+
+CHARACTER 1: {char1.name}
+- Age: {char1.age}
+- Occupation: {char1.occupation}
+- Personality: {char1.personality}
+- Current emotional state: {char1.emotional_state}
+
+CHARACTER 2: {char2.name}
+- Age: {char2.age}
+- Occupation: {char2.occupation}
+- Personality: {char2.personality}
+- Current emotional state: {char2.emotional_state}
+
+RELATIONSHIP: {char1.name} and {char2.name} have a relationship score of {relationship_score}/20
+LOCATION: {location}
+
+Generate a VERY BRIEF (1-2 sentences) summary of what they're talking about. Make it natural and realistic for their personalities and relationship. Also classify the interaction type.
+
+Respond in this exact format:
+TYPE: [friendly/conversation/argument/help]
+SUMMARY: [1-2 sentence summary of their conversation]
+
+Example:
+TYPE: friendly
+SUMMARY: {char1.name} and {char2.name} discussed their plans for the weekend, with {char1.name} suggesting they catch up over coffee."""
+
+    api_key = config.DEFAULT_API_KEY
+    if not api_key:
+        return None
+
+    try:
+        response = requests.post(
+            config.OPENROUTER_API_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": config.DEFAULT_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.8,
+                "max_tokens": 100
+            },
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            content = result['choices'][0]['message']['content']
+
+            # Parse response
+            lines = content.strip().split('\n')
+            interaction_type = 'conversation'
+            summary = ''
+
+            for line in lines:
+                if line.startswith('TYPE:'):
+                    interaction_type = line.replace('TYPE:', '').strip().lower()
+                elif line.startswith('SUMMARY:'):
+                    summary = line.replace('SUMMARY:', '').strip()
+
+            if summary:
+                return {
+                    'type': interaction_type,
+                    'summary': summary
+                }
+
+    except Exception as e:
+        print(f"Error generating character conversation: {e}")
+
+    return None
