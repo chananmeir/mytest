@@ -72,7 +72,7 @@ IMPORTANT BEHAVIORAL NOTES:
 
     def _build_conversation_history(self, character: Character) -> List[Dict[str, str]]:
         """Build conversation history for context"""
-        return character.conversation_history[-10:]  # Last 10 messages for context
+        return character.conversation_history[-config.CONVERSATION_HISTORY_LENGTH:]  # Configurable message count
 
     def get_character_response(
         self,
