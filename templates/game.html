@@ -175,6 +175,10 @@
             💼 Job Board
         </button>
 
+        <button class="action-button" onclick="openEventLog()" style="background: linear-gradient(135deg, #7b1fa2 0%, #c2185b 100%);">
+            📋 Event Log
+        </button>
+
         <div style="margin-top: 2rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
             <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-align: center;">⏱️ Time Control</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
@@ -487,6 +491,43 @@
 
             <!-- Jobs list -->
             <div id="jobs-list" style="max-height: 500px; overflow-y: auto;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Event Log Modal -->
+<div id="eventLogModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">📋 Event Log - What Happened While You Were Away</h2>
+            <button class="close-modal" onclick="closeModal('eventLogModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Info header -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #7b1fa2 0%, #c2185b 100%); border-radius: 10px; margin-bottom: 1.5rem; text-align: center;">
+                <div style="font-size: 1rem; color: rgba(255,255,255,0.95); margin-bottom: 0.3rem;">
+                    Characters act autonomously based on their active suggestions
+                </div>
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.8);">
+                    Recent events are listed below
+                </div>
+            </div>
+
+            <!-- Filter buttons -->
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-small" onclick="filterEventLog('all')" id="filter-events-all">All Events</button>
+                    <button class="btn btn-small" onclick="filterEventLog('phs')" id="filter-events-phs">✨ PHS Activations</button>
+                    <button class="btn btn-small" onclick="filterEventLog('clothing')" id="filter-events-clothing">👗 Clothing Changes</button>
+                    <button class="btn btn-small" onclick="filterEventLog('mood')" id="filter-events-mood">💭 Mood Changes</button>
+                    <button class="btn btn-small" onclick="filterEventLog('action')" id="filter-events-action">🚶 Actions</button>
+                </div>
+            </div>
+
+            <!-- Events timeline -->
+            <div id="events-timeline" style="max-height: 500px; overflow-y: auto; padding: 0.5rem;">
                 <!-- Populated by JavaScript -->
             </div>
         </div>

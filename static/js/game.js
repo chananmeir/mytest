@@ -2224,3 +2224,143 @@ function doJob(jobId) {
 function updateCharacterList() {
     updateCharacterSchedules();
 }
+
+// ==================== EVENT LOG ====================
+
+let allEvents = [];
+let currentEventFilter = 'all';
+
+// Open event log modal
+function openEventLog() {
+    $.ajax({
+        url: '/api/autonomous-events',
+        method: 'GET',
+        success: function(data) {
+            if (data.success) {
+                allEvents = data.events || [];
+
+                // Display events
+                currentEventFilter = 'all';
+                displayEventLog();
+
+                // Highlight "All Events" filter button
+                $('.btn[onclick*="filterEventLog"]').css('opacity', '0.6');
+                $('#filter-events-all').css('opacity', '1');
+
+                openModal('eventLogModal');
+            } else {
+                alert('Failed to load event log');
+            }
+        },
+        error: function() {
+            alert('Failed to load event log');
+        }
+    });
+}
+
+// Filter event log by type
+function filterEventLog(filter) {
+    currentEventFilter = filter;
+    displayEventLog();
+
+    // Update button styles
+    $('.btn[onclick*="filterEventLog"]').css('opacity', '0.6');
+    $(`#filter-events-${filter}`).css('opacity', '1');
+}
+
+// Display event log based on current filter
+function displayEventLog() {
+    const timeline = $('#events-timeline');
+    timeline.empty();
+
+    let filteredEvents = allEvents;
+
+    // Apply filter
+    if (currentEventFilter === 'phs') {
+        filteredEvents = allEvents.filter(e => e.is_phs);
+    } else if (currentEventFilter === 'clothing') {
+        filteredEvents = allEvents.filter(e => e.type === 'clothing_change');
+    } else if (currentEventFilter === 'mood') {
+        filteredEvents = allEvents.filter(e => e.type === 'mood_change');
+    } else if (currentEventFilter === 'action') {
+        filteredEvents = allEvents.filter(e => e.type === 'action');
+    }
+
+    if (filteredEvents.length === 0) {
+        timeline.html(`
+            <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+                <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">No Events Yet</div>
+                <div style="font-size: 0.9rem;">
+                    Characters will act autonomously based on their active Post-Hypnotic Suggestions.<br>
+                    Plant suggestions and let time pass to see events appear here.
+                </div>
+            </div>
+        `);
+        return;
+    }
+
+    // Display events in timeline format
+    filteredEvents.forEach((event, index) => {
+        const isPHS = event.is_phs;
+        const typeColors = {
+            'phs_activation': '#e94560',
+            'clothing_change': '#ff8c00',
+            'mood_change': '#667eea',
+            'action': '#43a047'
+        };
+        const borderColor = typeColors[event.type] || '#667eea';
+
+        const phsBadge = isPHS ? '<span style="background: linear-gradient(135deg, #e94560 0%, #ff8c00 100%); padding: 0.2rem 0.5rem; border-radius: 5px; font-size: 0.7rem; font-weight: bold; color: white; margin-left: 0.5rem;">PHS</span>' : '';
+
+        const eventHtml = `
+            <div class="event-item" style="background: var(--accent-color); padding: 1rem; border-radius: 10px; border-left: 4px solid ${borderColor}; margin-bottom: 1rem; position: relative;">
+                <!-- Timestamp -->
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                    ${event.timestamp}
+                </div>
+
+                <!-- Event description -->
+                <div style="display: flex; align-items: start; gap: 0.8rem;">
+                    <div style="font-size: 2rem; line-height: 1;">${event.icon}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; margin-bottom: 0.3rem; color: var(--highlight-color);">
+                            ${event.character}${phsBadge}
+                        </div>
+                        <div style="font-size: 0.95rem; line-height: 1.4;">
+                            ${event.description}
+                        </div>
+
+                        <!-- Event type badge -->
+                        <div style="margin-top: 0.5rem;">
+                            <span style="background: ${borderColor}; padding: 0.2rem 0.6rem; border-radius: 5px; font-size: 0.7rem; font-weight: bold; color: white; text-transform: uppercase;">
+                                ${event.type.replace('_', ' ')}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visibility indicator -->
+                ${event.visibility === 'private' ? '<div style="position: absolute; top: 0.5rem; right: 0.5rem; font-size: 0.7rem; color: var(--text-secondary);">🔒 Private</div>' : ''}
+                ${event.visibility === 'subtle' ? '<div style="position: absolute; top: 0.5rem; right: 0.5rem; font-size: 0.7rem; color: var(--text-secondary);">👁️ Subtle</div>' : ''}
+            </div>
+        `;
+
+        timeline.append(eventHtml);
+    });
+
+    // Add helpful tip if PHS events exist
+    const phsEvents = filteredEvents.filter(e => e.is_phs);
+    if (phsEvents.length > 0) {
+        const tipHtml = `
+            <div style="background: linear-gradient(135deg, rgba(233, 69, 96, 0.15) 0%, rgba(255, 140, 0, 0.15) 100%); padding: 1rem; border-radius: 10px; margin-top: 1.5rem; border: 2px dashed var(--highlight-color);">
+                <div style="font-weight: bold; margin-bottom: 0.5rem; color: var(--highlight-color);">💡 Tip: Reinforcing Suggestions</div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                    When PHS activations occur, the suggestion gets slightly stronger (+2% activation chance).
+                    You can also manually reinforce suggestions from the character's profile for even better results!
+                </div>
+            </div>
+        `;
+        timeline.append(tipHtml);
+    }
+}

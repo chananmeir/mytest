@@ -1326,6 +1326,19 @@ def api_advance_time():
         if success:
             event_data_list.append(event_data)
 
+    # Check for autonomous character events (PHS activations, etc.)
+    from systems.autonomous_events import AutonomousEventsSystem
+    autonomous_events = AutonomousEventsSystem.check_autonomous_triggers(game_state, minutes)
+    autonomous_messages = []
+
+    for auto_event in autonomous_events:
+        # Log the event
+        AutonomousEventsSystem.add_event_to_log(game_state, auto_event)
+
+        # Add to messages if visible
+        if auto_event.visibility in ['public', 'subtle']:
+            autonomous_messages.append(f"{auto_event.icon} {auto_event.description}")
+
     # Save the updated game state
     save_game_state(game_state)
 
@@ -1355,6 +1368,10 @@ def api_advance_time():
     # Add reset messages
     if reset_messages:
         response['messages'].extend(reset_messages)
+
+    # Add autonomous event messages
+    if autonomous_messages:
+        response['messages'].extend(autonomous_messages)
 
     # Check if any characters' schedules changed
     if events['new_period'] or events['new_day']:
@@ -2022,6 +2039,20 @@ def api_do_job():
     save_game_state(game_state)
 
     return jsonify(results)
+
+
+@app.route('/api/autonomous-events')
+def api_autonomous_events():
+    """Get recent autonomous character events (PHS activations, etc.)"""
+    from systems.autonomous_events import AutonomousEventsSystem
+
+    game_state = get_game_state()
+    recent_events = AutonomousEventsSystem.get_recent_events(game_state, limit=10)
+
+    return jsonify({
+        'success': True,
+        'events': recent_events
+    })
 
 
 if __name__ == '__main__':
