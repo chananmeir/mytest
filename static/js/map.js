@@ -29,8 +29,8 @@ async function openMap() {
         currentFilter = 'all';
         updateFilterButtons();
 
-        // Open modal
-        document.getElementById('mapModal').style.display = 'flex';
+        // Open modal using the standard modal system
+        openModal('mapModal');
     } catch (error) {
         console.error('Error loading locations:', error);
         showMessage('Failed to load locations', 'error');
