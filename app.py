@@ -801,7 +801,7 @@ def api_locations():
 
     game_state = get_game_state()
     current_hour = game_state.game_time.hour
-    current_period = game_state.game_time.get_time_period()
+    current_period = game_state.game_time.period
 
     locations = []
     for loc_id, location in ALL_LOCATIONS.items():

@@ -91,7 +91,7 @@ class GameState:
         if location_id is None:
             location_id = self.player.current_location
 
-        current_period = self.game_time.get_time_period()
+        current_period = self.game_time.period
         characters_here = {}
 
         for name, character in self.characters.items():
