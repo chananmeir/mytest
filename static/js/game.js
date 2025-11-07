@@ -60,10 +60,13 @@ function selectCharacter(characterName) {
     $(`.character-card[data-character="${characterName}"]`).addClass('active');
     $('#selected-character').text(characterName);
 
-    // Enable input
-    $('#message-input').prop('disabled', false);
+    // Enable input and update placeholder
+    $('#message-input').prop('disabled', false).attr('placeholder', 'Type your message...');
     $('#send-btn').prop('disabled', false);
     $('#plant-suggestion-btn').prop('disabled', false);
+
+    // Focus the input so user can start typing immediately
+    $('#message-input').focus();
 
     // Add system message
     addSystemMessage(`Now talking with ${characterName}. Type your message below.`);
