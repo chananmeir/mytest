@@ -561,6 +561,7 @@ def api_characters():
     from systems.time_system import get_character_schedule
     from systems.location_system import get_character_location
     from systems.mood_system import MoodSystem
+    from systems.unlock_system import UnlockSystem
 
     game_state = get_game_state()
     current_period = game_state.game_time.period
@@ -571,6 +572,11 @@ def api_characters():
 
     characters = []
     for char in characters_here.values():
+        # Check if character is unlocked
+        is_unlocked, unlock_reasons = UnlockSystem.is_character_unlocked(char.name, game_state)
+        if not is_unlocked:
+            continue  # Skip locked characters
+
         schedule = get_character_schedule(char.name, current_period)
 
         # Get mood information
@@ -1334,6 +1340,55 @@ def api_remove_phs():
         'message': f'Removed suggestion: "{removed_phs.trigger}"',
         'phs_count': len(character.active_phs),
         'max_phs': character.max_phs
+    })
+
+
+@app.route('/api/unlocks')
+def api_unlocks():
+    """Get unlock status for all characters and locations"""
+    from systems.unlock_system import UnlockSystem
+
+    game_state = get_game_state()
+
+    # Get available locations
+    available_locations = UnlockSystem.get_available_locations(game_state)
+
+    # Get available characters
+    available_characters = UnlockSystem.get_available_characters(game_state)
+
+    # Get upcoming unlocks
+    upcoming = UnlockSystem.get_next_unlock_preview(game_state)
+
+    return jsonify({
+        'locations': available_locations,
+        'characters': available_characters,
+        'upcoming': upcoming,
+        'game_day': game_state.game_time.day,
+        'game_week': game_state.game_time.day // 7 + 1
+    })
+
+
+@app.route('/api/trigger-event', methods=['POST'])
+def api_trigger_event():
+    """Manually trigger an event (for testing or story progression)"""
+    game_state = get_game_state()
+    data = request.get_json()
+
+    event_id = data.get('event_id')
+
+    if not event_id:
+        return jsonify({'error': 'event_id required'}), 400
+
+    # Add event to completed events
+    if event_id not in game_state.completed_events:
+        game_state.completed_events.append(event_id)
+
+    save_game_state(game_state)
+
+    return jsonify({
+        'success': True,
+        'message': f'Event {event_id} triggered',
+        'completed_events': game_state.completed_events
     })
 
 

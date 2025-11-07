@@ -35,6 +35,12 @@ class GameState:
         self.current_scene_name: str = "start"
         self.game_time: GameTime = GameTime()  # Time system
 
+        # Unlock progression tracking
+        self.completed_events: list = ['game_start']  # Event IDs that have triggered
+        self.completed_quests: list = []  # Quest IDs completed
+        self.unlocked_locations: list = []  # Manually unlocked locations
+        self.unlocked_characters: list = ['Ruth', 'Tom']  # Starting characters
+
         # Initialize characters from database
         self._initialize_characters()
 

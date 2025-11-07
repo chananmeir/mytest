@@ -237,6 +237,12 @@ class HypnosisSystem:
             if old_rapport < milestone <= new_rapport:
                 game_state.add_sp(1, f"Rapport milestone with {target_name} ({milestone})")
 
+        # Check for location unlocks triggered by this rapport increase
+        from systems.unlock_system import UnlockSystem
+        unlock_messages = UnlockSystem.check_rapport_unlock_triggers(target_name, new_rapport, game_state)
+        if unlock_messages:
+            message += "\n" + "\n".join(unlock_messages)
+
         return message
 
     @staticmethod
