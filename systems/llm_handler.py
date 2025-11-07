@@ -27,7 +27,7 @@ class LLMHandler:
         model = config.CHARACTER_MODELS.get(character.name, config.DEFAULT_MODEL)
         return api_key, model
 
-    def _build_character_context(self, character: Character) -> str:
+    def _build_character_context(self, character: Character, location_context: str = "") -> str:
         """Build context string for the character"""
         context = f"""You are roleplaying as {character.name}, a {character.age}-year-old {character.occupation}.
 
@@ -41,7 +41,13 @@ RELATIONSHIP WITH PLAYER:
 - The player is a 38-year-old family member who recently lost their job and is currently unemployed
 - Your rapport with them: {character.rapport}/20 (higher = more trust and warmth)
 - Your resistance to influence: {character.resistance}% (how skeptical/defensive you are)
+"""
 
+        # Add location context if provided
+        if location_context:
+            context += location_context
+
+        context += """
 IMPORTANT BEHAVIORAL NOTES:
 - Respond naturally as this character would in a family gathering
 - Your emotional state affects your tone and receptiveness
@@ -79,6 +85,7 @@ IMPORTANT BEHAVIORAL NOTES:
         character: Character,
         player_message: str,
         scene_context: str = "",
+        location_context: str = "",
         record_memory: bool = True
     ) -> Optional[str]:
         """Get a response from the character via LLM"""
@@ -89,8 +96,8 @@ IMPORTANT BEHAVIORAL NOTES:
         if not api_key:
             return f"[{character.name} would respond, but API key is not configured]"
 
-        # Build the system prompt with character context (includes memories)
-        system_prompt = self._build_character_context(character)
+        # Build the system prompt with character context (includes memories and location)
+        system_prompt = self._build_character_context(character, location_context)
 
         if scene_context:
             system_prompt += f"\n\nSCENE CONTEXT: {scene_context}"

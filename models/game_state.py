@@ -22,6 +22,7 @@ class PlayerState:
     current_scene: str = "start"
     scenes_completed: list = field(default_factory=list)
     hypnosis_knowledge: HypnosisKnowledge = field(default_factory=HypnosisKnowledge)
+    current_location: str = "home_living_room"  # Player's current location
 
 
 class GameState:
@@ -83,6 +84,53 @@ class GameState:
         if scene_name not in self.player.scenes_completed:
             self.player.scenes_completed.append(scene_name)
 
+    def get_characters_at_location(self, location_id: str = None) -> Dict[str, Character]:
+        """Get all characters currently at a specific location (defaults to player's location)"""
+        from systems.location_system import get_character_location
+
+        if location_id is None:
+            location_id = self.player.current_location
+
+        current_period = self.game_time.get_time_period()
+        characters_here = {}
+
+        for name, character in self.characters.items():
+            char_location = get_character_location(name, current_period)
+            if char_location == location_id:
+                characters_here[name] = character
+
+        return characters_here
+
+    def travel_to_location(self, location_id: str) -> bool:
+        """
+        Travel to a new location, advancing time appropriately
+        Returns True if successful, False if location unavailable
+        """
+        from systems.location_system import get_location, ALL_LOCATIONS
+
+        if location_id not in ALL_LOCATIONS:
+            return False
+
+        location = get_location(location_id)
+
+        # Check if location is open at current time
+        if not location.is_open(self.game_time.hour):
+            return False
+
+        # Advance time by travel time (in minutes)
+        if location.travel_time_from_home > 0:
+            for _ in range(location.travel_time_from_home):
+                self.game_time.advance_time(1)  # Advance 1 minute at a time
+
+        # Update player location
+        self.player.current_location = location_id
+        return True
+
+    def get_current_location(self):
+        """Get the Location object for player's current location"""
+        from systems.location_system import get_location
+        return get_location(self.player.current_location)
+
     def to_dict(self) -> dict:
         """Convert game state to dictionary for serialization"""
         return {
@@ -95,7 +143,8 @@ class GameState:
                 'total_sp_earned': self.player.total_sp_earned,
                 'current_scene': self.player.current_scene,
                 'scenes_completed': self.player.scenes_completed,
-                'hypnosis_knowledge': self.player.hypnosis_knowledge.to_dict()
+                'hypnosis_knowledge': self.player.hypnosis_knowledge.to_dict(),
+                'current_location': self.player.current_location
             },
             'characters': {
                 name: char.to_dict()
@@ -143,7 +192,8 @@ class GameState:
                 total_sp_earned=player_data['total_sp_earned'],
                 current_scene=player_data['current_scene'],
                 scenes_completed=player_data['scenes_completed'],
-                hypnosis_knowledge=hypnosis_knowledge
+                hypnosis_knowledge=hypnosis_knowledge,
+                current_location=player_data.get('current_location', 'home_living_room')  # Default for old saves
             )
 
             # Restore characters

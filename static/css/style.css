@@ -749,3 +749,30 @@ body {
     flex: 1;
 }
 
+/* Location Cards */
+.location-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.location-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.location-card button:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}
+
+.location-card button:active {
+    transform: scale(0.95);
+}
+
+/* Location filter buttons */
+#mapModal .btn-small {
+    transition: all 0.3s ease;
+}
+
+#mapModal .btn-small:hover {
+    transform: scale(1.05);
+}

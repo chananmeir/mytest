@@ -45,7 +45,7 @@
 <div class="game-content">
     <!-- Left: Character List -->
     <div class="character-list">
-        <h2>Family Members</h2>
+        <h2 id="character-list-header">Family Members</h2>
         <div id="character-cards">
             {% for character in game_state.characters.values() %}
             <div class="character-card" data-character="{{ character.name }}">
@@ -113,6 +113,10 @@
 
         <button class="action-button" onclick="openAddCharacter()">
             ➕ Add Character
+        </button>
+
+        <button class="action-button" onclick="openMap()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            🗺️ Travel
         </button>
 
         <div style="margin-top: 2rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
@@ -321,6 +325,39 @@
     </div>
 </div>
 
+<!-- Travel Map Modal -->
+<div id="mapModal" class="modal">
+    <div class="modal-content" style="max-width: 1200px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">🗺️ Travel Map</h2>
+            <button class="close-modal" onclick="closeModal('mapModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Current Location Display -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; margin-bottom: 1.5rem; text-align: center;">
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 0.3rem;">📍 Current Location</div>
+                <div style="font-size: 1.3rem; font-weight: bold; color: white;" id="current-location-name">Loading...</div>
+            </div>
+
+            <!-- Location Categories -->
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-small" onclick="filterLocations('all')" id="filter-all">All Locations</button>
+                    <button class="btn btn-small" onclick="filterLocations('home')" id="filter-home">🏠 Home</button>
+                    <button class="btn btn-small" onclick="filterLocations('work')" id="filter-work">💼 Work</button>
+                    <button class="btn btn-small" onclick="filterLocations('public')" id="filter-public">🌆 Public</button>
+                </div>
+            </div>
+
+            <!-- Locations Grid -->
+            <div id="locations-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; max-height: 500px; overflow-y: auto; padding: 0.5rem;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="{{ url_for('static', filename='js/sprite_renderer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
 {% endblock %}

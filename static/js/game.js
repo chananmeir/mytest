@@ -993,6 +993,14 @@ function updateCharacterSchedules() {
         url: '/api/characters',
         method: 'GET',
         success: function(data) {
+            // Update location header if available
+            if (data.location) {
+                const header = document.getElementById('character-list-header');
+                if (header) {
+                    header.textContent = `Family Members at ${data.location}`;
+                }
+            }
+
             data.characters.forEach(char => {
                 updateCharacterActivity(char.name, char.current_activity);
             });

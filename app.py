@@ -306,6 +306,8 @@ def api_player_profile():
 @app.route('/api/talk', methods=['POST'])
 def api_talk():
     """Handle character conversation"""
+    from systems.location_system import get_location_context_for_llm
+
     data = request.json
     character_name = data.get('character')
     player_message = data.get('message')
@@ -316,11 +318,16 @@ def api_talk():
     if not char:
         return jsonify({'error': 'Character not found'}), 404
 
-    # Get LLM response
+    # Get current location context
+    current_location = game_state.get_current_location()
+    location_context = get_location_context_for_llm(current_location)
+
+    # Get LLM response with location context
     response = llm_handler.get_character_response(
         char,
         player_message,
-        scene_context="Family dinner",
+        scene_context="Family gathering",
+        location_context=location_context,
         record_memory=True
     )
 
@@ -370,14 +377,19 @@ def api_talk():
 
 @app.route('/api/characters')
 def api_characters():
-    """Get all characters"""
+    """Get characters at player's current location"""
     from systems.time_system import get_character_schedule
+    from systems.location_system import get_character_location
 
     game_state = get_game_state()
     current_period = game_state.game_time.period
+    player_location = game_state.player.current_location
+
+    # Get only characters at player's location
+    characters_here = game_state.get_characters_at_location()
 
     characters = []
-    for char in game_state.characters.values():
+    for char in characters_here.values():
         schedule = get_character_schedule(char.name, current_period)
 
         characters.append({
@@ -395,7 +407,10 @@ def api_characters():
             'current_activity': schedule['activity']
         })
 
-    return jsonify({'characters': characters})
+    return jsonify({
+        'characters': characters,
+        'location': game_state.get_current_location().name
+    })
 
 
 @app.route('/api/character/<name>')
@@ -773,6 +788,122 @@ def api_advance_time():
         response['schedule_updates'] = schedule_updates
 
     return jsonify(response)
+
+
+@app.route('/api/locations')
+def api_locations():
+    """Get all available locations with their current status"""
+    from systems.location_system import ALL_LOCATIONS, get_characters_at_location
+
+    game_state = get_game_state()
+    current_hour = game_state.game_time.hour
+    current_period = game_state.game_time.get_time_period()
+
+    locations = []
+    for loc_id, location in ALL_LOCATIONS.items():
+        # Get characters at this location
+        characters_here = get_characters_at_location(loc_id, current_period)
+
+        locations.append({
+            'id': location.id,
+            'name': location.name,
+            'description': location.description,
+            'location_type': location.location_type,
+            'atmosphere': location.atmosphere,
+            'conversation_modifiers': location.conversation_modifiers,
+            'is_open': location.is_open(current_hour),
+            'opens_at': location.opens_at,
+            'closes_at': location.closes_at,
+            'travel_time': location.travel_time_from_home,
+            'characters_present': characters_here,
+            'is_current': loc_id == game_state.player.current_location
+        })
+
+    return jsonify({
+        'locations': locations,
+        'current_location': game_state.player.current_location
+    })
+
+
+@app.route('/api/current-location')
+def api_current_location():
+    """Get player's current location with characters present"""
+    game_state = get_game_state()
+    location = game_state.get_current_location()
+    characters_here = game_state.get_characters_at_location()
+
+    return jsonify({
+        'location': {
+            'id': location.id,
+            'name': location.name,
+            'description': location.description,
+            'atmosphere': location.atmosphere,
+            'conversation_modifiers': location.conversation_modifiers
+        },
+        'characters': [
+            {
+                'name': char.name,
+                'emotional_state': char.emotional_state,
+                'rapport': char.rapport,
+                'outfit': char.outfit
+            }
+            for char in characters_here.values()
+        ]
+    })
+
+
+@app.route('/api/travel', methods=['POST'])
+def api_travel():
+    """Travel to a new location"""
+    from systems.location_system import get_location
+
+    game_state = get_game_state()
+    data = request.json
+
+    destination_id = data.get('location_id')
+
+    if not destination_id:
+        return jsonify({'success': False, 'error': 'No destination specified'})
+
+    # Get the destination location
+    destination = get_location(destination_id)
+    if not destination:
+        return jsonify({'success': False, 'error': 'Invalid location'})
+
+    # Check if location is open
+    if not destination.is_open(game_state.game_time.hour):
+        return jsonify({
+            'success': False,
+            'error': f'{destination.name} is closed at this time'
+        })
+
+    # Travel to location (this also advances time)
+    old_location = game_state.get_current_location()
+    success = game_state.travel_to_location(destination_id)
+
+    if not success:
+        return jsonify({'success': False, 'error': 'Cannot travel to that location'})
+
+    # Save the updated game state
+    save_game_state(game_state)
+
+    # Get characters at new location
+    characters_here = game_state.get_characters_at_location()
+
+    return jsonify({
+        'success': True,
+        'old_location': old_location.name,
+        'new_location': destination.name,
+        'time_passed': destination.travel_time_from_home,
+        'current_time': game_state.game_time.get_formatted_time(),
+        'characters_present': [char.name for char in characters_here.values()],
+        'location': {
+            'id': destination.id,
+            'name': destination.name,
+            'description': destination.description,
+            'atmosphere': destination.atmosphere
+        }
+    })
 
 
 @app.route('/api/clothing-items')
