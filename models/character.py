@@ -28,6 +28,10 @@ class Character:
     relationships: Dict[str, int] = field(default_factory=dict)  # {character_name: relationship_score 0-20}
     character_interactions: List[Dict[str, str]] = field(default_factory=list)  # History with other characters
 
+    # Suspicion tracking
+    player_suspicion: int = 0  # 0-100, how much they suspect the player is manipulating people
+    character_suspicions: Dict[str, int] = field(default_factory=dict)  # {character_name: suspicion_level 0-100}
+
     def __post_init__(self):
         """Initialize any computed properties"""
         self.max_phs = self._calculate_max_phs()
@@ -166,7 +170,9 @@ class Character:
             'clothing_history': self.clothing_history,
             'outfit': self.outfit,
             'relationships': self.relationships,
-            'character_interactions': self.character_interactions
+            'character_interactions': self.character_interactions,
+            'player_suspicion': self.player_suspicion,
+            'character_suspicions': self.character_suspicions
         }
 
 
@@ -178,6 +184,9 @@ class PostHypnoticSuggestion:
     response: str
     success_rate: int  # Base success percentage
     reinforcements: int = 0  # Number of times reinforced
+    phs_type: str = "behavioral_prompt"  # behavioral_prompt, emotional_nudge, compliance_trigger, defensive
+    defensive_target: Optional[str] = None  # For defensive type: who to defend player to
+    suspicion_reduction: int = 0  # For defensive type: how much suspicion to reduce
 
     def calculate_activation_chance(self) -> int:
         """Calculate current activation chance"""
@@ -194,7 +203,10 @@ class PostHypnoticSuggestion:
             'trigger': self.trigger,
             'response': self.response,
             'success_rate': self.success_rate,
-            'reinforcements': self.reinforcements
+            'reinforcements': self.reinforcements,
+            'phs_type': self.phs_type,
+            'defensive_target': self.defensive_target,
+            'suspicion_reduction': self.suspicion_reduction
         }
 
     @classmethod

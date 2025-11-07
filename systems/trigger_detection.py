@@ -220,13 +220,15 @@ class TriggerDetector:
 
     @staticmethod
     def attempt_activations(
-        triggered: List[Tuple[PostHypnoticSuggestion, int]]
+        triggered: List[Tuple[PostHypnoticSuggestion, int]],
+        character: Optional[Character] = None
     ) -> List[Dict]:
         """
         Roll for activation of triggered suggestions
 
         Args:
             triggered: List of (PHS, activation_chance) tuples
+            character: The character whose PHS is being activated (for suspicion tracking)
 
         Returns:
             List of activation results with PHS details
@@ -244,7 +246,9 @@ class TriggerDetector:
                     'response': phs.response,
                     'activation_chance': activation_chance,
                     'roll': roll,
-                    'success': True
+                    'success': True,
+                    'phs': phs,  # Include full PHS object for suspicion checks
+                    'phs_type': phs.phs_type
                 })
             else:
                 # Failed activation (for debugging/logging)
@@ -254,7 +258,9 @@ class TriggerDetector:
                     'response': phs.response,
                     'activation_chance': activation_chance,
                     'roll': roll,
-                    'success': False
+                    'success': False,
+                    'phs': phs,
+                    'phs_type': phs.phs_type
                 })
 
         return activations

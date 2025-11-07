@@ -486,11 +486,62 @@ def api_talk():
         )
         changes.append({'type': 'emotional_state', 'message': message})
 
-    # Add PHS activations to changes
+    # Add PHS activations to changes and handle suspicion
+    from systems.suspicion_system import SuspicionSystem
+
     for activation in successful_activations:
         formatted_msg = format_activation_message(activation)
         if formatted_msg:
             changes.append({'type': 'phs_activation', 'message': formatted_msg})
+
+        # Check if this PHS activation should affect suspicion
+        phs = activation.get('phs')
+        if phs:
+            # Check if it's a defensive PHS
+            if phs.phs_type == 'defensive' and phs.defensive_target:
+                # Apply defensive reduction to target character's suspicion
+                target_char = game_state.get_character(phs.defensive_target)
+                if target_char:
+                    defense_msg = SuspicionSystem.apply_defensive_phs(
+                        char, target_char, phs.suspicion_reduction
+                    )
+                    changes.append({'type': 'suspicion', 'message': defense_msg})
+            else:
+                # Check if this behavior is out of character
+                is_ooc, suspicion_increase = SuspicionSystem.detect_out_of_character_behavior(char, phs)
+
+                if is_ooc and suspicion_increase > 0:
+                    # Other characters notice the strange behavior
+                    # Pick 1-2 random observers from available characters
+                    import random
+                    observers = [c for c in game_state.characters.values()
+                                if c.name != char.name and c.name != 'Player']
+
+                    if observers:
+                        num_observers = min(random.randint(1, 2), len(observers))
+                        selected_observers = random.sample(observers, num_observers)
+
+                        for observer in selected_observers:
+                            suspicion_msg = SuspicionSystem.increase_character_suspicion(
+                                observer, char.name, suspicion_increase
+                            )
+                            changes.append({'type': 'suspicion', 'message': suspicion_msg})
+
+                            # Calculate if observer blames the player
+                            evidence = SuspicionSystem.calculate_evidence_against_player(
+                                game_state, observer
+                            )
+                            if evidence > 0:
+                                player_suspicion_msg, confrontation = SuspicionSystem.increase_player_suspicion(
+                                    observer, evidence, f"({char.name} is acting strange)"
+                                )
+                                changes.append({'type': 'suspicion', 'message': player_suspicion_msg})
+
+                                if confrontation:
+                                    changes.append({
+                                        'type': 'game_over',
+                                        'message': f"🚨 GAME OVER: {observer.name} confronts you about manipulating the family!"
+                                    })
 
     save_game_state(game_state)
 
@@ -561,6 +612,7 @@ def api_character(name):
     """Get detailed character info"""
     from systems.clothing_effects import ClothingEffects
     from systems.mood_system import MoodSystem
+    from systems.suspicion_system import SuspicionSystem
 
     game_state = get_game_state()
     char = game_state.get_character(name)
@@ -575,9 +627,10 @@ def api_character(name):
         phs_list.append({
             'trigger': phs.trigger,
             'response': phs.response,
-            'strength': phs.strength,
+            'success_rate': phs.success_rate,
             'reinforcements': phs.reinforcements,
-            'activation_chance': chance
+            'activation_chance': chance,
+            'phs_type': phs.phs_type
         })
 
     # Get memories
@@ -603,6 +656,9 @@ def api_character(name):
         include_recommendation=True
     )
 
+    # Get suspicion status
+    suspicion_status = SuspicionSystem.get_suspicion_status(char)
+
     return jsonify({
         'name': char.name,
         'age': char.age,
@@ -623,9 +679,13 @@ def api_character(name):
         'clothing_modifier': clothing_modifier,
         'clothing_effect': clothing_desc,
         'active_phs': phs_list,
+        'max_phs': char.max_phs,
         'memories': memories,
         'relationships': char.relationships,
-        'character_interactions': char.character_interactions
+        'character_interactions': char.character_interactions,
+        'player_suspicion': char.player_suspicion,
+        'suspicion_status': suspicion_status,
+        'character_suspicions': char.character_suspicions
     })
 
 
@@ -965,6 +1025,15 @@ def api_advance_time():
     # Advance time
     events = game_state.game_time.advance_minutes(minutes)
 
+    # Apply suspicion decay based on time passed
+    from systems.suspicion_system import SuspicionSystem
+    hours_passed = minutes / 60
+    suspicion_messages = []
+
+    for char in game_state.characters.values():
+        decay_msgs = SuspicionSystem.decay_suspicion_over_time(char, int(hours_passed))
+        suspicion_messages.extend(decay_msgs)
+
     # Save the updated game state
     save_game_state(game_state)
 
@@ -981,6 +1050,10 @@ def api_advance_time():
     # Add event messages
     if events['messages']:
         response['messages'] = events['messages']
+
+    # Add suspicion decay messages
+    if suspicion_messages:
+        response['messages'].extend(suspicion_messages)
 
     # Check if any characters' schedules changed
     if events['new_period'] or events['new_day']:

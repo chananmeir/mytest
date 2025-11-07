@@ -638,6 +638,51 @@ function _openCharacterProfileModal() {
                 </div>
             `;
 
+            // Add suspicion section
+            if (char.suspicion_status) {
+                const sus = char.suspicion_status;
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">
+                            ${sus.icon} Suspicion Level
+                        </h3>
+                        <div style="padding: 1rem; background: var(--accent-color); border-radius: 8px; border-left: 4px solid ${sus.color};">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span style="font-weight: bold; color: ${sus.color};">${sus.status}</span>
+                                <span style="font-weight: bold;">${sus.level}/100</span>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.1); height: 20px; border-radius: 10px; overflow: hidden; margin-bottom: 0.5rem;">
+                                <div style="background: ${sus.bar_color}; height: 100%; width: ${sus.level}%; transition: width 0.3s;"></div>
+                            </div>
+                            <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                                ${sus.warning}
+                            </div>
+                `;
+
+                // Show what characters they're suspicious about
+                if (char.character_suspicions && Object.keys(char.character_suspicions).length > 0) {
+                    html += `
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                                <div style="font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: bold;">Concerned about:</div>
+                    `;
+                    for (const [targetName, suspicionLevel] of Object.entries(char.character_suspicions)) {
+                        html += `
+                                <div style="font-size: 0.85rem; margin-bottom: 0.3rem;">
+                                    • ${targetName}: ${suspicionLevel}% suspicious
+                                </div>
+                        `;
+                    }
+                    html += `
+                            </div>
+                    `;
+                }
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
             // Add relationships section
             if (char.relationships && Object.keys(char.relationships).length > 0) {
                 html += `
