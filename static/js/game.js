@@ -2364,3 +2364,423 @@ function displayEventLog() {
         timeline.append(tipHtml);
     }
 }
+
+// ==================== JOURNAL & DOSSIERS ====================
+
+let allJournalEntries = [];
+let currentJournalFilter = 'all';
+let currentDossier = null;
+
+// Open journal modal
+function openJournal() {
+    // Populate character dropdowns
+    populateCharacterDropdowns();
+
+    // Load journal entries
+    loadJournalEntries();
+
+    // Load dossiers summary for the dropdown
+    loadDossiersSummary();
+
+    // Reset to journal tab
+    switchJournalTab('entries');
+
+    openModal('journalModal');
+}
+
+// Populate character dropdowns (for new entry and dossier selection)
+function populateCharacterDropdowns() {
+    const journalCharSelect = $('#journal-character');
+    const dossierCharSelect = $('#dossier-character-select');
+
+    journalCharSelect.html('<option value="">-- None --</option>');
+    dossierCharSelect.html('<option value="">-- Select a character --</option>');
+
+    $('.character-card').each(function() {
+        const charName = $(this).data('character');
+        journalCharSelect.append(`<option value="${charName}">${charName}</option>`);
+        dossierCharSelect.append(`<option value="${charName}">${charName}</option>`);
+    });
+}
+
+// Switch between journal tabs
+function switchJournalTab(tabName) {
+    // Update tab buttons
+    $('.journal-tab').removeClass('active');
+    $(`.journal-tab[data-tab="${tabName}"]`).addClass('active');
+
+    // Update button styles
+    $('.journal-tab').each(function() {
+        if ($(this).hasClass('active')) {
+            $(this).css({
+                'background': 'var(--highlight-color)',
+                'color': 'white'
+            });
+        } else {
+            $(this).css({
+                'background': 'var(--accent-color)',
+                'color': 'var(--text-primary)'
+            });
+        }
+    });
+
+    // Update tab content
+    $('.journal-tab-content').hide();
+    $(`.journal-tab-content[data-tab-content="${tabName}"]`).show();
+
+    // Load data for the tab
+    if (tabName === 'entries') {
+        loadJournalEntries();
+    } else if (tabName === 'dossiers') {
+        loadDossiersSummary();
+    }
+}
+
+// Show new entry form
+function showNewEntryForm() {
+    $('#new-entry-form').slideDown(300);
+}
+
+// Cancel new entry
+function cancelNewEntry() {
+    $('#new-entry-form').slideUp(300);
+    // Clear form
+    $('#journal-entry-type').val('general');
+    $('#journal-character').val('');
+    $('#journal-title').val('');
+    $('#journal-content').val('');
+    $('#journal-important').prop('checked', false);
+}
+
+// Save journal entry
+function saveJournalEntry() {
+    const entryType = $('#journal-entry-type').val();
+    const character = $('#journal-character').val() || null;
+    const title = $('#journal-title').val().trim();
+    const content = $('#journal-content').val().trim();
+    const isImportant = $('#journal-important').is(':checked');
+
+    if (!content) {
+        alert('Please write some content for your journal entry');
+        return;
+    }
+
+    $.ajax({
+        url: '/api/journal/create',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            type: entryType,
+            character: character,
+            title: title,
+            content: content,
+            is_important: isImportant
+        }),
+        success: function(data) {
+            if (data.success) {
+                addSystemMessage('📝 Journal entry saved');
+                cancelNewEntry();
+                loadJournalEntries();
+            } else {
+                alert('Failed to save journal entry');
+            }
+        },
+        error: function() {
+            alert('Failed to save journal entry');
+        }
+    });
+}
+
+// Load journal entries
+function loadJournalEntries() {
+    const params = new URLSearchParams();
+    if (currentJournalFilter !== 'all') {
+        params.append('type', currentJournalFilter);
+    }
+
+    $.ajax({
+        url: `/api/journal/entries?${params.toString()}`,
+        method: 'GET',
+        success: function(data) {
+            if (data.success) {
+                allJournalEntries = data.entries;
+                displayJournalEntries();
+            }
+        },
+        error: function() {
+            $('#journal-entries-list').html('<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">Failed to load journal entries</p>');
+        }
+    });
+}
+
+// Filter journal entries
+function filterJournal(filter) {
+    currentJournalFilter = filter;
+    loadJournalEntries();
+
+    // Update button styles
+    $('.btn[onclick*="filterJournal"]').css('opacity', '0.6');
+    $(`#filter-journal-${filter}`).css('opacity', '1');
+}
+
+// Display journal entries
+function displayJournalEntries() {
+    const list = $('#journal-entries-list');
+    list.empty();
+
+    if (allJournalEntries.length === 0) {
+        list.html(`
+            <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📝</div>
+                <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">No Journal Entries Yet</div>
+                <div style="font-size: 0.9rem;">
+                    Write your first entry to start tracking your progress with characters!
+                </div>
+            </div>
+        `);
+        return;
+    }
+
+    allJournalEntries.forEach(entry => {
+        const importantBadge = entry.is_important ? '<span style="color: var(--warning-color); margin-left: 0.5rem;">⭐</span>' : '';
+        const characterBadge = entry.character ? `<span style="background: var(--highlight-color); padding: 0.2rem 0.6rem; border-radius: 5px; font-size: 0.7rem; color: white; margin-left: 0.5rem;">${entry.character}</span>` : '';
+
+        const entryHtml = `
+            <div class="journal-entry" style="background: var(--accent-color); padding: 1rem; border-radius: 10px; margin-bottom: 1rem; border-left: 4px solid var(--highlight-color);">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                    <div>
+                        <span style="font-size: 1.2rem; margin-right: 0.5rem;">${entry.icon}</span>
+                        <span style="font-weight: bold;">${entry.title || 'Untitled Entry'}</span>
+                        ${importantBadge}
+                        ${characterBadge}
+                    </div>
+                    <button class="btn btn-small" onclick="deleteJournalEntry('${entry.entry_id}')" style="background: var(--danger-color); color: white; padding: 0.3rem 0.6rem;">
+                        🗑️ Delete
+                    </button>
+                </div>
+
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.8rem;">
+                    ${entry.timestamp}
+                </div>
+
+                <div style="line-height: 1.6; white-space: pre-wrap;">
+                    ${entry.content}
+                </div>
+            </div>
+        `;
+
+        list.append(entryHtml);
+    });
+}
+
+// Delete journal entry
+function deleteJournalEntry(entryId) {
+    if (!confirm('Delete this journal entry? This cannot be undone.')) {
+        return;
+    }
+
+    $.ajax({
+        url: `/api/journal/delete/${entryId}`,
+        method: 'DELETE',
+        success: function(data) {
+            if (data.success) {
+                addSystemMessage('🗑️ Journal entry deleted');
+                loadJournalEntries();
+            } else {
+                alert('Failed to delete entry');
+            }
+        },
+        error: function() {
+            alert('Failed to delete entry');
+        }
+    });
+}
+
+// Load dossiers summary
+function loadDossiersSummary() {
+    // This is called when switching to dossiers tab
+    // The dropdown is already populated by populateCharacterDropdowns()
+}
+
+// Load character dossier
+function loadCharacterDossier(characterName) {
+    if (!characterName) {
+        $('#dossier-content').html(`
+            <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📂</div>
+                <div style="font-size: 1.2rem;">Select a character to view their dossier</div>
+            </div>
+        `);
+        return;
+    }
+
+    $.ajax({
+        url: `/api/dossier/${characterName}`,
+        method: 'GET',
+        success: function(data) {
+            if (data.success) {
+                displayCharacterDossier(data.dossier);
+            } else {
+                alert('Failed to load dossier');
+            }
+        },
+        error: function() {
+            alert('Failed to load dossier');
+        }
+    });
+}
+
+// Display character dossier
+function displayCharacterDossier(dossier) {
+    const content = $('#dossier-content');
+    content.empty();
+
+    let html = `
+        <!-- Character Header -->
+        <div style="background: linear-gradient(135deg, #5e35b1 0%, #1e88e5 100%); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem; color: white; text-align: center;">
+            <h2 style="margin: 0; font-size: 1.8rem;">${dossier.character_name}</h2>
+            <div style="font-size: 1rem; margin-top: 0.5rem; opacity: 0.9;">
+                ${dossier.basic_info.age} years old • ${dossier.basic_info.occupation}
+            </div>
+        </div>
+
+        <!-- Current Status -->
+        <div style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
+            <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">📊 Current Status</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div style="background: var(--bg-color); padding: 1rem; border-radius: 8px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Rapport</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--success-color);">${dossier.current_status.rapport}/20</div>
+                </div>
+                <div style="background: var(--bg-color); padding: 1rem; border-radius: 8px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Resistance</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: ${dossier.current_status.resistance < 30 ? 'var(--success-color)' : 'var(--danger-color)'};">${dossier.current_status.resistance}%</div>
+                </div>
+                <div style="background: var(--bg-color); padding: 1rem; border-radius: 8px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Emotional State</div>
+                    <div style="font-size: 1.2rem; font-weight: bold;">${dossier.current_status.emotional_state}</div>
+                </div>
+                <div style="background: var(--bg-color); padding: 1rem; border-radius: 8px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Suspicion</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: ${dossier.current_status.suspicion_level > 50 ? 'var(--danger-color)' : 'var(--success-color)'};">${dossier.current_status.suspicion_level}%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PHS Tracking -->
+        <div style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
+            <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">✨ Post-Hypnotic Suggestions</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                <div style="background: var(--bg-color); padding: 0.8rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--highlight-color);">${dossier.phs_tracking.total_planted}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Total Planted</div>
+                </div>
+                <div style="background: var(--bg-color); padding: 0.8rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--success-color);">${dossier.phs_tracking.currently_active}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Currently Active</div>
+                </div>
+                <div style="background: var(--bg-color); padding: 0.8rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--warning-color);">${dossier.phs_tracking.total_activations}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Total Activations</div>
+                </div>
+                <div style="background: var(--bg-color); padding: 0.8rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--highlight-color);">${dossier.phs_tracking.success_rate}%</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Avg Success Rate</div>
+                </div>
+            </div>
+    `;
+
+    if (dossier.phs_tracking.active_suggestions.length > 0) {
+        html += '<div style="margin-top: 1rem;"><strong>Active Suggestions:</strong></div>';
+        dossier.phs_tracking.active_suggestions.forEach(phs => {
+            html += `
+                <div style="background: var(--bg-color); padding: 0.8rem; border-radius: 8px; margin-top: 0.5rem;">
+                    <div style="font-weight: bold; margin-bottom: 0.3rem;">"${phs.response}"</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                        Trigger: ${phs.trigger}<br>
+                        Type: ${phs.type} • Success: ${phs.activation_chance}% • Reinforced: ${phs.reinforcements}x
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    html += '</div>';
+
+    // Vulnerabilities
+    if (dossier.vulnerabilities.length > 0) {
+        html += `
+            <div style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
+                <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🎯 Known Vulnerabilities</h3>
+        `;
+
+        dossier.vulnerabilities.forEach(vuln => {
+            const severityColor = {
+                'High': 'var(--danger-color)',
+                'Medium': 'var(--warning-color)',
+                'Low': 'var(--success-color)'
+            }[vuln.severity] || 'var(--text-secondary)';
+
+            html += `
+                <div style="background: var(--bg-color); padding: 1rem; border-radius: 8px; margin-bottom: 0.8rem; border-left: 4px solid ${severityColor};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <div>
+                            <span style="font-size: 1.2rem; margin-right: 0.5rem;">${vuln.icon}</span>
+                            <strong>${vuln.type}</strong>
+                        </div>
+                        <span style="font-size: 0.75rem; padding: 0.2rem 0.6rem; background: ${severityColor}; color: white; border-radius: 5px;">${vuln.severity}</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--text-secondary);">${vuln.description}</div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+    }
+
+    // Secrets
+    if (dossier.secrets_discovered.length > 0) {
+        html += `
+            <div style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
+                <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🔐 Secrets Discovered</h3>
+        `;
+
+        dossier.secrets_discovered.forEach(secret => {
+            html += `
+                <div style="background: var(--bg-color); padding: 1rem; border-radius: 8px; margin-bottom: 0.8rem;">
+                    <div style="margin-bottom: 0.3rem;">${secret.secret}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Discovered: ${secret.discovered}</div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+    }
+
+    // Statistics
+    html += `
+        <div style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
+            <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">📈 Statistics</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem;">
+                <div style="background: var(--bg-color); padding: 0.8rem; border-radius: 8px;">
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Conversations</div>
+                    <div style="font-size: 1.3rem; font-weight: bold;">${dossier.statistics.total_conversations || 0}</div>
+                </div>
+                <div style="background: var(--bg-color); padding: 0.8rem; border-radius: 8px;">
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Activities Together</div>
+                    <div style="font-size: 1.3rem; font-weight: bold;">${dossier.statistics.total_activities || 0}</div>
+                </div>
+                <div style="background: var(--bg-color); padding: 0.8rem; border-radius: 8px;">
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Gifts Received</div>
+                    <div style="font-size: 1.3rem; font-weight: bold;">${dossier.statistics.gifts_received || 0}</div>
+                </div>
+                <div style="background: var(--bg-color); padding: 0.8rem; border-radius: 8px;">
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">PHS Activations</div>
+                    <div style="font-size: 1.3rem; font-weight: bold;">${dossier.statistics.phs_activations || 0}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    content.html(html);
+}

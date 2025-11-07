@@ -2055,6 +2055,106 @@ def api_autonomous_events():
     })
 
 
+@app.route('/api/journal/entries', methods=['GET'])
+def api_get_journal_entries():
+    """Get journal entries, optionally filtered"""
+    from systems.journal_system import JournalSystem
+
+    game_state = get_game_state()
+
+    character = request.args.get('character')
+    entry_type = request.args.get('type')
+    limit = int(request.args.get('limit', 50))
+
+    entries = JournalSystem.get_journal_entries(
+        game_state,
+        character_name=character,
+        entry_type=entry_type,
+        limit=limit
+    )
+
+    return jsonify({
+        'success': True,
+        'entries': entries
+    })
+
+
+@app.route('/api/journal/create', methods=['POST'])
+def api_create_journal_entry():
+    """Create a new journal entry"""
+    from systems.journal_system import JournalSystem
+
+    game_state = get_game_state()
+    data = request.json
+
+    entry = JournalSystem.create_journal_entry(
+        game_state,
+        entry_type=data.get('type', 'general'),
+        content=data.get('content', ''),
+        character_name=data.get('character'),
+        title=data.get('title', ''),
+        tags=data.get('tags', []),
+        is_important=data.get('is_important', False)
+    )
+
+    save_game_state(game_state)
+
+    return jsonify({
+        'success': True,
+        'entry_id': entry.entry_id,
+        'message': 'Journal entry created'
+    })
+
+
+@app.route('/api/journal/delete/<entry_id>', methods=['DELETE'])
+def api_delete_journal_entry(entry_id):
+    """Delete a journal entry"""
+    from systems.journal_system import JournalSystem
+
+    game_state = get_game_state()
+
+    success = JournalSystem.delete_journal_entry(game_state, entry_id)
+
+    if success:
+        save_game_state(game_state)
+        return jsonify({'success': True, 'message': 'Entry deleted'})
+    else:
+        return jsonify({'success': False, 'error': 'Entry not found'}), 404
+
+
+@app.route('/api/dossier/<character_name>')
+def api_get_character_dossier(character_name):
+    """Get comprehensive dossier for a character"""
+    from systems.journal_system import JournalSystem
+
+    game_state = get_game_state()
+
+    dossier = JournalSystem.get_character_dossier(game_state, character_name)
+
+    if 'error' in dossier:
+        return jsonify(dossier), 404
+
+    return jsonify({
+        'success': True,
+        'dossier': dossier
+    })
+
+
+@app.route('/api/dossiers/summary')
+def api_get_all_dossiers_summary():
+    """Get summary of all character dossiers"""
+    from systems.journal_system import JournalSystem
+
+    game_state = get_game_state()
+
+    summaries = JournalSystem.get_all_dossiers_summary(game_state)
+
+    return jsonify({
+        'success': True,
+        'summaries': summaries
+    })
+
+
 if __name__ == '__main__':
     # Create templates and static directories if they don't exist
     os.makedirs('templates', exist_ok=True)
