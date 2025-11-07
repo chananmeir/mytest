@@ -422,8 +422,23 @@ function _openCharacterProfileModal() {
                 <div style="margin-bottom: 2rem;">
                     <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">Appearance</h3>
                     <div style="line-height: 2;">
-                        <strong>Wearing:</strong> ${char.clothing}<br>
+                        <strong>Wearing:</strong> ${char.outfit_description || char.clothing}<br>
                         <strong>Meaning:</strong> ${char.clothing_meaning}<br>
+            `;
+
+            // Add clothing effect if present
+            if (char.clothing_modifier !== undefined && char.clothing_modifier !== 0) {
+                let effectColor = char.clothing_modifier > 0 ? 'var(--success-color)' : 'var(--danger-color)';
+                let effectIcon = char.clothing_modifier > 0 ? '✓' : '✗';
+                html += `
+                        <div style="margin-top: 1rem; padding: 0.8rem; background: rgba(233, 69, 96, 0.15); border-left: 3px solid ${effectColor}; border-radius: 8px;">
+                            <strong style="color: ${effectColor};">${effectIcon} Suggestibility Effect:</strong><br>
+                            <span style="font-size: 0.9rem;">${char.clothing_effect}</span>
+                        </div>
+                `;
+            }
+
+            html += `
                     </div>
                 </div>
             `;
@@ -595,6 +610,22 @@ function _openPlantSuggestionModal() {
                 <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;">
                     SP Available: <span id="sp-in-modal">${$('#sp-display').text()}</span>
                 </div>
+        `;
+
+        // Show clothing effect if present
+        if (char.clothing_modifier !== undefined && char.clothing_modifier !== 0) {
+            let effectColor = char.clothing_modifier > 0 ? 'var(--success-color)' : 'var(--danger-color)';
+            let effectIcon = char.clothing_modifier > 0 ? '✓' : '✗';
+            let sign = char.clothing_modifier > 0 ? '+' : '';
+            html += `
+                <div style="margin-top: 1rem; padding: 0.8rem; background: rgba(233, 69, 96, 0.15); border-left: 3px solid ${effectColor}; border-radius: 8px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                    <strong style="color: ${effectColor};">${effectIcon} Outfit: ${sign}${char.clothing_modifier}% Suggestibility</strong><br>
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">${char.outfit_description || char.clothing}</span>
+                </div>
+            `;
+        }
+
+        html += `
             </div>
 
             <div style="margin-bottom: 1.5rem;">

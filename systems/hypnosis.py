@@ -5,6 +5,7 @@ import random
 from typing import Optional, Tuple
 from models.character import Character, PostHypnoticSuggestion
 from models.game_state import GameState
+from systems.clothing_effects import ClothingEffects
 
 
 class HypnosisSystem:
@@ -68,18 +69,26 @@ class HypnosisSystem:
 
         # Calculate base success rate based on rapport and resistance
         base_success = 50 + (char.rapport * 2) - (char.resistance // 2) + success_bonus
-        base_success = max(10, min(90, base_success))  # Clamp between 10-90
+
+        # Apply clothing modifier
+        clothing_modifier, clothing_desc = ClothingEffects.calculate_outfit_suggestibility(char)
+        final_success = ClothingEffects.apply_clothing_modifier_to_success_rate(base_success, clothing_modifier)
 
         phs = PostHypnoticSuggestion(
             target_name=target_name,
             trigger=trigger,
             response=response,
-            success_rate=base_success
+            success_rate=final_success
         )
 
         char.add_phs(phs)
 
-        return True, f"PHS planted on {target_name}. Base success rate: {base_success}%"
+        # Build response message
+        message = f"PHS planted on {target_name}. Success rate: {final_success}%"
+        if clothing_modifier != 0:
+            message += f" (base {base_success}%, {clothing_desc})"
+
+        return True, message
 
     @staticmethod
     def plant_behavioral_prompt(
@@ -105,18 +114,26 @@ class HypnosisSystem:
 
         # Behavioral prompts have slightly lower base success
         base_success = 40 + (char.rapport * 2) - (char.resistance // 2) + success_bonus
-        base_success = max(5, min(85, base_success))
+
+        # Apply clothing modifier
+        clothing_modifier, clothing_desc = ClothingEffects.calculate_outfit_suggestibility(char)
+        final_success = ClothingEffects.apply_clothing_modifier_to_success_rate(base_success, clothing_modifier)
 
         phs = PostHypnoticSuggestion(
             target_name=target_name,
             trigger=trigger,
             response=response,
-            success_rate=base_success
+            success_rate=final_success
         )
 
         char.add_phs(phs)
 
-        return True, f"PHS planted on {target_name}. Base success rate: {base_success}%"
+        # Build response message
+        message = f"PHS planted on {target_name}. Success rate: {final_success}%"
+        if clothing_modifier != 0:
+            message += f" (base {base_success}%, {clothing_desc})"
+
+        return True, message
 
     @staticmethod
     def plant_strong_anchor(
@@ -147,18 +164,26 @@ class HypnosisSystem:
         # Strong anchors have better base success, scales with SP investment
         bonus = (sp_cost - HypnosisSystem.STRONG_ANCHOR_COST_MIN) * 5
         base_success = 45 + bonus + (char.rapport * 2) - (char.resistance // 2) + success_bonus
-        base_success = max(10, min(90, base_success))
+
+        # Apply clothing modifier
+        clothing_modifier, clothing_desc = ClothingEffects.calculate_outfit_suggestibility(char)
+        final_success = ClothingEffects.apply_clothing_modifier_to_success_rate(base_success, clothing_modifier)
 
         phs = PostHypnoticSuggestion(
             target_name=target_name,
             trigger=trigger,
             response=response,
-            success_rate=base_success
+            success_rate=final_success
         )
 
         char.add_phs(phs)
 
-        return True, f"Strong PHS planted on {target_name}. Base success rate: {base_success}%"
+        # Build response message
+        message = f"Strong PHS planted on {target_name}. Success rate: {final_success}%"
+        if clothing_modifier != 0:
+            message += f" (base {base_success}%, {clothing_desc})"
+
+        return True, message
 
     @staticmethod
     def reinforce_phs(game_state: GameState, target_name: str, phs_index: int) -> Tuple[bool, str]:

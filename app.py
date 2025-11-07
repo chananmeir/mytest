@@ -547,6 +547,8 @@ def api_characters():
 @app.route('/api/character/<name>')
 def api_character(name):
     """Get detailed character info"""
+    from systems.clothing_effects import ClothingEffects
+
     game_state = get_game_state()
     char = game_state.get_character(name)
 
@@ -577,6 +579,10 @@ def api_character(name):
                 'timestamp': mem.timestamp
             })
 
+    # Calculate clothing effects
+    clothing_modifier, clothing_desc = ClothingEffects.calculate_outfit_suggestibility(char)
+    outfit_description = ClothingEffects.get_outfit_description(char)
+
     return jsonify({
         'name': char.name,
         'age': char.age,
@@ -589,6 +595,9 @@ def api_character(name):
         'clothing': char.clothing,
         'clothing_meaning': char.clothing_meaning,
         'outfit': char.outfit,
+        'outfit_description': outfit_description,
+        'clothing_modifier': clothing_modifier,
+        'clothing_effect': clothing_desc,
         'active_phs': phs_list,
         'memories': memories,
         'relationships': char.relationships,
