@@ -2155,6 +2155,127 @@ def api_get_all_dossiers_summary():
     })
 
 
+@app.route('/api/hypnosis/techniques')
+def api_hypnosis_techniques():
+    """Get available induction techniques"""
+    from systems.deep_hypnosis import DeepHypnosisSystem
+
+    game_state = get_game_state()
+
+    techniques = DeepHypnosisSystem.get_available_techniques(game_state)
+
+    return jsonify({
+        'success': True,
+        'techniques': techniques
+    })
+
+
+@app.route('/api/hypnosis/induce', methods=['POST'])
+def api_hypnosis_induce():
+    """Attempt hypnotic induction on a character"""
+    from systems.deep_hypnosis import DeepHypnosisSystem, InductionTechnique
+
+    game_state = get_game_state()
+    data = request.json
+
+    character_name = data.get('character')
+    technique_str = data.get('technique')
+
+    if not character_name or not technique_str:
+        return jsonify({'error': 'Missing character or technique'}), 400
+
+    # Convert string to enum
+    try:
+        technique = InductionTechnique(technique_str)
+    except ValueError:
+        return jsonify({'error': 'Invalid technique'}), 400
+
+    # Attempt induction
+    results = DeepHypnosisSystem.attempt_induction(game_state, character_name, technique)
+
+    if not results['success']:
+        return jsonify(results), 400
+
+    save_game_state(game_state)
+
+    return jsonify(results)
+
+
+@app.route('/api/hypnosis/wake', methods=['POST'])
+def api_hypnosis_wake():
+    """Wake a character from trance (for fractionation)"""
+    from systems.deep_hypnosis import DeepHypnosisSystem
+
+    game_state = get_game_state()
+    data = request.json
+
+    character_name = data.get('character')
+
+    if not character_name:
+        return jsonify({'error': 'Missing character'}), 400
+
+    results = DeepHypnosisSystem.wake_from_trance(game_state, character_name)
+
+    if not results['success']:
+        return jsonify(results), 400
+
+    save_game_state(game_state)
+
+    return jsonify(results)
+
+
+@app.route('/api/hypnosis/trance-state/<character_name>')
+def api_get_trance_state(character_name):
+    """Get character's current trance state"""
+    from systems.deep_hypnosis import DeepHypnosisSystem
+
+    game_state = get_game_state()
+    character = game_state.characters.get(character_name)
+
+    if not character:
+        return jsonify({'error': 'Character not found'}), 404
+
+    DeepHypnosisSystem.initialize_trance_state(character)
+
+    trance_state = character.trance_state
+
+    return jsonify({
+        'success': True,
+        'is_in_trance': trance_state.is_in_trance,
+        'current_depth': trance_state.current_depth,
+        'depth_level': trance_state.get_depth_name(),
+        'max_depth_reached': trance_state.max_depth_reached,
+        'fractionation_count': trance_state.fractionation_count,
+        'fractionation_multiplier': trance_state.fractionation_multiplier,
+        'vulnerabilities': DeepHypnosisSystem.get_character_vulnerabilities(character)
+    })
+
+
+@app.route('/api/hypnosis/deep-phs', methods=['POST'])
+def api_plant_deep_phs():
+    """Plant a PHS with depth-modified effectiveness"""
+    from systems.deep_hypnosis import DeepHypnosisSystem
+
+    game_state = get_game_state()
+    data = request.json
+
+    character_name = data.get('character')
+    trigger = data.get('trigger', '')
+    response = data.get('response', '')
+
+    if not character_name or not trigger or not response:
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    results = DeepHypnosisSystem.plant_deep_suggestion(game_state, character_name, trigger, response)
+
+    if not results['success']:
+        return jsonify(results), 400
+
+    save_game_state(game_state)
+
+    return jsonify(results)
+
+
 if __name__ == '__main__':
     # Create templates and static directories if they don't exist
     os.makedirs('templates', exist_ok=True)

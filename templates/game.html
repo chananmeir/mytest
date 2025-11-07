@@ -183,6 +183,10 @@
             📖 Journal & Dossiers
         </button>
 
+        <button class="action-button" onclick="openDeepHypnosis()" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);">
+            🌀 Deep Hypnosis
+        </button>
+
         <div style="margin-top: 2rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
             <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-align: center;">⏱️ Time Control</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
@@ -641,6 +645,119 @@
                     <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
                         <div style="font-size: 3rem; margin-bottom: 1rem;">📂</div>
                         <div style="font-size: 1.2rem;">Select a character to view their dossier</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deep Hypnosis Modal -->
+<div id="deepHypnosisModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">🌀 Deep Hypnosis - Induction & Trance Depth</h2>
+            <button class="close-modal" onclick="closeModal('deepHypnosisModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Character Selection -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Select Character:</label>
+                <select id="hypnosis-character-select" onchange="loadHypnosisCharacter(this.value)" style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                    <option value="">-- Select a character to hypnotize --</option>
+                </select>
+            </div>
+
+            <!-- Hypnosis Content (shown when character selected) -->
+            <div id="hypnosis-content" style="display: none;">
+                <!-- Trance State Display -->
+                <div id="trance-state-display" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem; color: white; text-align: center;">
+                    <div style="font-size: 1.2rem; margin-bottom: 0.5rem;" id="trance-status">Character Awake</div>
+                    <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Trance Depth</div>
+                            <div style="font-size: 1.8rem; font-weight: bold;" id="trance-depth">0%</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Depth Level</div>
+                            <div style="font-size: 1.3rem; font-weight: bold;" id="trance-level">Awake</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Fractionation Count</div>
+                            <div style="font-size: 1.3rem; font-weight: bold;" id="fraction-count">0</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Depth Multiplier</div>
+                            <div style="font-size: 1.3rem; font-weight: bold;" id="fraction-multiplier">1.0x</div>
+                        </div>
+                    </div>
+
+                    <!-- Depth Progress Bar -->
+                    <div style="margin-top: 1rem; background: rgba(255,255,255,0.2); height: 20px; border-radius: 10px; overflow: hidden;">
+                        <div id="depth-progress-bar" style="height: 100%; background: linear-gradient(90deg, #4caf50 0%, #ff9800 50%, #f44336 100%); width: 0%; transition: width 0.5s;"></div>
+                    </div>
+                </div>
+
+                <!-- Fractionation Button (shown when in trance) -->
+                <div id="fractionation-section" style="display: none; margin-bottom: 1.5rem;">
+                    <button class="btn btn-primary" onclick="wakeFromTrance()" style="width: 100%; font-size: 1.1rem; padding: 1rem;">
+                        👁️ Wake Them Up (Fractionation - Makes Next Induction Deeper!)
+                    </button>
+                    <div style="margin-top: 0.5rem; padding: 0.8rem; background: var(--accent-color); border-radius: 8px; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                        💡 Waking them and putting them back under makes them more suggestible each time
+                    </div>
+                </div>
+
+                <!-- Induction Techniques Grid -->
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🌀 Induction Techniques</h3>
+                    <div id="techniques-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Character Vulnerabilities -->
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🎯 Character Vulnerabilities</h3>
+                    <div id="vulnerabilities-list" style="background: var(--accent-color); padding: 1rem; border-radius: 10px;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Plant Deep Suggestion Section (only when in trance) -->
+                <div id="plant-suggestion-section" style="display: none;">
+                    <div style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px;">
+                        <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">✨ Plant Deep Suggestion</h3>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Trigger:</label>
+                            <input type="text" id="deep-phs-trigger" placeholder="When do you want this to activate?" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                        </div>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Response:</label>
+                            <textarea id="deep-phs-response" rows="3" placeholder="What should they do when triggered?" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+                        </div>
+
+                        <div id="depth-bonus-indicator" style="margin-bottom: 1rem; padding: 0.8rem; background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(255, 152, 0, 0.2) 100%); border-radius: 8px; text-align: center; color: var(--highlight-color); font-weight: bold;">
+                            <!-- Populated by JavaScript based on depth -->
+                        </div>
+
+                        <button class="btn btn-primary" onclick="plantDeepSuggestion()" style="width: 100%; font-size: 1.1rem;">
+                            🌀 Plant Deep Suggestion
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State (no character selected) -->
+            <div id="hypnosis-empty-state">
+                <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🌀</div>
+                    <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">Deep Hypnosis System</div>
+                    <div style="font-size: 0.9rem;">
+                        Select a character to begin hypnotic induction.<br>
+                        Multiple techniques available with varying depths and effects.
                     </div>
                 </div>
             </div>

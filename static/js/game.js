@@ -2784,3 +2784,324 @@ function displayCharacterDossier(dossier) {
 
     content.html(html);
 }
+
+// ==================== DEEP HYPNOSIS ====================
+
+let currentHypnosisCharacter = null;
+let availableTechniques = [];
+let currentTranceState = null;
+
+// Open deep hypnosis modal
+function openDeepHypnosis() {
+    // Populate character dropdown
+    const charSelect = $('#hypnosis-character-select');
+    charSelect.html('<option value="">-- Select a character to hypnotize --</option>');
+
+    $('.character-card').each(function() {
+        const charName = $(this).data('character');
+        charSelect.append(`<option value="${charName}">${charName}</option>`);
+    });
+
+    // Load available techniques
+    loadHypnosisTechniques();
+
+    openModal('deepHypnosisModal');
+}
+
+// Load available hypnosis techniques
+function loadHypnosisTechniques() {
+    $.ajax({
+        url: '/api/hypnosis/techniques',
+        method: 'GET',
+        success: function(data) {
+            if (data.success) {
+                availableTechniques = data.techniques;
+            }
+        },
+        error: function() {
+            alert('Failed to load hypnosis techniques');
+        }
+    });
+}
+
+// Load character for hypnosis
+function loadHypnosisCharacter(characterName) {
+    if (!characterName) {
+        $('#hypnosis-content').hide();
+        $('#hypnosis-empty-state').show();
+        return;
+    }
+
+    currentHypnosisCharacter = characterName;
+
+    // Show content, hide empty state
+    $('#hypnosis-content').show();
+    $('#hypnosis-empty-state').hide();
+
+    // Load character's trance state
+    loadTranceState(characterName);
+
+    // Load techniques grid
+    displayTechniquesGrid();
+}
+
+// Load character's current trance state
+function loadTranceState(characterName) {
+    $.ajax({
+        url: `/api/hypnosis/trance-state/${characterName}`,
+        method: 'GET',
+        success: function(data) {
+            if (data.success) {
+                currentTranceState = data;
+                updateTranceDisplay();
+                displayVulnerabilities(data.vulnerabilities);
+            }
+        },
+        error: function() {
+            alert('Failed to load trance state');
+        }
+    });
+}
+
+// Update trance state display
+function updateTranceDisplay() {
+    const state = currentTranceState;
+
+    // Update status text
+    if (state.is_in_trance) {
+        $('#trance-status').text(`${currentHypnosisCharacter} is in ${state.depth_level}`);
+    } else {
+        $('#trance-status').text(`${currentHypnosisCharacter} is Awake`);
+    }
+
+    // Update stats
+    $('#trance-depth').text(`${state.current_depth}%`);
+    $('#trance-level').text(state.depth_level);
+    $('#fraction-count').text(state.fractionation_count);
+    $('#fraction-multiplier').text(`${state.fractionation_multiplier.toFixed(1)}x`);
+
+    // Update progress bar
+    $('#depth-progress-bar').css('width', `${state.current_depth}%`);
+
+    // Show/hide fractionation button
+    if (state.is_in_trance && state.current_depth > 0) {
+        $('#fractionation-section').show();
+        $('#plant-suggestion-section').show();
+        updateDepthBonusIndicator(state.current_depth);
+    } else {
+        $('#fractionation-section').hide();
+        $('#plant-suggestion-section').hide();
+    }
+}
+
+// Display available induction techniques
+function displayTechniquesGrid() {
+    const grid = $('#techniques-grid');
+    grid.empty();
+
+    if (availableTechniques.length === 0) {
+        grid.html('<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">No techniques available</p>');
+        return;
+    }
+
+    availableTechniques.forEach(technique => {
+        const techHtml = `
+            <div class="technique-card" style="background: var(--accent-color); padding: 1rem; border-radius: 10px; border: 2px solid var(--border-color); cursor: pointer; transition: all 0.3s;" onclick="attemptInduction('${technique.technique}')">
+                <div style="font-size: 2rem; text-align: center; margin-bottom: 0.5rem;">${technique.icon}</div>
+                <div style="font-weight: bold; text-align: center; margin-bottom: 0.5rem;">${technique.name}</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.8rem; min-height: 3rem;">${technique.description}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                    <span style="color: var(--highlight-color);">⚡ ${technique.sp_cost} SP</span>
+                    <span style="color: var(--success-color);">+${technique.depth_gain}% Depth</span>
+                </div>
+                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); text-align: center;">⏱️ ${technique.duration} min</div>
+            </div>
+        `;
+
+        grid.append(techHtml);
+    });
+}
+
+// Display character vulnerabilities
+function displayVulnerabilities(vulns) {
+    const list = $('#vulnerabilities-list');
+    list.empty();
+
+    const vulnArray = Object.values(vulns);
+    if (vulnArray.length === 0) {
+        list.html('<p style="text-align: center; color: var(--text-secondary); padding: 1rem;">No vulnerability data</p>');
+        return;
+    }
+
+    vulnArray.forEach(vuln => {
+        const effectiveness = vuln.effectiveness;
+        let color = 'var(--text-secondary)';
+        if (effectiveness === 'Very Effective') color = 'var(--success-color)';
+        else if (effectiveness === 'Effective') color = 'var(--highlight-color)';
+        else if (effectiveness === 'Less Effective') color = 'var(--danger-color)';
+
+        const vulnHtml = `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">
+                <div style="font-weight: bold;">${vuln.name}</div>
+                <div>
+                    <span style="color: ${color}; font-weight: bold;">${vuln.multiplier}x</span>
+                    <span style="color: var(--text-secondary); margin-left: 0.5rem; font-size: 0.85rem;">(${effectiveness})</span>
+                </div>
+            </div>
+        `;
+
+        list.append(vulnHtml);
+    });
+}
+
+// Attempt induction with a technique
+function attemptInduction(techniqueId) {
+    if (!currentHypnosisCharacter) {
+        alert('Please select a character first');
+        return;
+    }
+
+    $.ajax({
+        url: '/api/hypnosis/induce',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            character: currentHypnosisCharacter,
+            technique: techniqueId
+        }),
+        success: function(data) {
+            if (data.success) {
+                // Show success messages
+                data.messages.forEach(msg => addSystemMessage(msg));
+
+                // Reload trance state
+                loadTranceState(currentHypnosisCharacter);
+
+                // Update game state (SP, time)
+                updateGameState();
+                updateTimeDisplay();
+            } else {
+                alert(data.error || 'Induction failed');
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to perform induction';
+            alert(error);
+        }
+    });
+}
+
+// Wake character from trance (fractionation)
+function wakeFromTrance() {
+    if (!currentHypnosisCharacter) {
+        return;
+    }
+
+    if (!confirm('Wake them up? This will increase fractionation count and make the next induction deeper!')) {
+        return;
+    }
+
+    $.ajax({
+        url: '/api/hypnosis/wake',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            character: currentHypnosisCharacter
+        }),
+        success: function(data) {
+            if (data.success) {
+                // Show messages
+                data.messages.forEach(msg => addSystemMessage(msg));
+
+                // Reload trance state
+                loadTranceState(currentHypnosisCharacter);
+
+                // Update game state
+                updateGameState();
+                updateTimeDisplay();
+            } else {
+                alert(data.error || 'Failed to wake character');
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to wake character';
+            alert(error);
+        }
+    });
+}
+
+// Update depth bonus indicator
+function updateDepthBonusIndicator(depth) {
+    const indicator = $('#depth-bonus-indicator');
+
+    let message = '';
+    let bonusPercent = 0;
+
+    if (depth <= 33) {
+        message = '💫 Light Trance: Simple suggestions (Base 30% activation + Fractionation bonus)';
+        bonusPercent = 30;
+    } else if (depth <= 66) {
+        message = '🌀 Medium Trance: Behavioral changes (Base 50% activation + Fractionation bonus)';
+        bonusPercent = 50;
+    } else {
+        message = '✨ Deep Trance: Core personality shifts (Base 70% activation + Fractionation bonus)';
+        bonusPercent = 70;
+    }
+
+    // Add fractionation bonus
+    if (currentTranceState && currentTranceState.fractionation_count > 0) {
+        const fractionBonus = currentTranceState.fractionation_count * 3;
+        message += ` (+${fractionBonus}% from ${currentTranceState.fractionation_count} fractionations)`;
+        bonusPercent += fractionBonus;
+    }
+
+    indicator.html(`${message}<br><strong>Final Activation Chance: ${bonusPercent}%</strong>`);
+}
+
+// Plant deep suggestion
+function plantDeepSuggestion() {
+    const trigger = $('#deep-phs-trigger').val().trim();
+    const response = $('#deep-phs-response').val().trim();
+
+    if (!trigger || !response) {
+        alert('Please enter both trigger and response');
+        return;
+    }
+
+    if (!currentHypnosisCharacter) {
+        alert('No character selected');
+        return;
+    }
+
+    $.ajax({
+        url: '/api/hypnosis/deep-phs',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            character: currentHypnosisCharacter,
+            trigger: trigger,
+            response: response
+        }),
+        success: function(data) {
+            if (data.success) {
+                // Show messages
+                data.messages.forEach(msg => addSystemMessage(msg));
+
+                // Clear form
+                $('#deep-phs-trigger').val('');
+                $('#deep-phs-response').val('');
+
+                // Update game state
+                updateGameState();
+
+                addSystemMessage('✨ Deep suggestion planted successfully!');
+            } else {
+                alert(data.error || 'Failed to plant suggestion');
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to plant suggestion';
+            alert(error);
+        }
+    });
+}
