@@ -525,6 +525,48 @@ function openSkillTree() {
     });
 }
 
+// Helper function to determine PHS type
+function detectPHSType(trigger, response) {
+    const triggerLower = trigger.toLowerCase();
+    const responseLower = response.toLowerCase();
+
+    // Behavioral prompts - actions and behaviors
+    if (triggerLower.includes('getting dressed') ||
+        triggerLower.includes('choosing clothes') ||
+        triggerLower.includes('dressing') ||
+        responseLower.includes('wear') ||
+        responseLower.includes('dress')) {
+        return { type: 'Behavioral Prompt', icon: '👗' };
+    }
+
+    if (responseLower.includes('call me') ||
+        responseLower.includes('visit me') ||
+        responseLower.includes('come to') ||
+        responseLower.includes('meet me')) {
+        return { type: 'Behavioral Prompt', icon: '🚶' };
+    }
+
+    // Emotional nudges - feelings and attractions
+    if (responseLower.includes('feel') ||
+        responseLower.includes('attracted') ||
+        responseLower.includes('like me') ||
+        responseLower.includes('love') ||
+        responseLower.includes('trust')) {
+        return { type: 'Emotional Nudge', icon: '💭' };
+    }
+
+    // Compliance triggers - obedience and agreement
+    if (responseLower.includes('obey') ||
+        responseLower.includes('agree') ||
+        responseLower.includes('do what') ||
+        responseLower.includes('listen to')) {
+        return { type: 'Compliance Trigger', icon: '🎯' };
+    }
+
+    // Default to behavioral prompt
+    return { type: 'Behavioral Prompt', icon: '🎯' };
+}
+
 // Open character profile modal (internal function)
 function _openCharacterProfileModal() {
     if (!selectedCharacter) {
@@ -538,7 +580,22 @@ function _openCharacterProfileModal() {
         success: function(char) {
             $('#profile-character-name').text(char.name);
 
+            // Create tabs
             let html = `
+                <div class="profile-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--accent-color);">
+                    <button class="profile-tab active" onclick="switchProfileTab('overview')" data-tab="overview" style="flex: 1; padding: 0.8rem; background: var(--highlight-color); color: white; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600;">
+                        👤 Overview
+                    </button>
+                    <button class="profile-tab" onclick="switchProfileTab('suggestions')" data-tab="suggestions" style="flex: 1; padding: 0.8rem; background: var(--accent-color); color: var(--text-primary); border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600;">
+                        🎯 Suggestions (${char.active_phs ? char.active_phs.length : 0}/${char.max_phs || 3})
+                    </button>
+                </div>
+
+                <div class="profile-tab-content" data-tab-content="overview">
+            `;
+
+            // Overview tab content
+            html += `
                 <div style="margin-bottom: 2rem;">
                     <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">Basic Information</h3>
                     <div style="line-height: 2;">
@@ -581,7 +638,7 @@ function _openCharacterProfileModal() {
                 </div>
             `;
 
-            // Add relationships section if character has relationships
+            // Add relationships section
             if (char.relationships && Object.keys(char.relationships).length > 0) {
                 html += `
                     <div style="margin-bottom: 2rem;">
@@ -619,7 +676,6 @@ function _openCharacterProfileModal() {
                         </div>
                 `;
 
-                // Show last 5 interactions
                 const recentInteractions = char.character_interactions.slice(-5).reverse();
                 recentInteractions.forEach(interaction => {
                     html += `
@@ -640,37 +696,13 @@ function _openCharacterProfileModal() {
                 html += '</div>';
             }
 
-            html += '';
-
-            if (char.active_phs && char.active_phs.length > 0) {
-                html += `
-                    <div style="margin-bottom: 2rem;">
-                        <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">Active Suggestions (${char.active_phs.length})</h3>
-                `;
-
-                char.active_phs.forEach((phs, i) => {
-                    let statusColor = phs.activation_chance >= 70 ? 'var(--success-color)' :
-                                     phs.activation_chance >= 50 ? 'var(--warning-color)' : 'var(--danger-color)';
-                    html += `
-                        <div style="background: var(--accent-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid ${statusColor};">
-                            <div style="font-weight: bold; margin-bottom: 0.5rem;">${phs.activation_chance}% activation chance</div>
-                            <div style="margin-bottom: 0.3rem;"><strong>Trigger:</strong> "${phs.trigger}"</div>
-                            <div style="margin-bottom: 0.3rem;"><strong>Response:</strong> "${phs.response}"</div>
-                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Reinforced ${phs.reinforcements} time(s)</div>
-                        </div>
-                    `;
-                });
-
-                html += '</div>';
-            }
-
+            // Add memories section
             if (char.memories && char.memories.length > 0) {
                 html += `
                     <div style="margin-bottom: 2rem;">
                         <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">Memories (${char.memories.length})</h3>
                 `;
 
-                // Show top 5 most important memories
                 const sortedMemories = char.memories.sort((a, b) => b.importance - a.importance).slice(0, 5);
                 sortedMemories.forEach(mem => {
                     const icons = {
@@ -697,6 +729,81 @@ function _openCharacterProfileModal() {
 
                 html += '</div>';
             }
+
+            html += '</div>'; // End overview tab
+
+            // Suggestions tab content
+            html += `<div class="profile-tab-content" data-tab-content="suggestions" style="display: none;">`;
+
+            if (char.active_phs && char.active_phs.length > 0) {
+                html += `
+                    <div style="text-align: center; margin-bottom: 2rem; padding: 1rem; background: var(--accent-color); border-radius: 8px;">
+                        <h3 style="color: var(--highlight-color); margin: 0;">${char.name.toUpperCase()} - ACTIVE SUGGESTIONS (${char.active_phs.length}/${char.max_phs || 3} slots)</h3>
+                    </div>
+                `;
+
+                char.active_phs.forEach((phs, i) => {
+                    const phsType = detectPHSType(phs.trigger, phs.response);
+                    const activationChance = phs.activation_chance;
+                    const barWidth = activationChance;
+                    const barColor = activationChance >= 70 ? 'var(--success-color)' :
+                                     activationChance >= 50 ? 'var(--warning-color)' : 'var(--danger-color)';
+
+                    html += `
+                        <div style="background: var(--accent-color); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid ${barColor};">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <div style="font-weight: bold; font-size: 1.1rem; color: var(--highlight-color);">
+                                    ${phsType.icon} "${phs.response}"
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 0.8rem; padding: 0.5rem; background: rgba(102, 126, 234, 0.1); border-radius: 5px;">
+                                <strong>Type:</strong> ${phsType.type}
+                            </div>
+
+                            <div style="margin-bottom: 0.8rem;">
+                                <strong>Trigger:</strong> ${phs.trigger}
+                            </div>
+
+                            <div style="margin-bottom: 0.8rem;">
+                                <strong>Activation:</strong> ${activationChance}%
+                                <div style="background: rgba(255,255,255,0.1); height: 20px; border-radius: 10px; overflow: hidden; margin-top: 0.3rem;">
+                                    <div style="background: ${barColor}; height: 100%; width: ${barWidth}%; transition: width 0.3s;"></div>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                                <strong>Reinforced:</strong> ${phs.reinforcements} time(s)
+                            </div>
+
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-small" onclick="reinforcePHS('${char.name}', ${i})" style="flex: 1; background: var(--success-color); color: white;">
+                                    ✨ Reinforce (1 SP)
+                                </button>
+                                <button class="btn btn-small" onclick="removePHS('${char.name}', ${i})" style="flex: 1; background: var(--danger-color); color: white;">
+                                    ✗ Remove
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += `
+                    <div style="text-align: center; padding: 3rem;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+                        <h3 style="color: var(--text-secondary); margin-bottom: 1rem;">No Active Suggestions</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                            ${char.name} has no active post-hypnotic suggestions.<br>
+                            Plant suggestions to influence their behavior and emotions.
+                        </p>
+                        <button class="btn btn-primary" onclick="closeModal('profileModal'); openPlantSuggestionFor('${char.name}')">
+                            🎯 Plant Suggestion
+                        </button>
+                    </div>
+                `;
+            }
+
+            html += '</div>'; // End suggestions tab
 
             $('#profile-content').html(html);
             openModal('profileModal');
@@ -1432,6 +1539,116 @@ function createCharacter() {
         error: function(xhr) {
             const error = xhr.responseJSON?.error || 'Failed to create character';
             alert(`Error: ${error}`);
+        }
+    });
+}
+
+// Switch profile tabs
+function switchProfileTab(tabName) {
+    // Update tab buttons
+    $('.profile-tab').removeClass('active');
+    $(`.profile-tab[data-tab="${tabName}"]`).addClass('active');
+
+    // Update tab button styles
+    $('.profile-tab').each(function() {
+        if ($(this).hasClass('active')) {
+            $(this).css({
+                'background': 'var(--highlight-color)',
+                'color': 'white'
+            });
+        } else {
+            $(this).css({
+                'background': 'var(--accent-color)',
+                'color': 'var(--text-primary)'
+            });
+        }
+    });
+
+    // Update tab content
+    $('.profile-tab-content').hide();
+    $(`.profile-tab-content[data-tab-content="${tabName}"]`).show();
+}
+
+// Reinforce a PHS
+function reinforcePHS(characterName, phsIndex) {
+    const currentSP = parseInt($('#sp-display').text());
+
+    if (currentSP < 1) {
+        addSystemMessage('Not enough Suggestion Points! You need 1 SP to reinforce a suggestion.');
+        return;
+    }
+
+    $.ajax({
+        url: '/api/phs/reinforce',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            character: characterName,
+            phs_index: phsIndex
+        }),
+        success: function(data) {
+            if (data.success) {
+                addSystemMessage(data.message);
+
+                // Update SP display
+                $('#sp-display').text(data.sp_remaining);
+
+                // Flash SP counter
+                $('#sp-display').parent().addClass('flash-effect');
+                setTimeout(() => {
+                    $('#sp-display').parent().removeClass('flash-effect');
+                }, 600);
+
+                // Refresh the profile modal to show updated PHS
+                _openCharacterProfileModal();
+
+                // Switch to suggestions tab
+                setTimeout(() => {
+                    switchProfileTab('suggestions');
+                }, 100);
+            } else {
+                addSystemMessage(`Error: ${data.error}`);
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to reinforce suggestion';
+            addSystemMessage(`Error: ${error}`);
+        }
+    });
+}
+
+// Remove a PHS
+function removePHS(characterName, phsIndex) {
+    if (!confirm('Are you sure you want to remove this suggestion? This cannot be undone.')) {
+        return;
+    }
+
+    $.ajax({
+        url: '/api/phs/remove',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            character: characterName,
+            phs_index: phsIndex
+        }),
+        success: function(data) {
+            if (data.success) {
+                addSystemMessage(data.message);
+
+                // Refresh the profile modal to show updated PHS list
+                _openCharacterProfileModal();
+
+                // Switch to suggestions tab
+                setTimeout(() => {
+                    switchProfileTab('suggestions');
+                }, 100);
+            } else {
+                addSystemMessage(`Error: ${data.error}`);
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to remove suggestion';
+            addSystemMessage(`Error: ${error}`);
         }
     });
 }

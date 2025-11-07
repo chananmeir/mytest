@@ -1195,6 +1195,75 @@ def api_character_outfit(name):
     })
 
 
+@app.route('/api/phs/reinforce', methods=['POST'])
+def api_reinforce_phs():
+    """Reinforce a post-hypnotic suggestion"""
+    game_state = get_game_state()
+    data = request.get_json()
+
+    character_name = data.get('character')
+    phs_index = data.get('phs_index')
+
+    character = game_state.characters.get(character_name)
+    if not character:
+        return jsonify({'error': 'Character not found'}), 404
+
+    if phs_index < 0 or phs_index >= len(character.active_phs):
+        return jsonify({'error': 'Invalid PHS index'}), 400
+
+    # Check if player has enough SP
+    sp_cost = 1
+    if game_state.player.suggestion_points < sp_cost:
+        return jsonify({'error': 'Not enough Suggestion Points'}), 400
+
+    # Reinforce the PHS
+    phs = character.active_phs[phs_index]
+    phs.reinforce()
+
+    # Deduct SP
+    game_state.player.suggestion_points -= sp_cost
+
+    return jsonify({
+        'success': True,
+        'message': f'Reinforced suggestion! Now {phs.calculate_activation_chance()}% activation chance.',
+        'phs': {
+            'trigger': phs.trigger,
+            'response': phs.response,
+            'success_rate': phs.success_rate,
+            'reinforcements': phs.reinforcements,
+            'activation_chance': phs.calculate_activation_chance()
+        },
+        'sp_remaining': game_state.player.suggestion_points
+    })
+
+
+@app.route('/api/phs/remove', methods=['POST'])
+def api_remove_phs():
+    """Remove a post-hypnotic suggestion"""
+    game_state = get_game_state()
+    data = request.get_json()
+
+    character_name = data.get('character')
+    phs_index = data.get('phs_index')
+
+    character = game_state.characters.get(character_name)
+    if not character:
+        return jsonify({'error': 'Character not found'}), 404
+
+    if phs_index < 0 or phs_index >= len(character.active_phs):
+        return jsonify({'error': 'Invalid PHS index'}), 400
+
+    # Remove the PHS
+    removed_phs = character.active_phs.pop(phs_index)
+
+    return jsonify({
+        'success': True,
+        'message': f'Removed suggestion: "{removed_phs.trigger}"',
+        'phs_count': len(character.active_phs),
+        'max_phs': character.max_phs
+    })
+
+
 if __name__ == '__main__':
     # Create templates and static directories if they don't exist
     os.makedirs('templates', exist_ok=True)
