@@ -461,7 +461,9 @@ def api_character(name):
         'clothing_meaning': char.clothing_meaning,
         'outfit': char.outfit,
         'active_phs': phs_list,
-        'memories': memories
+        'memories': memories,
+        'relationships': char.relationships,
+        'character_interactions': char.character_interactions
     })
 
 

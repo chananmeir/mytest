@@ -18,10 +18,14 @@ class Character:
     emotional_state: str = "neutral"  # neutral, relaxed, tense, defensive, open, etc.
     gender: str = "male"  # male/female - used for template fallback images
     active_phs: List['PostHypnoticSuggestion'] = field(default_factory=list)
-    conversation_history: List[Dict[str, str]] = field(default_factory=list)
+    conversation_history: List[Dict[str, str]] = field(default_factory=list)  # With player
     memories: List = field(default_factory=list)  # List of Memory objects
     clothing_history: List[Dict[str, str]] = field(default_factory=list)  # Track clothing changes
     outfit: Dict[str, str] = field(default_factory=dict)  # Visual outfit: {slot: item_id}
+
+    # Character-to-character relationships
+    relationships: Dict[str, int] = field(default_factory=dict)  # {character_name: relationship_score 0-20}
+    character_interactions: List[Dict[str, str]] = field(default_factory=list)  # History with other characters
 
     def __post_init__(self):
         """Initialize any computed properties"""
@@ -40,6 +44,24 @@ class Character:
         if not self.outfit:
             from data.clothing_items import DEFAULT_OUTFITS
             self.outfit = DEFAULT_OUTFITS.get(self.name, {'expression': 'neutral'}).copy()
+
+        # Initialize default relationships if empty
+        if not self.relationships:
+            self.relationships = self._init_default_relationships()
+
+    def _init_default_relationships(self) -> Dict[str, int]:
+        """Initialize default family relationships"""
+        # These are just defaults - can be modified through gameplay
+        defaults = {
+            'Ruth': {'Tom': 12, 'Melanie': 7, 'Vanessa': 6, 'Derek': 8},
+            'Melanie': {'Ruth': 7, 'Tom': 10, 'Derek': 5, 'Karen': 11},
+            'Tom': {'Ruth': 12, 'Melanie': 10, 'Derek': 8, 'Dawn': 9},
+            'Dawn': {'Tom': 9, 'Karen': 14, 'Vanessa': 8, 'Ruth': 11},
+            'Vanessa': {'Ruth': 6, 'Dawn': 8, 'Melanie': 5, 'Derek': 7},
+            'Derek': {'Ruth': 8, 'Tom': 8, 'Melanie': 5, 'Vanessa': 7},
+            'Karen': {'Dawn': 14, 'Melanie': 11, 'Tom': 6, 'Vanessa': 4}
+        }
+        return defaults.get(self.name, {})
 
     def _calculate_max_phs(self) -> int:
         """Calculate maximum active PHS based on resistance"""
@@ -138,7 +160,9 @@ class Character:
             'conversation_history': self.conversation_history,
             'memories': [mem.to_dict() if hasattr(mem, 'to_dict') else mem for mem in self.memories],
             'clothing_history': self.clothing_history,
-            'outfit': self.outfit
+            'outfit': self.outfit,
+            'relationships': self.relationships,
+            'character_interactions': self.character_interactions
         }
 
 

@@ -387,7 +387,7 @@ function _openCharacterProfileModal() {
                 <div style="margin-bottom: 2rem;">
                     <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">Current Status</h3>
                     <div style="line-height: 2;">
-                        <strong>Rapport:</strong> ${char.rapport}/20<br>
+                        <strong>Rapport (with you):</strong> ${char.rapport}/20<br>
                         <strong>Emotional State:</strong> ${char.emotional_state}<br>
                         <strong>Resistance:</strong> ${char.resistance}%<br>
                     </div>
@@ -401,6 +401,67 @@ function _openCharacterProfileModal() {
                     </div>
                 </div>
             `;
+
+            // Add relationships section if character has relationships
+            if (char.relationships && Object.keys(char.relationships).length > 0) {
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">Relationships with Others</h3>
+                `;
+
+                for (const [otherChar, score] of Object.entries(char.relationships)) {
+                    const rapport_bar = '█'.repeat(score) + '░'.repeat(20 - score);
+                    let relationship_desc = '';
+                    if (score >= 15) relationship_desc = '💜 Very Close';
+                    else if (score >= 10) relationship_desc = '💙 Good Friends';
+                    else if (score >= 5) relationship_desc = '🤝 Friendly';
+                    else if (score >= 0) relationship_desc = '😐 Neutral';
+                    else relationship_desc = '😠 Hostile';
+
+                    html += `
+                        <div style="background: var(--accent-color); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.8rem;">
+                            <div style="font-weight: bold; margin-bottom: 0.5rem;">${otherChar}</div>
+                            <div style="font-family: monospace; font-size: 0.8rem; margin-bottom: 0.3rem;">[${rapport_bar}] ${score}/20</div>
+                            <div style="font-size: 0.9rem; color: var(--text-secondary);">${relationship_desc}</div>
+                        </div>
+                    `;
+                }
+
+                html += '</div>';
+            }
+
+            // Add character interactions section
+            if (char.character_interactions && char.character_interactions.length > 0) {
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">Recent Interactions with Others</h3>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            Past conversations with other characters
+                        </div>
+                `;
+
+                // Show last 5 interactions
+                const recentInteractions = char.character_interactions.slice(-5).reverse();
+                recentInteractions.forEach(interaction => {
+                    html += `
+                        <div style="background: var(--accent-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                            <div style="font-weight: bold; margin-bottom: 0.5rem; color: var(--highlight-color);">
+                                Conversation with ${interaction.with_character}
+                            </div>
+                            <div style="margin-bottom: 0.5rem; font-size: 0.9rem;">
+                                ${interaction.summary || interaction.snippet || 'Talked together'}
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                                ${interaction.timestamp || 'Recently'}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            }
+
+            html += '';
 
             if (char.active_phs && char.active_phs.length > 0) {
                 html += `

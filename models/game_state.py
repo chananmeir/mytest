@@ -226,7 +226,9 @@ class GameState:
                     active_phs=phs_list,
                     conversation_history=char_data.get('conversation_history', []),
                     memories=memories_list,
-                    clothing_history=char_data.get('clothing_history', [])
+                    clothing_history=char_data.get('clothing_history', []),
+                    relationships=char_data.get('relationships', {}),  # Default for old saves
+                    character_interactions=char_data.get('character_interactions', [])  # Default for old saves
                 )
                 self.characters[name] = char
 
