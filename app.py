@@ -509,6 +509,7 @@ def api_characters():
     """Get characters at player's current location"""
     from systems.time_system import get_character_schedule
     from systems.location_system import get_character_location
+    from systems.mood_system import MoodSystem
 
     game_state = get_game_state()
     current_period = game_state.game_time.period
@@ -521,6 +522,13 @@ def api_characters():
     for char in characters_here.values():
         schedule = get_character_schedule(char.name, current_period)
 
+        # Get mood information
+        mood_info = MoodSystem.format_mood_display(
+            char.emotional_state,
+            char.emotional_state_reason,
+            include_recommendation=True
+        )
+
         characters.append({
             'name': char.name,
             'age': char.age,
@@ -529,6 +537,10 @@ def api_characters():
             'personality': char.personality,
             'rapport': char.rapport,
             'emotional_state': char.emotional_state,
+            'emotional_state_reason': char.emotional_state_reason,
+            'mood_emoji': mood_info['emoji'],
+            'mood_recommendation': mood_info['recommendation_text'],
+            'mood_color': mood_info['recommendation_color'],
             'resistance': char.resistance,
             'clothing': char.clothing,
             'active_phs': len(char.active_phs),
@@ -548,6 +560,7 @@ def api_characters():
 def api_character(name):
     """Get detailed character info"""
     from systems.clothing_effects import ClothingEffects
+    from systems.mood_system import MoodSystem
 
     game_state = get_game_state()
     char = game_state.get_character(name)
@@ -583,6 +596,13 @@ def api_character(name):
     clothing_modifier, clothing_desc = ClothingEffects.calculate_outfit_suggestibility(char)
     outfit_description = ClothingEffects.get_outfit_description(char)
 
+    # Get mood information
+    mood_info = MoodSystem.format_mood_display(
+        char.emotional_state,
+        char.emotional_state_reason,
+        include_recommendation=True
+    )
+
     return jsonify({
         'name': char.name,
         'age': char.age,
@@ -591,6 +611,10 @@ def api_character(name):
         'personality': char.personality,
         'rapport': char.rapport,
         'emotional_state': char.emotional_state,
+        'emotional_state_reason': char.emotional_state_reason,
+        'mood_emoji': mood_info['emoji'],
+        'mood_recommendation': mood_info['recommendation_text'],
+        'mood_color': mood_info['recommendation_color'],
         'resistance': char.resistance,
         'clothing': char.clothing,
         'clothing_meaning': char.clothing_meaning,

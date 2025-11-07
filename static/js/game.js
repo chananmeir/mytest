@@ -1330,9 +1330,35 @@ function updateCharacterSchedules() {
 
             data.characters.forEach(char => {
                 updateCharacterActivity(char.name, char.current_activity);
+                updateCharacterMood(char);
             });
         }
     });
+}
+
+// Update character mood indicator
+function updateCharacterMood(char) {
+    const moodIndicator = $(`.mood-indicator[data-character="${char.name}"]`);
+    if (!moodIndicator.length) return;
+
+    // Update mood display with emoji and state
+    const moodDisplay = moodIndicator.find('.mood-display');
+    let moodText = `${char.mood_emoji} ${char.emotional_state.charAt(0).toUpperCase() + char.emotional_state.slice(1)}`;
+
+    // Add reason if available
+    if (char.emotional_state_reason) {
+        moodText += ` <span style="color: var(--text-secondary); font-weight: normal;">(${char.emotional_state_reason})</span>`;
+    }
+
+    moodDisplay.html(moodText);
+
+    // Update recommendation
+    const moodRecommendation = moodIndicator.find('.mood-recommendation');
+    moodRecommendation.html(char.mood_recommendation);
+    moodRecommendation.css('color', char.mood_color);
+
+    // Update border color based on mood
+    moodIndicator.css('border-left-color', char.mood_color);
 }
 
 // Open add character modal

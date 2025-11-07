@@ -60,6 +60,17 @@
                 <div class="character-info" style="margin-top: 0.3rem;">
                     Rapport: <span class="rapport-value" data-character="{{ character.name }}">{{ character.rapport }}</span>/20 | {{ character.emotional_state|title }}
                 </div>
+
+                <!-- Mood Indicator -->
+                <div class="mood-indicator" data-character="{{ character.name }}" style="background: rgba(102, 126, 234, 0.1); border-left: 3px solid var(--text-secondary); padding: 0.5rem; margin-top: 0.5rem; border-radius: 5px; font-size: 0.75rem;">
+                    <div class="mood-display" style="font-weight: 600; margin-bottom: 0.3rem;">
+                        😐 Neutral
+                    </div>
+                    <div class="mood-recommendation" style="color: var(--text-secondary); font-size: 0.7rem;">
+                        • Loading...
+                    </div>
+                </div>
+
                 <!-- Milestone indicator -->
                 {% set next_milestone = (((character.rapport // 5) + 1) * 5) if character.rapport < 20 else 20 %}
                 {% if character.rapport < 20 %}

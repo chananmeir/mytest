@@ -16,6 +16,7 @@ class Character:
     resistance: int  # 0-100, how resistant to hypnotic suggestions
     rapport: int = 0  # 0-20, your influence level with them
     emotional_state: str = "neutral"  # neutral, relaxed, tense, defensive, open, etc.
+    emotional_state_reason: str = ""  # Why they're in this emotional state
     gender: str = "male"  # male/female - used for template fallback images
     active_phs: List['PostHypnoticSuggestion'] = field(default_factory=list)
     conversation_history: List[Dict[str, str]] = field(default_factory=list)  # With player
@@ -82,9 +83,11 @@ class Character:
         """Decrease rapport, minimum 0"""
         self.rapport = max(0, self.rapport - amount)
 
-    def set_emotional_state(self, state: str) -> None:
+    def set_emotional_state(self, state: str, reason: str = "") -> None:
         """Change the character's emotional state"""
         self.emotional_state = state
+        if reason:
+            self.emotional_state_reason = reason
 
     def can_accept_phs(self) -> bool:
         """Check if character can accept more PHS"""
@@ -155,6 +158,7 @@ class Character:
             'resistance': self.resistance,
             'rapport': self.rapport,
             'emotional_state': self.emotional_state,
+            'emotional_state_reason': self.emotional_state_reason,
             'gender': self.gender,
             'active_phs': [phs.to_dict() for phs in self.active_phs],
             'conversation_history': self.conversation_history,

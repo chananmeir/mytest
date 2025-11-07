@@ -253,7 +253,7 @@ class HypnosisSystem:
             return "Character not found"
 
         old_state = char.emotional_state
-        char.set_emotional_state(new_state)
+        char.set_emotional_state(new_state, reason)
 
         message = f"{target_name}'s state: {old_state} → {new_state}"
 
