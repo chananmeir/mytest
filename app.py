@@ -701,6 +701,47 @@ def api_add_character():
     })
 
 
+@app.route('/api/record-interaction', methods=['POST'])
+def api_record_interaction():
+    """Record an interaction between two characters"""
+    from systems.character_interactions import record_interaction
+
+    data = request.json
+    game_state = get_game_state()
+
+    # Validate required fields
+    char1_name = data.get('character1')
+    char2_name = data.get('character2')
+    interaction_type = data.get('type', 'conversation')
+    summary = data.get('summary')
+
+    if not all([char1_name, char2_name, summary]):
+        return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+
+    # Get characters
+    char1 = game_state.get_character(char1_name)
+    char2 = game_state.get_character(char2_name)
+
+    if not char1 or not char2:
+        return jsonify({'success': False, 'error': 'Character not found'}), 404
+
+    # Record the interaction
+    location = data.get('location', game_state.get_current_location().name)
+    record_interaction(char1, char2, interaction_type, summary, location)
+
+    # Save updated game state
+    save_game_state(game_state)
+
+    return jsonify({
+        'success': True,
+        'message': f'Recorded interaction between {char1_name} and {char2_name}',
+        'new_relationship_scores': {
+            f'{char1_name}_to_{char2_name}': char1.relationships.get(char2_name, 5),
+            f'{char2_name}_to_{char1_name}': char2.relationships.get(char1_name, 5)
+        }
+    })
+
+
 @app.route('/api/books')
 def api_books():
     """Get available books"""
