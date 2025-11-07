@@ -68,27 +68,44 @@ function renderCharacterSprite(characterName, outfit, containerId, options = {})
 
             // Determine image path
             let imagePath;
+            let fallbackPath;
+
             if (slot === 'base') {
+                // Base body is always character-specific
                 imagePath = baseImagePath + 'base/body.png';
             } else if (slot === 'expression') {
+                // Expressions are always character-specific
                 const expression = outfit.expression || 'neutral';
                 imagePath = baseImagePath + `expressions/${expression}.png`;
             } else if (itemId) {
-                // Get clothing item image path from backend
-                imagePath = baseImagePath + getClothingItemPath(itemId);
+                // For clothing items: try shared folder first, then character-specific
+                const clothingPath = getClothingItemPath(itemId);
+
+                // Primary: shared clothing folder
+                imagePath = `/static/images/shared_clothing/${clothingPath}`;
+
+                // Fallback: character-specific override
+                fallbackPath = baseImagePath + clothingPath;
             }
 
             if (imagePath) {
                 layer.src = imagePath;
                 layer.dataset.slot = slot;
                 layer.dataset.itemId = itemId || '';
+                layer.dataset.fallbackPath = fallbackPath || '';
 
-                // Handle image load errors
+                // Handle image load errors with fallback
                 layer.onerror = function() {
-                    if (opts.showPlaceholder) {
-                        // Show placeholder if image doesn't exist
-                        this.style.display = 'none';
-                        console.warn(`Image not found: ${imagePath}`);
+                    // If shared image not found, try character-specific override
+                    if (this.dataset.fallbackPath && this.src !== this.dataset.fallbackPath) {
+                        console.log(`Shared image not found, trying character-specific: ${this.dataset.fallbackPath}`);
+                        this.src = this.dataset.fallbackPath;
+                    } else {
+                        // No fallback or fallback also failed
+                        if (opts.showPlaceholder) {
+                            this.style.display = 'none';
+                            console.warn(`Image not found: ${imagePath}` + (fallbackPath ? ` (also tried: ${fallbackPath})` : ''));
+                        }
                     }
                 };
 

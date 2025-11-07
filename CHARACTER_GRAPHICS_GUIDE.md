@@ -15,68 +15,89 @@ All layers stack on top of each other to create the final character appearance.
 
 ## Directory Structure
 
-Images are organized by character name:
+The system uses **SHARED CLOTHING** to avoid duplicating images. You only need to create ONE image of a white blouse, not 7 copies!
 
 ```
-static/images/characters/
-├── Ruth/
-│   ├── base/
-│   │   └── body.png
-│   ├── expressions/
-│   │   ├── neutral.png
-│   │   ├── happy.png
-│   │   ├── sad.png
-│   │   ├── angry.png
-│   │   ├── surprised.png
-│   │   ├── aroused.png
-│   │   ├── embarrassed.png
-│   │   ├── confused.png
-│   │   └── confident.png
-│   ├── clothing/
-│   │   ├── underwear/
-│   │   │   ├── bra_standard_white.png
-│   │   │   ├── bra_lace_black.png
-│   │   │   ├── bra_sports.png
-│   │   │   ├── panties_standard_white.png
-│   │   │   ├── panties_lace_black.png
-│   │   │   └── panties_thong.png
-│   │   ├── tops/
-│   │   │   ├── blouse_white.png
-│   │   │   ├── blouse_sheer.png
-│   │   │   ├── t_shirt_casual.png
-│   │   │   ├── tank_top.png
-│   │   │   ├── crop_top.png
-│   │   │   └── sweater_modest.png
-│   │   ├── bottoms/
-│   │   │   ├── skirt_pencil.png
-│   │   │   ├── skirt_mini.png
-│   │   │   ├── pants_slacks.png
-│   │   │   ├── jeans_casual.png
-│   │   │   ├── shorts_athletic.png
-│   │   │   └── leggings_yoga.png
-│   │   ├── dresses/
-│   │   │   ├── dress_modest_floral.png
-│   │   │   ├── dress_cocktail.png
-│   │   │   └── dress_sundress.png
-│   │   └── outerwear/
-│   │       └── (jackets, coats, etc.)
+static/images/
+├── shared_clothing/          # ⭐ CLOTHING IS SHARED ACROSS ALL CHARACTERS
+│   ├── underwear/
+│   │   ├── bra_standard_white.png
+│   │   ├── bra_lace_black.png
+│   │   ├── bra_sports.png
+│   │   ├── panties_standard_white.png
+│   │   ├── panties_lace_black.png
+│   │   └── panties_thong.png
+│   ├── tops/
+│   │   ├── blouse_white.png
+│   │   ├── blouse_sheer.png
+│   │   ├── t_shirt_casual.png
+│   │   ├── tank_top.png
+│   │   ├── crop_top.png
+│   │   └── sweater_modest.png
+│   ├── bottoms/
+│   │   ├── skirt_pencil.png
+│   │   ├── skirt_mini.png
+│   │   ├── pants_slacks.png
+│   │   ├── jeans_casual.png
+│   │   ├── shorts_athletic.png
+│   │   └── leggings_yoga.png
+│   ├── dresses/
+│   │   ├── dress_modest_floral.png
+│   │   ├── dress_cocktail.png
+│   │   └── dress_sundress.png
+│   ├── outerwear/
+│   │   └── (jackets, coats, etc.)
 │   └── accessories/
 │       ├── jewelry_pearls.png
 │       ├── jewelry_choker.png
 │       └── glasses_reading.png
-├── Tom/
-│   └── (same structure)
-├── Lisa/
-│   └── (same structure)
-├── Marcus/
-│   └── (same structure)
-├── Sophie/
-│   └── (same structure)
-├── Rachel/
-│   └── (same structure)
-└── James/
-    └── (same structure)
+│
+└── characters/               # ⭐ CHARACTER-SPECIFIC CONTENT ONLY
+    ├── Ruth/
+    │   ├── base/
+    │   │   └── body.png      # Ruth's unique body
+    │   └── expressions/
+    │       ├── neutral.png   # Ruth's unique facial expressions
+    │       ├── happy.png
+    │       ├── sad.png
+    │       ├── angry.png
+    │       ├── surprised.png
+    │       ├── aroused.png
+    │       ├── embarrassed.png
+    │       ├── confused.png
+    │       └── confident.png
+    ├── Tom/
+    │   ├── base/body.png     # Tom's unique body
+    │   └── expressions/...   # Tom's unique facial expressions
+    ├── Lisa/
+    │   ├── base/body.png
+    │   └── expressions/...
+    ├── Marcus/
+    │   ├── base/body.png
+    │   └── expressions/...
+    ├── Sophie/
+    │   ├── base/body.png
+    │   └── expressions/...
+    ├── Rachel/
+    │   ├── base/body.png
+    │   └── expressions/...
+    └── James/
+        ├── base/body.png
+        └── expressions/...
 ```
+
+### How The Shared System Works:
+
+1. **Clothing is shared** - All characters use the SAME clothing images from `shared_clothing/`
+2. **Bodies are unique** - Each character has their own body image in `characters/{name}/base/`
+3. **Expressions are unique** - Each character has their own facial expressions in `characters/{name}/expressions/`
+4. **Optional overrides** - If you want Ruth to have a special version of a blouse, create `characters/Ruth/underwear/blouse_white.png` and it will be used instead of the shared version
+
+This means:
+- ✅ Create **1 white blouse image** → all characters can wear it
+- ✅ Create **7 body images** (one per character)
+- ✅ Create **7 sets of expressions** (9 per character = 63 total)
+- ❌ DON'T create 7 copies of the same clothing item!
 
 ## Image Requirements
 
@@ -183,10 +204,14 @@ clothing only, no person, product photography style, high quality
 ### Step 1: Generate the Image
 Create the clothing image with AI, remove the background, save as PNG
 
-### Step 2: Place in Correct Folder
+### Step 2: Place in SHARED Folder
+Since clothing is shared across all characters, place it in the shared folder:
+
 ```bash
-static/images/characters/Ruth/clothing/tops/blouse_fancy.png
+static/images/shared_clothing/tops/blouse_fancy.png
 ```
+
+NOT in a character-specific folder! One image for ALL characters.
 
 ### Step 3: Add to Database
 Edit `data/clothing_items.py` and add your item:
@@ -197,7 +222,7 @@ Edit `data/clothing_items.py` and add your item:
     name='Fancy Blouse',
     category='tops',
     slot='top',
-    image_path='clothing/tops/blouse_fancy.png',
+    image_path='tops/blouse_fancy.png',  # Path relative to shared_clothing/
     description='Elegant fancy blouse',
     tags=['formal', 'elegant'],
     coverage=80,
@@ -206,7 +231,16 @@ Edit `data/clothing_items.py` and add your item:
 ```
 
 ### Step 4: Restart the Game
-The new item will appear in the dress-up interface!
+The new item will appear in the dress-up interface for ALL characters!
+
+### Optional: Character-Specific Override
+If you want a specific character (e.g., Ruth) to have a unique version:
+
+```bash
+static/images/characters/Ruth/tops/blouse_fancy.png
+```
+
+The system will automatically use Ruth's version for her, and the shared version for everyone else.
 
 ## Available Clothing Items
 
@@ -282,10 +316,13 @@ This means you can:
    - Remove backgrounds
    - Save in `expressions/` folder
 
-3. **Generate her default outfit**:
-   - White blouse → `clothing/tops/blouse_white.png`
-   - Pencil skirt → `clothing/bottoms/skirt_pencil.png`
-   - Standard white underwear → `clothing/underwear/bra_standard_white.png` + `panties_standard_white.png`
+3. **Generate clothing items** (these go in SHARED folder, not Ruth's folder):
+   - White blouse → `static/images/shared_clothing/tops/blouse_white.png`
+   - Pencil skirt → `static/images/shared_clothing/bottoms/skirt_pencil.png`
+   - Standard white underwear:
+     - `static/images/shared_clothing/underwear/bra_standard_white.png`
+     - `static/images/shared_clothing/underwear/panties_standard_white.png`
+   - **Remember**: These clothing items can now be worn by ANY character, not just Ruth!
 
 4. **Test in game**:
    - Start game
