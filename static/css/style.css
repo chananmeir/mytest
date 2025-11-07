@@ -944,3 +944,81 @@ body {
 #mapModal .btn-small:hover {
     transform: scale(1.05);
 }
+
+/* Activities System */
+.no-activities {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 1rem;
+    font-size: 0.9rem;
+}
+
+.activity-btn {
+    background: linear-gradient(135deg, var(--accent-color) 0%, rgba(83, 52, 131, 0.5) 100%);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.activity-btn:hover {
+    background: linear-gradient(135deg, var(--border-color) 0%, var(--highlight-color) 100%);
+    border-color: var(--highlight-color);
+    transform: translateX(3px);
+    box-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
+}
+
+.activity-btn:active {
+    transform: scale(0.98);
+}
+
+.activity-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.activity-icon {
+    font-size: 1.3rem;
+}
+
+.activity-name {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.activity-duration {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.2rem 0.5rem;
+    border-radius: 5px;
+}
+
+.activity-cost {
+    font-size: 0.8rem;
+    color: white;
+    background: var(--highlight-color);
+    padding: 0.2rem 0.5rem;
+    border-radius: 5px;
+    font-weight: 600;
+}
+
+.activity-description {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.activity-rewards {
+    font-size: 0.8rem;
+    color: var(--success-color);
+    font-weight: 500;
+}

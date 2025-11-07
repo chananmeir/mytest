@@ -573,6 +573,112 @@ function advanceTime(minutes) {
     });
 }
 
+// Load and display available activities
+function loadActivities() {
+    $.ajax({
+        url: '/api/available-activities',
+        method: 'GET',
+        success: function(data) {
+            displayActivities(data.activities, data.character_present);
+        },
+        error: function() {
+            $('#activities-list').html('<p class="no-activities">No activities available here.</p>');
+        }
+    });
+}
+
+// Display activities
+function displayActivities(activities, characterPresent) {
+    const activitiesList = $('#activities-list');
+
+    if (!activities || activities.length === 0) {
+        activitiesList.html('<p class="no-activities">No activities available here.</p>');
+        return;
+    }
+
+    let html = '';
+    activities.forEach(activity => {
+        const isPreferred = activity.is_preferred ? '⭐' : '';
+        const cost = activity.sp_cost > 0 ? `<span class="activity-cost">${activity.sp_cost} SP</span>` : '';
+        const rewards = [];
+
+        if (activity.rapport_gain > 0) rewards.push(`+${activity.rapport_gain} Rapport`);
+        if (activity.money_reward > 0) rewards.push(`$${activity.money_reward}`);
+        if (activity.sp_reward > 0) rewards.push(`+${activity.sp_reward} SP`);
+        if (activity.allows_phs) rewards.push(`PHS +${activity.phs_bonus}%`);
+
+        const rewardsText = rewards.length > 0 ? `<div class="activity-rewards">${rewards.join(', ')}</div>` : '';
+
+        html += `
+            <div class="activity-btn" data-activity-id="${activity.activity_id}" data-character="${characterPresent || ''}">
+                <div class="activity-header">
+                    <span class="activity-icon">${activity.icon}</span>
+                    <span class="activity-name">${activity.name} ${isPreferred}</span>
+                    <span class="activity-duration">${activity.duration_minutes}m</span>
+                    ${cost}
+                </div>
+                <div class="activity-description">${activity.description}</div>
+                ${rewardsText}
+            </div>
+        `;
+    });
+
+    activitiesList.html(html);
+
+    // Add click handlers
+    $('.activity-btn').on('click', function() {
+        const activityId = $(this).data('activity-id');
+        const character = $(this).data('character');
+        startActivity(activityId, character);
+    });
+}
+
+// Start an activity
+function startActivity(activityId, characterName) {
+    if (!confirm('Start this activity? Time will pass.')) return;
+
+    $.ajax({
+        url: '/api/start-activity',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            activity_id: activityId,
+            character_name: characterName || null
+        }),
+        success: function(data) {
+            // Show activity completion message
+            addSystemMessage(`✨ ${data.activity_name} completed!`);
+            addSystemMessage(data.message);
+
+            // Show all changes
+            if (data.changes && data.changes.length > 0) {
+                data.changes.forEach(change => addSystemMessage(change));
+            }
+
+            // Show PHS opportunity if available
+            if (data.phs_opportunity) {
+                addSystemMessage(`💡 Perfect moment for a suggestion! (+${data.phs_bonus}% success)`);
+                // Optionally auto-open plant suggestion modal
+                // _openPlantSuggestionModal();
+            }
+
+            // Update character card if applicable
+            if (data.character_state && characterName) {
+                updateCharacterCard(characterName, data.character_state);
+            }
+
+            // Update game state
+            updateGameState();
+            loadActivities();
+            updateCharacterList();
+        },
+        error: function(xhr) {
+            const errorMsg = xhr.responseJSON?.error || 'Failed to start activity';
+            addSystemMessage(`❌ ${errorMsg}`);
+        }
+    });
+}
+
 // Open skill tree modal
 function openSkillTree() {
     $.ajax({

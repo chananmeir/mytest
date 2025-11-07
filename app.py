@@ -1781,6 +1781,146 @@ def api_goals():
     })
 
 
+@app.route('/api/available-activities')
+def api_available_activities():
+    """Get activities available at player's current location"""
+    from systems.activities import ActivitiesSystem
+
+    game_state = get_game_state()
+    player_location = game_state.player.current_location
+
+    # Get character at current location (if any)
+    characters_here = game_state.get_characters_at_location()
+    character_name = characters_here[0].name if characters_here else None
+
+    # Get rapport if character present
+    rapport = 0
+    if character_name:
+        char = game_state.get_character(character_name)
+        rapport = char.rapport if char else 0
+
+    # Get available activities
+    activities = ActivitiesSystem.get_available_activities(
+        location=player_location,
+        character_present=character_name,
+        rapport=rapport,
+        player_sp=game_state.player.suggestion_points
+    )
+
+    # Convert to dict format
+    activities_data = []
+    for activity in activities:
+        # Check if character especially likes this activity
+        is_preferred = False
+        if character_name:
+            preferences = ActivitiesSystem.get_character_activity_preferences(character_name)
+            is_preferred = activity.activity_id in preferences
+
+        activities_data.append({
+            'activity_id': activity.activity_id,
+            'name': activity.name,
+            'description': activity.description,
+            'duration_minutes': activity.duration_minutes,
+            'sp_cost': activity.sp_cost,
+            'min_rapport': activity.min_rapport,
+            'icon': activity.icon,
+            'activity_type': activity.activity_type,
+            'rapport_gain': activity.rapport_gain,
+            'allows_phs': activity.allows_phs,
+            'phs_bonus': activity.phs_bonus,
+            'money_reward': activity.money_reward,
+            'sp_reward': activity.sp_reward,
+            'is_preferred': is_preferred
+        })
+
+    return jsonify({
+        'activities': activities_data,
+        'location': player_location,
+        'character_present': character_name
+    })
+
+
+@app.route('/api/start-activity', methods=['POST'])
+def api_start_activity():
+    """Start an activity"""
+    from systems.activities import ActivitiesSystem
+    from systems.time_system import advance_time
+    from systems.goal_system import GoalSystem
+
+    data = request.json
+    activity_id = data.get('activity_id')
+    character_name = data.get('character_name')
+
+    game_state = get_game_state()
+
+    # Get activity
+    activity = ActivitiesSystem.get_activity_by_id(activity_id)
+    if not activity:
+        return jsonify({'error': 'Activity not found'}), 404
+
+    # Get character
+    char = None
+    if character_name:
+        char = game_state.get_character(character_name)
+        if not char:
+            return jsonify({'error': 'Character not found'}), 404
+
+    # Check requirements
+    if activity.sp_cost > game_state.player.suggestion_points:
+        return jsonify({'error': 'Not enough SP'}), 400
+
+    if char and char.rapport < activity.min_rapport:
+        return jsonify({'error': f'Need {activity.min_rapport}+ rapport'}), 400
+
+    # Deduct SP cost
+    if activity.sp_cost > 0:
+        game_state.player.suggestion_points -= activity.sp_cost
+
+    # Perform activity
+    results = ActivitiesSystem.perform_activity(activity, char, game_state)
+
+    # Advance time
+    time_msgs = advance_time(game_state, activity.duration_minutes)
+    results['changes'].extend(time_msgs)
+
+    # Track time for goals
+    time_goal_messages = GoalSystem.track_time_advance(game_state, activity.duration_minutes)
+    results['changes'].extend(time_goal_messages)
+
+    # Check for daily/weekly resets
+    reset_messages = GoalSystem.check_daily_reset(game_state)
+    reset_messages.extend(GoalSystem.check_weekly_reset(game_state))
+    results['changes'].extend(reset_messages)
+
+    # Check for time-triggered events
+    from systems.event_system import EventSystem
+    triggered_events = EventSystem.check_time_triggered_events(game_state)
+    for event in triggered_events:
+        success, event_data = EventSystem.trigger_event(event.event_id, game_state)
+        if success:
+            results['changes'].append(f"📖 {event.name}: {event.description}")
+
+    save_game_state(game_state)
+
+    return jsonify({
+        'success': True,
+        'activity_name': results['activity_name'],
+        'message': results['message'],
+        'changes': results['changes'],
+        'duration': results['duration'],
+        'phs_opportunity': results.get('phs_opportunity', False),
+        'phs_bonus': results.get('phs_bonus', 0),
+        'rapport_gained': results.get('rapport_gained', 0),
+        'money_earned': results.get('money_earned', 0),
+        'sp_earned': results.get('sp_earned', 0),
+        'character_state': {
+            'rapport': char.rapport,
+            'emotional_state': char.emotional_state,
+            'resistance': char.resistance
+        } if char else None
+    })
+
+
 if __name__ == '__main__':
     # Create templates and static directories if they don't exist
     os.makedirs('templates', exist_ok=True)

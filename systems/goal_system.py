@@ -553,6 +553,36 @@ class GoalSystem:
         return messages
 
     @staticmethod
+    def track_activity(game_state, activity_id: str) -> List[str]:
+        """Track activities performed for goals"""
+        messages = []
+        GoalSystem.initialize_goals(game_state)
+
+        # Track total activities
+        if 'total_activities' not in game_state.goals:
+            game_state.goals['total_activities'] = 0
+
+        game_state.goals['total_activities'] += 1
+        total = game_state.goals['total_activities']
+
+        # Daily activity goal (not in default goals, but could be added)
+        completed, msg = GoalSystem.update_goal_progress(game_state, 'daily_activity', 'daily', 1)
+        if completed and msg:
+            messages.append(msg)
+
+        # Achievement for doing many activities
+        if total == 10:
+            completed, msg = GoalSystem.update_goal_progress(game_state, 'activities_10', 'achievements', 10)
+            if completed and msg:
+                messages.append(msg)
+        elif total == 50:
+            completed, msg = GoalSystem.update_goal_progress(game_state, 'activities_50', 'achievements', 50)
+            if completed and msg:
+                messages.append(msg)
+
+        return messages
+
+    @staticmethod
     def track_rapport_milestone(game_state, character_name: str, new_rapport: int) -> List[str]:
         """Track rapport milestones"""
         messages = []

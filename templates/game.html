@@ -173,6 +173,16 @@
             </div>
         </div>
 
+        <!-- Activities Section -->
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+            <div style="font-size: 1rem; color: var(--highlight-color); margin-bottom: 0.8rem; font-weight: bold; text-align: center;">
+                🎯 Available Activities
+            </div>
+            <div id="activities-list">
+                <p class="no-activities">Loading activities...</p>
+            </div>
+        </div>
+
         <div style="margin-top: 1rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
             <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Selected Character:</div>
             <div style="font-size: 1.1rem; font-weight: bold;" id="selected-character">None</div>
@@ -412,4 +422,13 @@
 <script src="{{ url_for('static', filename='js/sprite_renderer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/game.js') }}"></script>
 <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+<script>
+    // Initialize activities when page loads
+    $(function() {
+        loadActivities();
+
+        // Refresh activities when location or time changes
+        setInterval(loadActivities, 60000); // Refresh every minute
+    });
+</script>
 {% endblock %}
