@@ -19,6 +19,8 @@ class PlayerState:
     clothing: str = "Faded t-shirt, clean but older jeans, comfortable shoes"
     suggestion_points: int = config.STARTING_SP
     total_sp_earned: int = 0
+    money: int = 100  # Starting money ($100)
+    total_money_earned: int = 0
     current_scene: str = "start"
     scenes_completed: list = field(default_factory=list)
     hypnosis_knowledge: HypnosisKnowledge = field(default_factory=HypnosisKnowledge)
@@ -148,6 +150,8 @@ class GameState:
                 'clothing': self.player.clothing,
                 'suggestion_points': self.player.suggestion_points,
                 'total_sp_earned': self.player.total_sp_earned,
+                'money': self.player.money,
+                'total_money_earned': self.player.total_money_earned,
                 'current_scene': self.player.current_scene,
                 'scenes_completed': self.player.scenes_completed,
                 'hypnosis_knowledge': self.player.hypnosis_knowledge.to_dict(),
@@ -220,6 +224,8 @@ class GameState:
                 clothing=player_data['clothing'],
                 suggestion_points=player_data['suggestion_points'],
                 total_sp_earned=player_data['total_sp_earned'],
+                money=player_data.get('money', 100),  # Default for old saves
+                total_money_earned=player_data.get('total_money_earned', 0),  # Default for old saves
                 current_scene=player_data['current_scene'],
                 scenes_completed=player_data['scenes_completed'],
                 hypnosis_knowledge=hypnosis_knowledge,

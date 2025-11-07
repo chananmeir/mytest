@@ -510,6 +510,7 @@ function updateGameState() {
         method: 'GET',
         success: function(data) {
             $('#sp-display').text(data.player.suggestion_points);
+            $('#money-display').text(`$${data.player.money}`);
             $('#skill-level').text(data.player.skill_level.toUpperCase());
             $('#techniques-count').text(`${data.player.techniques_mastered}/${data.player.total_techniques}`);
         }
@@ -1949,4 +1950,277 @@ function removePHS(characterName, phsIndex) {
             addSystemMessage(`Error: ${error}`);
         }
     });
+}
+
+// ==================== GIFT SHOP ====================
+
+let allGifts = [];
+let currentGiftFilter = 'all';
+
+// Open gift shop modal
+function openGiftShop() {
+    $.ajax({
+        url: '/api/shop/gifts',
+        method: 'GET',
+        success: function(data) {
+            allGifts = data.gifts;
+
+            // Update money display
+            $('#gift-shop-money').text(`$${data.player_money}`);
+
+            // Populate character selector
+            const recipientSelect = $('#gift-recipient');
+            recipientSelect.html('<option value="">Select a character...</option>');
+
+            // Get character list from the page
+            $('.character-card').each(function() {
+                const charName = $(this).data('character');
+                recipientSelect.append(`<option value="${charName}">${charName}</option>`);
+            });
+
+            // Display gifts
+            currentGiftFilter = 'all';
+            displayGifts();
+
+            // Highlight "All Gifts" filter button
+            $('.btn[onclick*="filterGifts"]').css('opacity', '0.6');
+            $('#filter-gifts-all').css('opacity', '1');
+
+            openModal('giftShopModal');
+        },
+        error: function() {
+            alert('Failed to load gift shop');
+        }
+    });
+}
+
+// Filter gifts by price range
+function filterGifts(category) {
+    currentGiftFilter = category;
+    displayGifts();
+
+    // Update button styles
+    $('.btn[onclick*="filterGifts"]').css('opacity', '0.6');
+    $(`#filter-gifts-${category}`).css('opacity', '1');
+}
+
+// Display gifts based on current filter
+function displayGifts() {
+    const giftsGrid = $('#gifts-grid');
+    giftsGrid.empty();
+
+    let filteredGifts = allGifts;
+
+    // Apply filter
+    if (currentGiftFilter === 'cheap') {
+        filteredGifts = allGifts.filter(g => g.cost <= 30);
+    } else if (currentGiftFilter === 'medium') {
+        filteredGifts = allGifts.filter(g => g.cost >= 50 && g.cost <= 100);
+    } else if (currentGiftFilter === 'expensive') {
+        filteredGifts = allGifts.filter(g => g.cost >= 150);
+    }
+
+    if (filteredGifts.length === 0) {
+        giftsGrid.html('<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">No gifts in this category</p>');
+        return;
+    }
+
+    filteredGifts.forEach(gift => {
+        const canAfford = gift.can_afford;
+        const affordClass = canAfford ? '' : 'opacity: 0.5;';
+
+        let effectsHtml = '<div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">';
+        if (gift.rapport_gain > 0) effectsHtml += `<div>❤️ +${gift.rapport_gain} Rapport</div>`;
+        if (gift.resistance_change < 0) effectsHtml += `<div>🎯 ${gift.resistance_change}% Resistance</div>`;
+        if (gift.suggestibility_bonus > 0) effectsHtml += `<div>✨ +${gift.suggestibility_bonus}% Permanent Suggestibility</div>`;
+        if (gift.unlocks_content) effectsHtml += `<div>🔓 Unlocks: ${gift.unlocks_content.replace(/_/g, ' ')}</div>`;
+        effectsHtml += '</div>';
+
+        const giftHtml = `
+            <div class="gift-card" style="${affordClass} background: var(--accent-color); padding: 1rem; border-radius: 10px; border: 2px solid var(--border-color); cursor: ${canAfford ? 'pointer' : 'not-allowed'};" ${canAfford ? `onclick="buyGift('${gift.gift_id}')"` : ''}>
+                <div style="font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem;">${gift.icon}</div>
+                <div style="font-weight: bold; text-align: center; margin-bottom: 0.5rem;">${gift.name}</div>
+                <div style="font-size: 1.2rem; text-align: center; color: var(--highlight-color); margin-bottom: 0.5rem; font-weight: bold;">$${gift.cost}</div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; min-height: 3rem;">${gift.description}</div>
+                ${effectsHtml}
+                ${!canAfford ? '<div style="color: var(--danger-color); text-align: center; margin-top: 0.5rem; font-size: 0.85rem;">⚠️ Cannot Afford</div>' : ''}
+            </div>
+        `;
+
+        giftsGrid.append(giftHtml);
+    });
+}
+
+// Buy and give a gift
+function buyGift(giftId) {
+    const recipient = $('#gift-recipient').val();
+
+    if (!recipient) {
+        alert('Please select a character to give this gift to!');
+        return;
+    }
+
+    const gift = allGifts.find(g => g.gift_id === giftId);
+
+    if (!confirm(`Give ${gift.name} to ${recipient} for $${gift.cost}?`)) {
+        return;
+    }
+
+    $.ajax({
+        url: '/api/shop/give-gift',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            gift_id: giftId,
+            character: recipient
+        }),
+        success: function(data) {
+            if (data.success) {
+                addSystemMessage(`🎁 You gave ${gift.name} to ${recipient}!`);
+                addSystemMessage(data.message);
+
+                // Show changes
+                if (data.changes && data.changes.length > 0) {
+                    data.changes.forEach(change => addSystemMessage(change));
+                }
+
+                // Update game state and money display
+                updateGameState();
+
+                // Refresh the gift shop to show updated affordability
+                openGiftShop();
+
+                // Update character card if they're present
+                updateCharacterList();
+            } else {
+                alert(`Error: ${data.error || 'Failed to give gift'}`);
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to give gift';
+            alert(`Error: ${error}`);
+        }
+    });
+}
+
+// ==================== JOB BOARD ====================
+
+// Open job board modal
+function openJobBoard() {
+    $.ajax({
+        url: '/api/jobs',
+        method: 'GET',
+        success: function(data) {
+            // Update money display
+            $('#job-board-money').text(`$${data.player_money}`);
+
+            // Display jobs
+            displayJobs(data.jobs);
+
+            openModal('jobBoardModal');
+        },
+        error: function() {
+            alert('Failed to load job board');
+        }
+    });
+}
+
+// Display jobs list
+function displayJobs(jobs) {
+    const jobsList = $('#jobs-list');
+    jobsList.empty();
+
+    if (jobs.length === 0) {
+        jobsList.html('<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">No jobs available</p>');
+        return;
+    }
+
+    jobs.forEach(job => {
+        const canAfford = job.can_afford_sp;
+        const meetsRequirement = job.meets_requirement;
+        const canDo = canAfford && meetsRequirement;
+
+        let requirementText = '';
+        if (!meetsRequirement) {
+            requirementText = `<div style="color: var(--danger-color); font-size: 0.85rem; margin-top: 0.5rem;">⚠️ Requires: ${job.requires_skill_level} skill level</div>`;
+        }
+
+        let spCostText = '';
+        if (job.sp_cost > 0) {
+            spCostText = `<span style="color: ${canAfford ? 'var(--warning-color)' : 'var(--danger-color)'};">• Costs ${job.sp_cost} SP</span>`;
+        }
+
+        const jobHtml = `
+            <div class="job-card" style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; border: 2px solid var(--border-color); margin-bottom: 1rem; ${canDo ? 'cursor: pointer;' : 'opacity: 0.6; cursor: not-allowed;'}" ${canDo ? `onclick="doJob('${job.job_id}')"` : ''}>
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <div>
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">${job.icon} ${job.name}</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary);">${job.description}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.5rem; color: var(--success-color); font-weight: bold;">$${job.pay}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">${job.duration_minutes} min</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; color: var(--text-secondary);">
+                    <span>⏱️ ${Math.floor(job.duration_minutes / 60)}h ${job.duration_minutes % 60}m</span>
+                    ${spCostText}
+                </div>
+
+                ${requirementText}
+                ${!canDo ? '<div style="color: var(--danger-color); text-align: center; margin-top: 0.8rem; font-size: 0.9rem; font-weight: bold;">⚠️ Requirements Not Met</div>' : ''}
+            </div>
+        `;
+
+        jobsList.append(jobHtml);
+    });
+}
+
+// Do a job
+function doJob(jobId) {
+    if (!confirm('Start this job? Time will pass and you will earn money.')) {
+        return;
+    }
+
+    $.ajax({
+        url: '/api/jobs/do-job',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            job_id: jobId
+        }),
+        success: function(data) {
+            if (data.success) {
+                addSystemMessage(`💼 ${data.job_name} completed!`);
+                addSystemMessage(data.message);
+
+                // Show changes (money earned, time passed)
+                if (data.changes && data.changes.length > 0) {
+                    data.changes.forEach(change => addSystemMessage(change));
+                }
+
+                // Update game state
+                updateGameState();
+
+                // Close job board modal
+                closeModal('jobBoardModal');
+
+                // Refresh activities (time passed, location may have changed)
+                loadActivities();
+                updateCharacterList();
+            } else {
+                alert(`Error: ${data.error || 'Failed to complete job'}`);
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to do job';
+            alert(`Error: ${error}`);
+        }
+    });
+}
+
+// Helper to update character list (refresh character locations/states)
+function updateCharacterList() {
+    updateCharacterSchedules();
 }

@@ -18,6 +18,7 @@ class Activity:
     requires_character: Optional[str] = None  # Character must be present
     min_rapport: int = 0  # Minimum rapport with character
     sp_cost: int = 0  # SP cost to initiate
+    money_cost: int = 0  # Money cost to perform (for expensive activities)
     max_participants: int = 2  # How many can do this together
     activity_type: str = "social"  # social, chore, exercise, entertainment, intimate
 
@@ -441,6 +442,7 @@ class ActivitiesSystem:
         ),
         'park_picnic': Activity(
             activity_id='park_picnic',
+            money_cost=30,
             name='Have a Picnic',
             description='Spread out a blanket and share food. Romantic and relaxed.',
             location='city_park',
@@ -509,6 +511,7 @@ class ActivitiesSystem:
     CAFE_ACTIVITIES = {
         'coffee_date': Activity(
             activity_id='coffee_date',
+            money_cost=20,
             name='Coffee Date',
             description='Enjoy coffee and pastries together. Intimate setting.',
             location='coffee_cafe',
@@ -578,6 +581,7 @@ class ActivitiesSystem:
     MALL_ACTIVITIES = {
         'shop_together': Activity(
             activity_id='shop_together',
+            money_cost=50,
             name='Go Shopping',
             description='Browse stores and help them pick things out.',
             location='shopping_mall',
@@ -600,6 +604,7 @@ class ActivitiesSystem:
         ),
         'clothing_shopping': Activity(
             activity_id='clothing_shopping',
+            money_cost=100,
             name='Help Pick Outfits',
             description='Help them choose new clothes. Perfect for style suggestions.',
             location='shopping_mall',
@@ -623,6 +628,7 @@ class ActivitiesSystem:
         ),
         'movie_theater': Activity(
             activity_id='movie_theater',
+            money_cost=25,
             name='See a Movie',
             description='Watch a film together at the mall cinema.',
             location='shopping_mall',
@@ -667,6 +673,7 @@ class ActivitiesSystem:
     RESTAURANT_ACTIVITIES = {
         'dinner_date': Activity(
             activity_id='dinner_date',
+            money_cost=80,
             name='Romantic Dinner',
             description='Upscale dinner date. Intimate, special occasion.',
             location='restaurant',
@@ -690,6 +697,7 @@ class ActivitiesSystem:
         ),
         'celebration_dinner': Activity(
             activity_id='celebration_dinner',
+            money_cost=60,
             name='Celebrate Together',
             description='Celebrate a milestone or achievement with a nice meal.',
             location='restaurant',
@@ -710,6 +718,7 @@ class ActivitiesSystem:
         ),
         'business_lunch': Activity(
             activity_id='business_lunch',
+            money_cost=35,
             name='Business Lunch',
             description='Professional lunch meeting. Good for serious conversations.',
             location='restaurant',
@@ -878,6 +887,12 @@ class ActivitiesSystem:
             'changes': []
         }
 
+        # Deduct money cost if any
+        if activity.money_cost > 0:
+            game_state.player.money -= activity.money_cost
+            results['changes'].append(f"💵 Spent ${activity.money_cost}")
+            results['money_spent'] = activity.money_cost
+
         # Apply rapport gain
         if activity.rapport_gain > 0:
             from systems.hypnosis import HypnosisSystem
@@ -912,7 +927,8 @@ class ActivitiesSystem:
 
         # Award money
         if activity.money_reward > 0:
-            game_state.player.suggestion_points += activity.money_reward
+            game_state.player.money += activity.money_reward
+            game_state.player.total_money_earned += activity.money_reward
             results['changes'].append(f"💵 Earned ${activity.money_reward}")
             results['money_earned'] = activity.money_reward
 

@@ -116,6 +116,7 @@ def api_game_state():
     return jsonify({
         'player': {
             'suggestion_points': game_state.player.suggestion_points,
+            'money': game_state.player.money,
             'skill_level': game_state.player.hypnosis_knowledge.skill_level,
             'techniques_mastered': len(game_state.player.hypnosis_knowledge.known_techniques),
             'total_techniques': 11
@@ -1869,6 +1870,9 @@ def api_start_activity():
     if activity.sp_cost > game_state.player.suggestion_points:
         return jsonify({'error': 'Not enough SP'}), 400
 
+    if activity.money_cost > game_state.player.money:
+        return jsonify({'error': f'Not enough money (need ${activity.money_cost})'}), 400
+
     if char and char.rapport < activity.min_rapport:
         return jsonify({'error': f'Need {activity.min_rapport}+ rapport'}), 400
 
@@ -1919,6 +1923,105 @@ def api_start_activity():
             'resistance': char.resistance
         } if char else None
     })
+
+
+@app.route('/api/shop/gifts')
+def api_shop_gifts():
+    """Get available gifts"""
+    from systems.money_system import MoneySystem
+
+    game_state = get_game_state()
+    player_money = game_state.player.money
+
+    gifts = []
+    for gift in MoneySystem.ALL_GIFTS.values():
+        gifts.append({
+            'gift_id': gift.gift_id,
+            'name': gift.name,
+            'description': gift.description,
+            'cost': gift.cost,
+            'category': gift.category,
+            'icon': gift.icon,
+            'can_afford': player_money >= gift.cost,
+            'rapport_gain': gift.rapport_gain,
+            'resistance_change': gift.resistance_change
+        })
+
+    return jsonify({
+        'gifts': gifts,
+        'player_money': player_money
+    })
+
+
+@app.route('/api/shop/give-gift', methods=['POST'])
+def api_give_gift():
+    """Give a gift to a character"""
+    from systems.money_system import MoneySystem
+
+    data = request.json
+    gift_id = data.get('gift_id')
+    character_name = data.get('character')
+
+    game_state = get_game_state()
+
+    gift = MoneySystem.ALL_GIFTS.get(gift_id)
+    if not gift:
+        return jsonify({'error': 'Gift not found'}), 404
+
+    results = MoneySystem.give_gift(game_state, character_name, gift)
+
+    if not results['success']:
+        return jsonify(results), 400
+
+    save_game_state(game_state)
+
+    return jsonify(results)
+
+
+@app.route('/api/jobs')
+def api_jobs():
+    """Get available jobs"""
+    from systems.money_system import MoneySystem
+
+    game_state = get_game_state()
+
+    jobs = []
+    for job in MoneySystem.JOBS.values():
+        jobs.append({
+            'job_id': job.job_id,
+            'name': job.name,
+            'description': job.description,
+            'duration_minutes': job.duration_minutes,
+            'pay': job.pay,
+            'sp_cost': job.sp_cost,
+            'icon': job.icon
+        })
+
+    return jsonify({'jobs': jobs})
+
+
+@app.route('/api/jobs/do-job', methods=['POST'])
+def api_do_job():
+    """Perform a job to earn money"""
+    from systems.money_system import MoneySystem
+
+    data = request.json
+    job_id = data.get('job_id')
+
+    game_state = get_game_state()
+
+    job = MoneySystem.JOBS.get(job_id)
+    if not job:
+        return jsonify({'error': 'Job not found'}), 404
+
+    results = MoneySystem.do_job(game_state, job)
+
+    if not results['success']:
+        return jsonify(results), 400
+
+    save_game_state(game_state)
+
+    return jsonify(results)
 
 
 if __name__ == '__main__':
