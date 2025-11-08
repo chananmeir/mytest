@@ -208,40 +208,96 @@ def save_game(game_state, slot=1, screenshot=None):
 
 ---
 
-### 6. More Scenes & Locations 🏠
-**Current State:** Only family dinner scene fully implemented
+### 6. Scene Implementations for Existing Locations 🏠
+**Current State:**
+- ✅ **Location System COMPLETE:** 12 fully-defined locations in `location_system.py`
+  - 5 Home locations (Kitchen, Living Room, Dining Room, Your Room, Backyard)
+  - 3 Work locations (Ruth's Office, Fitness Center, Elementary School)
+  - 4 Public locations (City Park, Coffee Café, Shopping Mall, Restaurant)
+- ✅ **Character Schedules COMPLETE:** All 7 characters have time-based location schedules
+- ❌ **Scene Files:** Only 1 scene implemented (`family_dinner.py`)
+
 **Impact:** HIGH - Content expansion, replayability
 
+**The Gap:** You have the infrastructure 100% ready, but need actual playable scene content!
+
 **Recommendations:**
-You already have `location_system.py`! Add these scenes:
+Create scene implementations for your existing 12 locations:
 
-- **Phase 1 Scenes:**
-  - Kitchen (one-on-one conversations while helping)
-  - Living Room (TV watching, casual hangout)
-  - Backyard (smoking/vaping excuse, private talks)
-  - Garage (Tom's workshop - easy target isolation)
+**Priority 1 - Home Scenes (Leverage existing locations):**
+- **Kitchen Scene** (`scenes/kitchen_scene.py`)
+  - One-on-one conversations while helping with cooking
+  - Ruth and Dawn often here
+  - Privacy: Medium (good for deeper talks)
 
-- **Phase 2 Scenes:**
-  - Ruth's House (visit her home)
-  - Grocery Store (run into family members)
-  - Gym (Derek's domain - challenge scenario)
-  - Hospital (visit Melanie at work)
+- **Living Room Scene** (`scenes/living_room_scene.py`)
+  - TV watching, casual hangout
+  - James gaming, family relaxing
+  - Privacy: Low (group setting, harder suggestions)
 
-- **Phase 3 Scenes:**
-  - Holiday gatherings (Christmas, Thanksgiving)
-  - Birthday parties
-  - Family vacation
-  - Wedding preparation (if high rapport)
+- **Backyard Scene** (`scenes/backyard_scene.py`)
+  - Private conversations, fresh air excuse
+  - Rachel playing, private talks
+  - Privacy: High (isolated, great for PHS planting)
+
+- **Your Room Scene** (`scenes/your_room_scene.py`)
+  - Most intimate setting
+  - Tom, Sophie, James visit at night
+  - Privacy: Very High (1-on-1 only, deep conversations)
+
+**Priority 2 - Work Location Scenes:**
+- **Fitness Center Scene** (Marcus's domain)
+  - Challenge scenario, ego-based manipulation
+  - Requires different approach (physical vs mental)
+
+- **Ruth's Office Scene** (catch her at work)
+  - Professional environment, stress-based opportunities
+  - Guilt leverage point
+
+**Priority 3 - Public Location Scenes:**
+- **Coffee Café Scene** (neutral ground)
+  - Intimate conversations in public
+  - Great for "accidental" meetups
+
+- **City Park Scene** (outdoor, relaxed)
+  - Sophie's reading spot
+  - Reflective conversations
 
 **Implementation Pattern:**
 ```python
 # scenes/kitchen_scene.py
 class KitchenScene(BaseScene):
     def __init__(self, game_state, llm_handler):
-        super().__init__("kitchen", "Kitchen - Ruth's House", game_state, llm_handler)
-        self.available_characters = ["Ruth", "Dawn"]  # Who's in kitchen
-        self.privacy_level = "medium"  # Easier to plant suggestions
+        # Use existing location from location_system.py!
+        from systems.location_system import get_location
+        location = get_location('home_kitchen')
+
+        super().__init__(
+            scene_id="kitchen",
+            scene_name=location.name,
+            game_state=game_state,
+            llm_handler=llm_handler
+        )
+
+        self.location = location
+        self.privacy_level = "medium"
+
+    def get_available_characters(self):
+        # Use character location schedules
+        from systems.location_system import get_characters_at_location
+        from systems.time_system import get_current_period
+
+        period = get_current_period(self.game_state.current_time)
+        return get_characters_at_location('home_kitchen', period)
 ```
+
+**Quick Implementation Checklist:**
+- [ ] `scenes/kitchen_scene.py` - Implement using existing `home_kitchen` location
+- [ ] `scenes/living_room_scene.py` - Use `home_living_room` location
+- [ ] `scenes/backyard_scene.py` - Use `home_backyard` location
+- [ ] `scenes/your_room_scene.py` - Use `home_your_room` location
+- [ ] Update web UI to allow location navigation
+- [ ] Add location travel/transition system in `app.py`
 
 ---
 
@@ -586,6 +642,13 @@ You already have amazing docs:
 - **Estimated Time:** 4-6 hours
 - **Impact:** Adds stakes immediately
 
+### 6. Implement Kitchen Scene 🏠
+- Use existing `home_kitchen` location from `location_system.py`
+- Create `scenes/kitchen_scene.py` (copy pattern from `family_dinner.py`)
+- Add location navigation to web UI
+- **Estimated Time:** 3-5 hours
+- **Impact:** Doubles available game content immediately
+
 ---
 
 ## Monetization Considerations (If Desired)
@@ -621,7 +684,7 @@ You already have amazing docs:
 ### Biggest Opportunities
 1. **Visual Assets** (Priority #1) - Would 10x the appeal
 2. **Tutorial/Onboarding** - Get players hooked in first 5 minutes
-3. **More Scenes** - Leverage existing location system
+3. **Scene Implementations** - You have 12 locations defined, implement playable scenes for them
 4. **Consequence System** - Make choices matter more
 5. **Audio** - Complete the immersive experience
 
@@ -634,11 +697,11 @@ You already have amazing docs:
 5. Add suspicion consequences
 
 **Phase 2 (Next Month):**
-1. Add 3 new scenes
-2. Implement achievement system
-3. Multiple save slots
-4. Mobile optimization
-5. Character backstory unlocks
+1. Implement 4 home scenes (Kitchen, Living Room, Backyard, Your Room) using existing locations
+2. Add location navigation/travel UI
+3. Implement achievement system
+4. Multiple save slots
+5. Mobile optimization
 
 **Phase 3 (Month 3):**
 1. Branching narrative & endings
