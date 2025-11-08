@@ -2680,6 +2680,212 @@ def api_save_system_config():
     })
 
 
+# ==================== MODDING SYSTEM ENDPOINTS ====================
+
+@app.route('/api/mods/list')
+def api_list_mods():
+    """List all loaded mods"""
+    from systems.mod_system import mod_loader
+
+    summary = mod_loader.get_load_summary()
+
+    return jsonify({
+        'success': True,
+        'summary': summary
+    })
+
+
+@app.route('/api/mods/load', methods=['POST'])
+def api_load_mods():
+    """Load all mods from mods directory"""
+    from systems.mod_system import mod_loader
+
+    results = mod_loader.load_all_mods()
+
+    return jsonify({
+        'success': True,
+        'results': results
+    })
+
+
+@app.route('/api/mods/reload', methods=['POST'])
+def api_reload_mod():
+    """Reload a specific mod (for development)"""
+    from systems.mod_system import mod_loader
+
+    data = request.json
+    mod_id = data.get('mod_id')
+
+    if not mod_id:
+        return jsonify({'success': False, 'error': 'mod_id required'}), 400
+
+    success, errors = mod_loader.reload_mod(mod_id)
+
+    if success:
+        return jsonify({
+            'success': True,
+            'message': f'Mod {mod_id} reloaded successfully'
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'errors': errors
+        }), 400
+
+
+@app.route('/api/mods/characters')
+def api_get_character_mods():
+    """Get all character mods"""
+    from systems.mod_system import get_character_mods
+
+    character_mods = get_character_mods()
+
+    return jsonify({
+        'success': True,
+        'character_mods': character_mods,
+        'count': len(character_mods)
+    })
+
+
+@app.route('/api/mods/activities')
+def api_get_activity_mods():
+    """Get all activity mods"""
+    from systems.mod_system import get_activity_mods
+
+    activity_mods = get_activity_mods()
+
+    return jsonify({
+        'success': True,
+        'activity_mods': activity_mods,
+        'count': len(activity_mods)
+    })
+
+
+@app.route('/api/mods/techniques')
+def api_get_technique_mods():
+    """Get all technique mods"""
+    from systems.mod_system import get_technique_mods
+
+    technique_mods = get_technique_mods()
+
+    return jsonify({
+        'success': True,
+        'technique_mods': technique_mods,
+        'count': len(technique_mods)
+    })
+
+
+@app.route('/api/mods/scenarios')
+def api_get_scenario_mods():
+    """Get all scenario mods"""
+    from systems.mod_system import get_scenario_mods
+
+    scenario_mods = get_scenario_mods()
+
+    return jsonify({
+        'success': True,
+        'scenario_mods': scenario_mods,
+        'count': len(scenario_mods)
+    })
+
+
+@app.route('/api/mods/integrate', methods=['POST'])
+def api_integrate_mod():
+    """Integrate a mod into the current game"""
+    from systems.mod_system import integrate_mod_into_game
+
+    game_state = get_game_state()
+    data = request.json
+
+    mod_id = data.get('mod_id')
+    if not mod_id:
+        return jsonify({'success': False, 'error': 'mod_id required'}), 400
+
+    success, message = integrate_mod_into_game(mod_id, game_state)
+
+    if success:
+        # Save updated game state
+        save_game_state(game_state)
+
+        return jsonify({
+            'success': True,
+            'message': message
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'error': message
+        }), 400
+
+
+@app.route('/api/mods/character/add', methods=['POST'])
+def api_add_character_from_mod():
+    """Add a character to the game from a mod"""
+    from systems.mod_system import mod_loader, ModIntegration
+
+    game_state = get_game_state()
+    data = request.json
+
+    mod_id = data.get('mod_id')
+    if not mod_id:
+        return jsonify({'success': False, 'error': 'mod_id required'}), 400
+
+    mod_data = mod_loader.get_mod(mod_id)
+    if not mod_data:
+        return jsonify({'success': False, 'error': f'Mod {mod_id} not found'}), 404
+
+    if mod_data['metadata']['mod_type'] != 'character':
+        return jsonify({'success': False, 'error': 'Not a character mod'}), 400
+
+    try:
+        character = ModIntegration.create_character_from_mod(mod_data, game_state)
+        game_state.characters[character.name] = character
+
+        # Save updated game state
+        save_game_state(game_state)
+
+        return jsonify({
+            'success': True,
+            'message': f'Added character: {character.name}',
+            'character': {
+                'name': character.name,
+                'age': character.age,
+                'gender': character.gender,
+                'rapport': character.rapport,
+                'suspicion': character.suspicion
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/mods/validate', methods=['POST'])
+def api_validate_mod():
+    """Validate a mod file without loading it"""
+    from systems.mod_system import mod_loader
+
+    data = request.json
+    mod_data = data.get('mod_data')
+
+    if not mod_data:
+        return jsonify({'success': False, 'error': 'mod_data required'}), 400
+
+    validation = mod_loader.validate_mod(mod_data)
+
+    return jsonify({
+        'success': True,
+        'validation': {
+            'valid': validation.valid,
+            'errors': validation.errors,
+            'warnings': validation.warnings,
+            'mod_id': validation.mod_id
+        }
+    })
+
+
 if __name__ == '__main__':
     # Create templates and static directories if they don't exist
     os.makedirs('templates', exist_ok=True)
