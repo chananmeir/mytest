@@ -18,6 +18,10 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 app.config['SESSION_TYPE'] = 'filesystem'
 
+# Register Asset Manager Blueprint
+from asset_manager import asset_manager
+app.register_blueprint(asset_manager)
+
 # Global instances
 llm_handler = LLMHandler()
 hypnosis_system = HypnosisSystem()

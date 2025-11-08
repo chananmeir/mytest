@@ -412,3 +412,8 @@ def get_items_by_slot(slot: str) -> dict:
 def get_items_by_tag(tag: str) -> dict:
     """Get all items with a specific tag"""
     return {k: v for k, v in ALL_CLOTHING_ITEMS.items() if tag in v.tags}
+
+
+def get_all_clothing_items() -> dict:
+    """Get all clothing items"""
+    return ALL_CLOTHING_ITEMS
