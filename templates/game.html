@@ -1,0 +1,780 @@
+{% extends "base.html" %}
+
+{% block title %}Family Dynamics RPG - Game{% endblock %}
+
+{% block content %}
+<!-- Game Header -->
+<div class="game-header">
+    <div class="player-stats" style="cursor: pointer;" onclick="openPlayerProfile()" title="Click to view your profile">
+        <div class="stat-item">
+            <span class="stat-label">Suggestion Points</span>
+            <span class="stat-value" id="sp-display">{{ game_state.player.suggestion_points }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Money</span>
+            <span class="stat-value" id="money-display">${{ game_state.player.money }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Skill Level</span>
+            <span class="stat-value" id="skill-level">{{ game_state.player.hypnosis_knowledge.skill_level|upper }}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Techniques</span>
+            <span class="stat-value" id="techniques-count">{{ game_state.player.hypnosis_knowledge.known_techniques|length }}/11</span>
+        </div>
+    </div>
+
+    <div class="time-display">
+        <div class="time-item">
+            <span class="time-icon">🕐</span>
+            <span class="time-value" id="current-time">6:00 PM</span>
+        </div>
+        <div class="time-item">
+            <span class="time-icon">📅</span>
+            <span class="time-value" id="current-date">Monday, January 15</span>
+        </div>
+        <div class="time-item">
+            <span class="time-icon">🌆</span>
+            <span class="time-value" id="current-period">Evening</span>
+        </div>
+    </div>
+
+    <div class="game-actions">
+        <button class="btn btn-small" onclick="saveGame()">💾 Save</button>
+        <button class="btn btn-small" onclick="exitGame()">🚪 Exit</button>
+    </div>
+</div>
+
+<!-- Main Game Content -->
+<div class="game-content">
+    <!-- Left: Character List -->
+    <div class="character-list">
+        <h2 id="character-list-header">Characters</h2>
+        <div id="character-cards">
+            {% for character in game_state.characters.values() %}
+            <div class="character-card" data-character="{{ character.name }}">
+                <!-- Character Sprite Preview -->
+                <div id="sprite-{{ character.name }}" class="character-sprite-small" style="margin: 0 auto 0.5rem auto;"></div>
+
+                <div class="character-name">{{ character.name }}</div>
+                <div class="character-info">{{ character.age }} - {{ character.occupation }}</div>
+                <div class="rapport-bar">
+                    <div class="rapport-fill" style="width: {{ (character.rapport / 20 * 100)|int }}%"></div>
+                </div>
+                <div class="character-info" style="margin-top: 0.3rem;">
+                    Rapport: <span class="rapport-value" data-character="{{ character.name }}">{{ character.rapport }}</span>/20 | {{ character.emotional_state|title }}
+                </div>
+
+                <!-- Mood Indicator -->
+                <div class="mood-indicator" data-character="{{ character.name }}" style="background: rgba(102, 126, 234, 0.1); border-left: 3px solid var(--text-secondary); padding: 0.5rem; margin-top: 0.5rem; border-radius: 5px; font-size: 0.75rem;">
+                    <div class="mood-display" style="font-weight: 600; margin-bottom: 0.3rem;">
+                        😐 Neutral
+                    </div>
+                    <div class="mood-recommendation" style="color: var(--text-secondary); font-size: 0.7rem;">
+                        • Loading...
+                    </div>
+                </div>
+
+                <!-- Milestone indicator -->
+                {% set next_milestone = (((character.rapport // 5) + 1) * 5) if character.rapport < 20 else 20 %}
+                {% if character.rapport < 20 %}
+                <div class="milestone-indicator" data-character="{{ character.name }}" style="font-size: 0.75rem; color: var(--warning-color); margin-top: 0.3rem; text-align: center;">
+                    ⭐ Next milestone: {{ next_milestone }}/20 (+1 SP)
+                </div>
+                {% else %}
+                <div class="milestone-indicator" data-character="{{ character.name }}" style="font-size: 0.75rem; color: var(--success-color); margin-top: 0.3rem; text-align: center;">
+                    ✨ Maximum rapport!
+                </div>
+                {% endif %}
+
+                <!-- Character Actions -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 0.8rem;">
+                    <button class="btn btn-small" onclick="selectCharacter('{{ character.name }}')"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="Start conversation">
+                        💬 Talk
+                    </button>
+                    <button class="btn btn-small" onclick="openCharacterProfile('{{ character.name }}')"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="View full profile">
+                        👤 Profile
+                    </button>
+                    <button class="btn btn-small" onclick="openPlantSuggestionFor('{{ character.name }}')"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="Plant hypnotic suggestion">
+                        🎯 Suggest
+                    </button>
+                    <button class="btn btn-small" onclick="openCharacterDressUp('{{ character.name }}', {{ character.outfit|tojson }})"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="Change outfit">
+                        👗 Outfit
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Center: Dialogue/Content Area -->
+    <div class="main-content">
+        <div class="dialogue-box" id="dialogue-box">
+            <div class="dialogue-message">
+                <div class="system-message">
+                    Welcome to the Family Dinner. Select a character to talk to, or use the actions panel to study hypnosis and view your skills.
+                </div>
+            </div>
+        </div>
+
+        <!-- Dialogue Choices (shown when contextual choices are available) -->
+        <div class="dialogue-choices" id="dialogue-choices" style="display: none;">
+            <div class="choices-header">Choose your response:</div>
+            <div class="choices-container" id="choices-container">
+                <!-- Choice buttons will be inserted here -->
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="message-input" placeholder="Select a character to start talking..." disabled>
+            <button class="btn" id="send-btn" onclick="sendMessage()" disabled>Send</button>
+        </div>
+    </div>
+
+    <!-- Right: Actions Panel -->
+    <div class="action-panel">
+        <h2>Actions</h2>
+
+        <button class="action-button" id="plant-suggestion-btn" onclick="openPlantSuggestionFor()" disabled>
+            🎯 Plant Suggestion
+        </button>
+
+        <button class="action-button" onclick="openCharacterProfile()">
+            👤 View Profile
+        </button>
+
+        <button class="action-button" onclick="openSkillTree()">
+            🌳 Skill Tree
+        </button>
+
+        <button class="action-button" onclick="openStudyMenu()">
+            📚 Study Hypnosis
+        </button>
+
+        <button class="action-button" onclick="openBooks()">
+            📖 Read Books
+        </button>
+
+        <button class="action-button" onclick="openAddCharacter()">
+            ➕ Add Character
+        </button>
+
+        <button class="action-button" onclick="openMap()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            🗺️ Travel
+        </button>
+
+        <button class="action-button" onclick="openGiftShop()" style="background: linear-gradient(135deg, #e94560 0%, #ff8c00 100%);">
+            🎁 Gift Shop
+        </button>
+
+        <button class="action-button" onclick="openJobBoard()" style="background: linear-gradient(135deg, #43a047 0%, #1e88e5 100%);">
+            💼 Job Board
+        </button>
+
+        <button class="action-button" onclick="openEventLog()" style="background: linear-gradient(135deg, #7b1fa2 0%, #c2185b 100%);">
+            📋 Event Log
+        </button>
+
+        <button class="action-button" onclick="openJournal()" style="background: linear-gradient(135deg, #5e35b1 0%, #1e88e5 100%);">
+            📖 Journal & Dossiers
+        </button>
+
+        <button class="action-button" onclick="openDeepHypnosis()" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);">
+            🌀 Deep Hypnosis
+        </button>
+
+        <div style="margin-top: 2rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-align: center;">⏱️ Time Control</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <button class="btn btn-small" onclick="advanceTime(15)" title="Skip 15 minutes">+15 min</button>
+                <button class="btn btn-small" onclick="advanceTime(60)" title="Skip 1 hour">+1 hour</button>
+                <button class="btn btn-small" onclick="advanceTime(180)" title="Skip 3 hours">+3 hours</button>
+                <button class="btn btn-small" onclick="advanceTime(480)" title="Skip to next period">Next Period</button>
+            </div>
+        </div>
+
+        <!-- Activities Section -->
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+            <div style="font-size: 1rem; color: var(--highlight-color); margin-bottom: 0.8rem; font-weight: bold; text-align: center;">
+                🎯 Available Activities
+            </div>
+            <div id="activities-list">
+                <p class="no-activities">Loading activities...</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Selected Character:</div>
+            <div style="font-size: 1.1rem; font-weight: bold;" id="selected-character">None</div>
+        </div>
+    </div>
+</div>
+
+<!-- Skill Tree Modal -->
+<div id="skillTreeModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Hypnosis Skill Tree</h2>
+            <button class="close-modal" onclick="closeModal('skillTreeModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div style="font-size: 1.2rem;">
+                    <span id="modal-skill-level"></span> |
+                    <span id="modal-techniques-count"></span> Techniques Mastered
+                </div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                    Bonuses: <span id="modal-bonuses"></span>
+                </div>
+            </div>
+
+            <div id="skill-tree-content" class="skill-tree">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Character Profile Modal -->
+<div id="profileModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="profile-character-name"></h2>
+            <button class="close-modal" onclick="closeModal('profileModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="profile-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Plant Suggestion Modal -->
+<div id="plantSuggestionModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Plant Suggestion</h2>
+            <button class="close-modal" onclick="closeModal('plantSuggestionModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="plant-suggestion-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Study Menu Modal -->
+<div id="studyModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Study Hypnosis</h2>
+            <button class="close-modal" onclick="closeModal('studyModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="action-button" onclick="openBooks()">
+                📖 Read a Book
+            </div>
+            <div class="action-button" onclick="practiceMenu()">
+                🎓 Practice Techniques
+            </div>
+            <div class="action-button" onclick="researchOnline()">
+                🌐 Research Online
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Books Modal -->
+<div id="booksModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Available Books</h2>
+            <button class="close-modal" onclick="closeModal('booksModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="books-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Player Profile Modal -->
+<div id="playerProfileModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">👤 Your Profile</h2>
+            <button class="close-modal" onclick="closeModal('playerProfileModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="player-profile-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Add Character Modal -->
+<div id="addCharacterModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">➕ Add New Character</h2>
+            <button class="close-modal" onclick="closeModal('addCharacterModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+                Create a new family member or friend to interact with
+            </p>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Name *</label>
+                <input type="text" id="new-char-name" placeholder="e.g., Sarah"
+                       style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Age *</label>
+                    <input type="number" id="new-char-age" placeholder="25" min="1" max="120"
+                           style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Gender *</label>
+                    <select id="new-char-gender"
+                            style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Resistance (%) *</label>
+                    <input type="number" id="new-char-resistance" placeholder="50" min="0" max="100"
+                           style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                    <small style="color: var(--text-secondary);">Higher = harder to influence</small>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Occupation *</label>
+                <input type="text" id="new-char-occupation" placeholder="e.g., College Student"
+                       style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Personality *</label>
+                <textarea id="new-char-personality" placeholder="e.g., Shy, thoughtful, loves reading" rows="2"
+                          style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Clothing (Optional)</label>
+                <input type="text" id="new-char-clothing" placeholder="e.g., Hoodie and jeans"
+                       style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Clothing Meaning (Optional)</label>
+                <input type="text" id="new-char-clothing-meaning" placeholder="e.g., Comfort over style"
+                       style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+
+            <button class="btn btn-primary" onclick="createCharacter()" style="width: 100%;">
+                ✨ Create Character
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Dress-Up Modal -->
+<div id="dressUpModal" class="modal">
+    <div class="modal-content" style="max-width: 1200px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+            <h2 class="modal-title">👗 Dress-Up: <span id="dressup-character-name"></span></h2>
+            <button class="close-modal" onclick="closeDressUpModal()">&times;</button>
+        </div>
+        <div class="modal-body" style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem;">
+            <!-- Left: Character Preview -->
+            <div>
+                <h3 style="margin-bottom: 1rem; text-align: center;">Preview</h3>
+                <div id="dressup-preview" style="margin: 0 auto;"></div>
+            </div>
+
+            <!-- Right: Clothing Options -->
+            <div>
+                <h3 style="margin-bottom: 1rem;">Select Clothing</h3>
+                <div id="dressup-clothing-options" style="max-height: 600px; overflow-y: auto;">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid var(--border-color);">
+            <button class="btn btn-primary" onclick="closeDressUpModal()">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- Travel Map Modal -->
+<div id="mapModal" class="modal">
+    <div class="modal-content" style="max-width: 1200px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">🗺️ Travel Map</h2>
+            <button class="close-modal" onclick="closeModal('mapModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Current Location Display -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; margin-bottom: 1.5rem; text-align: center;">
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 0.3rem;">📍 Current Location</div>
+                <div style="font-size: 1.3rem; font-weight: bold; color: white;" id="current-location-name">Loading...</div>
+            </div>
+
+            <!-- Location Categories -->
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-small" onclick="filterLocations('all')" id="filter-all">All Locations</button>
+                    <button class="btn btn-small" onclick="filterLocations('home')" id="filter-home">🏠 Home</button>
+                    <button class="btn btn-small" onclick="filterLocations('work')" id="filter-work">💼 Work</button>
+                    <button class="btn btn-small" onclick="filterLocations('public')" id="filter-public">🌆 Public</button>
+                </div>
+            </div>
+
+            <!-- Locations Grid -->
+            <div id="locations-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; max-height: 500px; overflow-y: auto; padding: 0.5rem;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gift Shop Modal -->
+<div id="giftShopModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">🎁 Gift Shop</h2>
+            <button class="close-modal" onclick="closeModal('giftShopModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Money display -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #e94560 0%, #ff8c00 100%); border-radius: 10px; margin-bottom: 1.5rem; text-align: center;">
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 0.3rem;">💰 Your Money</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: white;" id="gift-shop-money">$0</div>
+            </div>
+
+            <!-- Character selector -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Give Gift To:</label>
+                <select id="gift-recipient" style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                    <option value="">Select a character...</option>
+                </select>
+            </div>
+
+            <!-- Gift categories filter -->
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-small" onclick="filterGifts('all')" id="filter-gifts-all">All Gifts</button>
+                    <button class="btn btn-small" onclick="filterGifts('cheap')" id="filter-gifts-cheap">💐 Cheap ($10-30)</button>
+                    <button class="btn btn-small" onclick="filterGifts('medium')" id="filter-gifts-medium">💎 Medium ($50-100)</button>
+                    <button class="btn btn-small" onclick="filterGifts('expensive')" id="filter-gifts-expensive">✨ Expensive ($150-300)</button>
+                </div>
+            </div>
+
+            <!-- Gifts grid -->
+            <div id="gifts-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; max-height: 500px; overflow-y: auto; padding: 0.5rem;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Job Board Modal -->
+<div id="jobBoardModal" class="modal">
+    <div class="modal-content" style="max-width: 800px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">💼 Job Board - Earn Money</h2>
+            <button class="close-modal" onclick="closeModal('jobBoardModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Money display -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #43a047 0%, #1e88e5 100%); border-radius: 10px; margin-bottom: 1.5rem; text-align: center;">
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 0.3rem;">💰 Your Money</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: white;" id="job-board-money">$0</div>
+            </div>
+
+            <!-- Jobs list -->
+            <div id="jobs-list" style="max-height: 500px; overflow-y: auto;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Event Log Modal -->
+<div id="eventLogModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">📋 Event Log - What Happened While You Were Away</h2>
+            <button class="close-modal" onclick="closeModal('eventLogModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Info header -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #7b1fa2 0%, #c2185b 100%); border-radius: 10px; margin-bottom: 1.5rem; text-align: center;">
+                <div style="font-size: 1rem; color: rgba(255,255,255,0.95); margin-bottom: 0.3rem;">
+                    Characters act autonomously based on their active suggestions
+                </div>
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.8);">
+                    Recent events are listed below
+                </div>
+            </div>
+
+            <!-- Filter buttons -->
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-small" onclick="filterEventLog('all')" id="filter-events-all">All Events</button>
+                    <button class="btn btn-small" onclick="filterEventLog('phs')" id="filter-events-phs">✨ PHS Activations</button>
+                    <button class="btn btn-small" onclick="filterEventLog('clothing')" id="filter-events-clothing">👗 Clothing Changes</button>
+                    <button class="btn btn-small" onclick="filterEventLog('mood')" id="filter-events-mood">💭 Mood Changes</button>
+                    <button class="btn btn-small" onclick="filterEventLog('action')" id="filter-events-action">🚶 Actions</button>
+                </div>
+            </div>
+
+            <!-- Events timeline -->
+            <div id="events-timeline" style="max-height: 500px; overflow-y: auto; padding: 0.5rem;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Journal & Dossiers Modal -->
+<div id="journalModal" class="modal">
+    <div class="modal-content" style="max-width: 1100px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">📖 Journal & Character Dossiers</h2>
+            <button class="close-modal" onclick="closeModal('journalModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Tabs -->
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--accent-color);">
+                <button class="journal-tab active" onclick="switchJournalTab('entries')" data-tab="entries" style="flex: 1; padding: 0.8rem; background: var(--highlight-color); color: white; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600;">
+                    📝 My Journal
+                </button>
+                <button class="journal-tab" onclick="switchJournalTab('dossiers')" data-tab="dossiers" style="flex: 1; padding: 0.8rem; background: var(--accent-color); color: var(--text-primary); border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600;">
+                    📂 Character Dossiers
+                </button>
+            </div>
+
+            <!-- Journal Entries Tab -->
+            <div class="journal-tab-content" data-tab-content="entries">
+                <!-- New Entry Button -->
+                <button class="btn btn-primary" onclick="showNewEntryForm()" style="width: 100%; margin-bottom: 1rem;">
+                    ✏️ Write New Entry
+                </button>
+
+                <!-- New Entry Form (hidden by default) -->
+                <div id="new-entry-form" style="display: none; background: var(--accent-color); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem;">New Journal Entry</h3>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Entry Type:</label>
+                        <select id="journal-entry-type" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                            <option value="general">📝 General Note</option>
+                            <option value="character_note">👤 Character Note</option>
+                            <option value="goal">🎯 Goal</option>
+                            <option value="observation">👁️ Observation</option>
+                            <option value="phs_note">✨ PHS Note</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Character (optional):</label>
+                        <select id="journal-character" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                            <option value="">-- None --</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Title:</label>
+                        <input type="text" id="journal-title" placeholder="Brief title for this entry" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Content:</label>
+                        <textarea id="journal-content" rows="5" placeholder="Write your journal entry here..." style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" id="journal-important" style="width: 20px; height: 20px;">
+                            <span style="font-weight: bold;">⭐ Mark as Important</span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-primary" onclick="saveJournalEntry()" style="flex: 1;">Save Entry</button>
+                        <button class="btn btn-secondary" onclick="cancelNewEntry()" style="flex: 1;">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Filter Buttons -->
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn btn-small" onclick="filterJournal('all')" id="filter-journal-all">All Entries</button>
+                        <button class="btn btn-small" onclick="filterJournal('general')" id="filter-journal-general">📝 General</button>
+                        <button class="btn btn-small" onclick="filterJournal('character_note')" id="filter-journal-character_note">👤 Characters</button>
+                        <button class="btn btn-small" onclick="filterJournal('goal')" id="filter-journal-goal">🎯 Goals</button>
+                        <button class="btn btn-small" onclick="filterJournal('observation')" id="filter-journal-observation">👁️ Observations</button>
+                        <button class="btn btn-small" onclick="filterJournal('phs_note')" id="filter-journal-phs_note">✨ PHS Notes</button>
+                    </div>
+                </div>
+
+                <!-- Journal Entries List -->
+                <div id="journal-entries-list" style="max-height: 500px; overflow-y: auto;">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Character Dossiers Tab -->
+            <div class="journal-tab-content" data-tab-content="dossiers" style="display: none;">
+                <!-- Character Selection -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Select Character:</label>
+                    <select id="dossier-character-select" onchange="loadCharacterDossier(this.value)" style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                        <option value="">-- Select a character --</option>
+                    </select>
+                </div>
+
+                <!-- Dossier Content -->
+                <div id="dossier-content">
+                    <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📂</div>
+                        <div style="font-size: 1.2rem;">Select a character to view their dossier</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deep Hypnosis Modal -->
+<div id="deepHypnosisModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">🌀 Deep Hypnosis - Induction & Trance Depth</h2>
+            <button class="close-modal" onclick="closeModal('deepHypnosisModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Character Selection -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Select Character:</label>
+                <select id="hypnosis-character-select" onchange="loadHypnosisCharacter(this.value)" style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                    <option value="">-- Select a character to hypnotize --</option>
+                </select>
+            </div>
+
+            <!-- Hypnosis Content (shown when character selected) -->
+            <div id="hypnosis-content" style="display: none;">
+                <!-- Trance State Display -->
+                <div id="trance-state-display" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem; color: white; text-align: center;">
+                    <div style="font-size: 1.2rem; margin-bottom: 0.5rem;" id="trance-status">Character Awake</div>
+                    <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Trance Depth</div>
+                            <div style="font-size: 1.8rem; font-weight: bold;" id="trance-depth">0%</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Depth Level</div>
+                            <div style="font-size: 1.3rem; font-weight: bold;" id="trance-level">Awake</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Fractionation Count</div>
+                            <div style="font-size: 1.3rem; font-weight: bold;" id="fraction-count">0</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Depth Multiplier</div>
+                            <div style="font-size: 1.3rem; font-weight: bold;" id="fraction-multiplier">1.0x</div>
+                        </div>
+                    </div>
+
+                    <!-- Depth Progress Bar -->
+                    <div style="margin-top: 1rem; background: rgba(255,255,255,0.2); height: 20px; border-radius: 10px; overflow: hidden;">
+                        <div id="depth-progress-bar" style="height: 100%; background: linear-gradient(90deg, #4caf50 0%, #ff9800 50%, #f44336 100%); width: 0%; transition: width 0.5s;"></div>
+                    </div>
+                </div>
+
+                <!-- Fractionation Button (shown when in trance) -->
+                <div id="fractionation-section" style="display: none; margin-bottom: 1.5rem;">
+                    <button class="btn btn-primary" onclick="wakeFromTrance()" style="width: 100%; font-size: 1.1rem; padding: 1rem;">
+                        👁️ Wake Them Up (Fractionation - Makes Next Induction Deeper!)
+                    </button>
+                    <div style="margin-top: 0.5rem; padding: 0.8rem; background: var(--accent-color); border-radius: 8px; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                        💡 Waking them and putting them back under makes them more suggestible each time
+                    </div>
+                </div>
+
+                <!-- Induction Techniques Grid -->
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🌀 Induction Techniques</h3>
+                    <div id="techniques-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Character Vulnerabilities -->
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🎯 Character Vulnerabilities</h3>
+                    <div id="vulnerabilities-list" style="background: var(--accent-color); padding: 1rem; border-radius: 10px;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Plant Deep Suggestion Section (only when in trance) -->
+                <div id="plant-suggestion-section" style="display: none;">
+                    <div style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px;">
+                        <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">✨ Plant Deep Suggestion</h3>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Trigger:</label>
+                            <input type="text" id="deep-phs-trigger" placeholder="When do you want this to activate?" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                        </div>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Response:</label>
+                            <textarea id="deep-phs-response" rows="3" placeholder="What should they do when triggered?" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+                        </div>
+
+                        <div id="depth-bonus-indicator" style="margin-bottom: 1rem; padding: 0.8rem; background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(255, 152, 0, 0.2) 100%); border-radius: 8px; text-align: center; color: var(--highlight-color); font-weight: bold;">
+                            <!-- Populated by JavaScript based on depth -->
+                        </div>
+
+                        <button class="btn btn-primary" onclick="plantDeepSuggestion()" style="width: 100%; font-size: 1.1rem;">
+                            🌀 Plant Deep Suggestion
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State (no character selected) -->
+            <div id="hypnosis-empty-state">
+                <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🌀</div>
+                    <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">Deep Hypnosis System</div>
+                    <div style="font-size: 0.9rem;">
+                        Select a character to begin hypnotic induction.<br>
+                        Multiple techniques available with varying depths and effects.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/sprite_renderer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+<script>
+    // Initialize activities when page loads
+    $(function() {
+        loadActivities();
+
+        // Refresh activities when location or time changes
+        setInterval(loadActivities, 60000); // Refresh every minute
+    });
+</script>
+{% endblock %}

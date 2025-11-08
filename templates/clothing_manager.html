@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clothing Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2em;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #cbd5e0;
+            color: #2d3748;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 25px;
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .filter-section {
+            margin-bottom: 25px;
+        }
+
+        .filter-section label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .filter-section select, .filter-section input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .content {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .item-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .item-card:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            transform: translateY(-3px);
+        }
+
+        .item-image {
+            width: 100%;
+            height: 200px;
+            background: #f7fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #cbd5e0;
+            font-size: 3em;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .item-details {
+            padding: 15px;
+        }
+
+        .item-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+
+        .item-meta {
+            font-size: 0.9em;
+            color: #718096;
+            margin-bottom: 10px;
+        }
+
+        .item-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 12px;
+        }
+
+        .tag {
+            background: #edf2f7;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            color: #4a5568;
+        }
+
+        .item-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #a0aec0;
+            font-size: 0.85em;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .item-actions button {
+            flex: 1;
+            padding: 8px;
+            font-size: 0.9em;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #a0aec0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .tag-input-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            min-height: 45px;
+        }
+
+        .tag-input-container input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .tag-item {
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tag-item .remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+
+        .upload-area.drag-over {
+            border-color: #667eea;
+            background: #edf2f7;
+        }
+
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .range-container input[type="range"] {
+            flex: 1;
+        }
+
+        .range-value {
+            min-width: 45px;
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .alert {
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .alert-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👔 Clothing Manager</h1>
+            <div>
+                <button class="btn btn-secondary" onclick="location.href='/assets'">← Back to Assets</button>
+                <button class="btn btn-primary" onclick="openAddModal()">+ Add New Item</button>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="sidebar">
+                <h3>Filters</h3>
+
+                <div class="filter-section">
+                    <label>Category</label>
+                    <select id="filterCategory" onchange="applyFilters()">
+                        <option value="">All Categories</option>
+                        <option value="underwear">Underwear</option>
+                        <option value="tops">Tops</option>
+                        <option value="bottoms">Bottoms</option>
+                        <option value="dresses">Dresses</option>
+                        <option value="outerwear">Outerwear</option>
+                        <option value="accessories">Accessories</option>
+                    </select>
+                </div>
+
+                <div class="filter-section">
+                    <label>Slot</label>
+                    <select id="filterSlot" onchange="applyFilters()">
+                        <option value="">All Slots</option>
+                        <option value="bra">Bra</option>
+                        <option value="panties">Panties</option>
+                        <option value="top">Top</option>
+                        <option value="bottom">Bottom</option>
+                        <option value="dress">Dress</option>
+                        <option value="shoes">Shoes</option>
+                        <option value="outerwear">Outerwear</option>
+                    </select>
+                </div>
+
+                <div class="filter-section">
+                    <label>Search</label>
+                    <input type="text" id="searchBox" placeholder="Search by name..." oninput="applyFilters()">
+                </div>
+
+                <div class="filter-section">
+                    <label>Sort By</label>
+                    <select id="sortBy" onchange="applyFilters()">
+                        <option value="name">Name</option>
+                        <option value="coverage">Coverage</option>
+                        <option value="formality">Formality</option>
+                        <option value="category">Category</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="content">
+                <div id="alertContainer"></div>
+
+                <div>
+                    <h3>Clothing Items <span id="itemCount" style="color: #a0aec0; font-weight: normal;"></span></h3>
+                </div>
+
+                <div class="items-grid" id="itemsGrid">
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #a0aec0;">
+                        Loading items...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal" id="itemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Clothing Item</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+
+            <form id="itemForm" onsubmit="saveItem(event)">
+                <div class="form-group">
+                    <label>Item ID *</label>
+                    <input type="text" id="itemId" required placeholder="e.g., bra_lace_red">
+                </div>
+
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" id="itemName" required placeholder="e.g., Red Lace Bra">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select id="itemCategory" required>
+                            <option value="">Select...</option>
+                            <option value="underwear">Underwear</option>
+                            <option value="tops">Tops</option>
+                            <option value="bottoms">Bottoms</option>
+                            <option value="dresses">Dresses</option>
+                            <option value="outerwear">Outerwear</option>
+                            <option value="accessories">Accessories</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Slot *</label>
+                        <select id="itemSlot" required>
+                            <option value="">Select...</option>
+                            <option value="bra">Bra</option>
+                            <option value="panties">Panties</option>
+                            <option value="top">Top</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="dress">Dress</option>
+                            <option value="shoes">Shoes</option>
+                            <option value="outerwear">Outerwear</option>
+                            <option value="jewelry">Jewelry</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Description *</label>
+                    <textarea id="itemDescription" required placeholder="Describe the clothing item..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Image Path</label>
+                    <input type="text" id="itemImagePath" placeholder="e.g., underwear/bra_lace_red.png">
+                </div>
+
+                <div class="form-group">
+                    <label>Tags (press Enter to add)</label>
+                    <div class="tag-input-container" id="tagContainer">
+                        <input type="text" id="tagInput" placeholder="Add tags..." onkeydown="handleTagInput(event)">
+                    </div>
+                    <small style="color: #a0aec0;">Suggested: revealing, sexy, modest, formal, casual, comfortable, elegant</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Coverage: <span id="coverageValue" class="range-value">50</span></label>
+                    <div class="range-container">
+                        <span>0</span>
+                        <input type="range" id="itemCoverage" min="0" max="100" value="50" oninput="updateRangeValue('coverage')">
+                        <span>100</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Formality: <span id="formalityValue" class="range-value">50</span></label>
+                    <div class="range-container">
+                        <span>0</span>
+                        <input type="range" id="itemFormality" min="0" max="100" value="50" oninput="updateRangeValue('formality')">
+                        <span>100</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Suggestibility Factor</label>
+                    <input type="number" id="itemSuggestibility" step="0.1" value="1.0" min="0" max="3">
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success" style="flex: 1;">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allItems = {};
+        let currentTags = [];
+
+        // Load all items
+        async function loadItems() {
+            try {
+                const response = await fetch('/assets/api/clothing/list');
+                const data = await response.json();
+
+                if (data.success) {
+                    allItems = data.items;
+                    displayItems();
+                }
+            } catch (error) {
+                showAlert('Error loading items: ' + error.message, 'error');
+            }
+        }
+
+        // Display items
+        function displayItems() {
+            const grid = document.getElementById('itemsGrid');
+            const category = document.getElementById('filterCategory').value;
+            const slot = document.getElementById('filterSlot').value;
+            const search = document.getElementById('searchBox').value.toLowerCase();
+            const sortBy = document.getElementById('sortBy').value;
+
+            // Filter items
+            let items = Object.values(allItems).filter(item => {
+                if (category && item.category !== category) return false;
+                if (slot && item.slot !== slot) return false;
+                if (search && !item.name.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            // Sort items
+            items.sort((a, b) => {
+                if (sortBy === 'name') return a.name.localeCompare(b.name);
+                if (sortBy === 'coverage') return b.coverage - a.coverage;
+                if (sortBy === 'formality') return b.formality - a.formality;
+                if (sortBy === 'category') return a.category.localeCompare(b.category);
+                return 0;
+            });
+
+            // Update count
+            document.getElementById('itemCount').textContent = `(${items.length} items)`;
+
+            // Display
+            if (items.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #a0aec0;">No items found</div>';
+                return;
+            }
+
+            grid.innerHTML = items.map(item => `
+                <div class="item-card">
+                    <div class="item-image">
+                        ${item.image_path ? `<img src="/static/images/characters/general/${item.image_path}" onerror="this.style.display='none'" alt="${item.name}">` : '👔'}
+                    </div>
+                    <div class="item-details">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-meta">${item.category} • ${item.slot}</div>
+                        <div class="item-tags">
+                            ${item.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                        <div class="item-stats">
+                            <div class="stat">
+                                <div class="stat-label">Coverage</div>
+                                <div class="stat-value">${item.coverage}</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Formality</div>
+                                <div class="stat-value">${item.formality}</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Suggest</div>
+                                <div class="stat-value">${item.suggestibility_factor.toFixed(1)}</div>
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn btn-secondary" onclick="viewItem('${item.id}')">View</button>
+                            <button class="btn btn-danger" onclick="deleteItem('${item.id}', '${item.name}')">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function applyFilters() {
+            displayItems();
+        }
+
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = 'Add Clothing Item';
+            document.getElementById('itemForm').reset();
+            currentTags = [];
+            updateTagDisplay();
+            document.getElementById('itemModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('itemModal').classList.remove('active');
+        }
+
+        function handleTagInput(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const input = event.target;
+                const tag = input.value.trim();
+
+                if (tag && !currentTags.includes(tag)) {
+                    currentTags.push(tag);
+                    input.value = '';
+                    updateTagDisplay();
+                }
+            }
+        }
+
+        function removeTag(tag) {
+            currentTags = currentTags.filter(t => t !== tag);
+            updateTagDisplay();
+        }
+
+        function updateTagDisplay() {
+            const container = document.getElementById('tagContainer');
+            const input = container.querySelector('input');
+
+            // Remove existing tags
+            container.querySelectorAll('.tag-item').forEach(el => el.remove());
+
+            // Add tags before input
+            currentTags.forEach(tag => {
+                const tagEl = document.createElement('div');
+                tagEl.className = 'tag-item';
+                tagEl.innerHTML = `${tag} <span class="remove" onclick="removeTag('${tag}')">&times;</span>`;
+                container.insertBefore(tagEl, input);
+            });
+        }
+
+        function updateRangeValue(type) {
+            const value = document.getElementById(`item${type.charAt(0).toUpperCase() + type.slice(1)}`).value;
+            document.getElementById(`${type}Value`).textContent = value;
+        }
+
+        async function saveItem(event) {
+            event.preventDefault();
+
+            const item = {
+                id: document.getElementById('itemId').value,
+                name: document.getElementById('itemName').value,
+                category: document.getElementById('itemCategory').value,
+                slot: document.getElementById('itemSlot').value,
+                description: document.getElementById('itemDescription').value,
+                image_path: document.getElementById('itemImagePath').value,
+                tags: currentTags,
+                coverage: parseInt(document.getElementById('itemCoverage').value),
+                formality: parseInt(document.getElementById('itemFormality').value),
+                suggestibility_factor: parseFloat(document.getElementById('itemSuggestibility').value)
+            };
+
+            try {
+                const response = await fetch('/assets/api/clothing/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(item)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('Item added successfully! Backup created.', 'success');
+                    closeModal();
+                    loadItems();
+                } else {
+                    showAlert('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error saving item: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteItem(id, name) {
+            if (!confirm(`Delete "${name}"? This will create a backup first.`)) return;
+
+            try {
+                const response = await fetch(`/assets/api/clothing/delete/${id}`, {method: 'POST'});
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('Item deleted. ' + data.message, 'success');
+                    loadItems();
+                } else {
+                    showAlert('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error deleting item: ' + error.message, 'error');
+            }
+        }
+
+        function viewItem(id) {
+            const item = allItems[id];
+            if (!item) return;
+
+            alert(`Name: ${item.name}\nCategory: ${item.category}\nSlot: ${item.slot}\nCoverage: ${item.coverage}\nFormality: ${item.formality}\n\nDescription: ${item.description}\n\nTags: ${item.tags.join(', ')}`);
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        // Initialize
+        loadItems();
+    </script>
+</body>
+</html>
