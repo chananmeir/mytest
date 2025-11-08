@@ -1631,6 +1631,26 @@ def api_travel():
     if not success:
         return jsonify({'success': False, 'error': 'Cannot travel to that location'})
 
+    # Map location to scene
+    location_to_scene_map = {
+        'home_kitchen': 'kitchen',
+        'home_living_room': 'living_room',
+        'home_dining_room': 'family_dinner',
+        'home_your_room': 'your_room',
+        'home_backyard': 'backyard',
+        'ruths_office': 'ruths_office',
+        'fitness_center': 'fitness_center',
+        'elementary_school': 'elementary_school',
+        'city_park': 'city_park',
+        'coffee_cafe': 'coffee_cafe',
+        'shopping_mall': 'shopping_mall',
+        'restaurant': 'restaurant'
+    }
+
+    # Update current scene based on location
+    new_scene = location_to_scene_map.get(destination_id, 'family_dinner')
+    session['current_scene'] = new_scene
+
     # Save the updated game state
     save_game_state(game_state)
 

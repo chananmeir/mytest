@@ -125,8 +125,8 @@ Remember: People tell their secrets to those they don't consider dangerous.
         self.game_state = GameState()
         self.llm_handler = LLMHandler()
 
-        # Start with the first scene
-        self.play_scene(FamilyDinnerScene(self.game_state, self.llm_handler))
+        # Select which scene to start with
+        self.select_scene()
 
     def load_game(self):
         """Load a saved game"""
@@ -147,9 +147,8 @@ Remember: People tell their secrets to those they don't consider dangerous.
 
             input("\nPress Enter to continue...")
 
-            # For now, return to family dinner scene
-            # In a full game, this would resume from the saved scene
-            self.play_scene(FamilyDinnerScene(self.game_state, self.llm_handler))
+            # Select which scene to play
+            self.select_scene()
         else:
             print("\n✗ Failed to load game")
             input("\nPress Enter to continue...")
@@ -199,6 +198,58 @@ TECHNICAL:
 """
         print(about)
         input("\nPress Enter to continue...")
+
+    def select_scene(self):
+        """Select which scene/location to play"""
+        from scenes.kitchen_scene import KitchenScene
+
+        while True:
+            print("\n" + "="*70)
+            print("SELECT A LOCATION")
+            print("="*70)
+            print("\nWhere do you want to go?")
+            print()
+
+            scenes = [
+                ("Family Dinner (Dining Room)", "The formal family gathering. Everyone is here."),
+                ("Kitchen", "Intimate setting. Good for one-on-one conversations."),
+                ("Back to Main Menu", "")
+            ]
+
+            for i, (name, desc) in enumerate(scenes, 1):
+                print(f"{i}. {name}")
+                if desc:
+                    print(f"   {desc}")
+                print()
+
+            try:
+                choice = input("Enter your choice: ").strip()
+                choice_num = int(choice)
+
+                if choice_num == 1:
+                    # Family Dinner
+                    self.play_scene(FamilyDinnerScene(self.game_state, self.llm_handler))
+                    # After scene, return to scene selection
+                    continue
+
+                elif choice_num == 2:
+                    # Kitchen
+                    self.play_scene(KitchenScene(self.game_state, self.llm_handler))
+                    # After scene, return to scene selection
+                    continue
+
+                elif choice_num == 3:
+                    # Back to main menu
+                    return
+
+                else:
+                    print(f"Please enter a number between 1 and {len(scenes)}")
+
+            except ValueError:
+                print("Please enter a valid number")
+            except KeyboardInterrupt:
+                print("\n\nReturning to main menu...")
+                return
 
     def play_scene(self, scene):
         """Play a scene"""
