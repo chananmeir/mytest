@@ -55,6 +55,10 @@ class GameState:
         self.unlocked_locations: list = []  # Manually unlocked locations
         self.unlocked_characters: list = ['Ruth', 'Tom']  # Starting characters
 
+        # Enhanced AI Integration
+        from systems.enhanced_ai_integration import EnhancedAIIntegration
+        self.ai_integration: EnhancedAIIntegration = EnhancedAIIntegration()
+
         # Initialize characters from database
         self._initialize_characters()
 
@@ -186,7 +190,8 @@ class GameState:
             },
             'scene_history': self.scene_history,
             'current_scene_name': self.current_scene_name,
-            'game_time': self.game_time.to_dict()
+            'game_time': self.game_time.to_dict(),
+            'ai_integration': self.ai_integration.to_dict() if hasattr(self, 'ai_integration') else {}
         }
 
     def save_game(self, filename: str = config.SAVE_FILE) -> bool:
@@ -317,6 +322,13 @@ class GameState:
                 self.game_time = GameTime.from_dict(save_data['game_time'])
             else:
                 self.game_time = GameTime()  # Default time for old saves
+
+            # Restore AI integration (with backwards compatibility)
+            from systems.enhanced_ai_integration import EnhancedAIIntegration
+            if 'ai_integration' in save_data and save_data['ai_integration']:
+                self.ai_integration = EnhancedAIIntegration.from_dict(save_data['ai_integration'])
+            else:
+                self.ai_integration = EnhancedAIIntegration()  # Default for old saves
 
             return True
         except FileNotFoundError:
