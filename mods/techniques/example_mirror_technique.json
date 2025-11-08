@@ -1,0 +1,143 @@
+{
+  "metadata": {
+    "mod_id": "technique_mirror_induction",
+    "name": "Mirror Induction Technique",
+    "version": "1.0.0",
+    "author": "Example Modder",
+    "description": "A subtle mirroring technique that induces trance through matching body language and speech patterns. Less obvious than direct methods but requires patience.",
+    "mod_type": "technique",
+    "dependencies": [],
+    "compatible_game_version": "1.0",
+    "tags": ["technique", "hypnosis", "subtle", "advanced"]
+  },
+  "technique_data": {
+    "technique_id": "mirror_induction",
+    "name": "Mirror Induction",
+    "category": "conversational",
+    "description": "Subtly mirror the target's body language, breathing, and speech patterns to build unconscious rapport and induce a light trance state.",
+    "induction_method": "behavioral_matching",
+    "base_success_rate": 65,
+    "sp_cost": 6,
+    "duration_minutes": 45,
+    "required_rapport": 8,
+    "required_emotional_state": [
+      "relaxed",
+      "comfortable",
+      "neutral",
+      "curious"
+    ],
+    "incompatible_emotional_state": [
+      "angry",
+      "suspicious",
+      "defensive",
+      "anxious"
+    ],
+    "trance_depth": "light_to_medium",
+    "detection_risk": 20,
+    "success_modifiers": {
+      "high_rapport_bonus": {
+        "condition": "rapport >= 12",
+        "modifier": 15,
+        "description": "Deep trust makes mirroring feel natural"
+      },
+      "low_suspicion_bonus": {
+        "condition": "suspicion < 15",
+        "modifier": 10,
+        "description": "They're not watching for manipulation"
+      },
+      "private_location_bonus": {
+        "condition": "observers == 0",
+        "modifier": 10,
+        "description": "No interruptions or witnesses"
+      },
+      "rushed_penalty": {
+        "condition": "duration < 30",
+        "modifier": -25,
+        "description": "Mirroring requires time to work effectively"
+      },
+      "high_suspicion_penalty": {
+        "condition": "suspicion >= 30",
+        "modifier": -20,
+        "description": "They're watching your behavior too closely"
+      }
+    },
+    "stages": [
+      {
+        "stage": 1,
+        "name": "Observation",
+        "duration_minutes": 10,
+        "description": "Carefully observe target's baseline behavior, breathing rate, posture, and speech patterns.",
+        "sp_cost": 1,
+        "detection_risk": 5,
+        "failure_consequence": "minor",
+        "can_abort": true
+      },
+      {
+        "stage": 2,
+        "name": "Matching",
+        "duration_minutes": 15,
+        "description": "Begin subtly matching their patterns - breathing rhythm, posture shifts, word choices.",
+        "sp_cost": 2,
+        "detection_risk": 8,
+        "success_requirement": "stage_1_complete",
+        "failure_consequence": "moderate",
+        "can_abort": true
+      },
+      {
+        "stage": 3,
+        "name": "Leading",
+        "duration_minutes": 15,
+        "description": "Gradually shift your patterns - if they follow unconsciously, rapport is established.",
+        "sp_cost": 2,
+        "detection_risk": 10,
+        "success_requirement": "stage_2_complete",
+        "critical": true,
+        "failure_consequence": "technique_fails"
+      },
+      {
+        "stage": 4,
+        "name": "Suggestion",
+        "duration_minutes": 5,
+        "description": "With behavioral rapport established, plant suggestion in their synchronized state.",
+        "sp_cost": 1,
+        "detection_risk": 15,
+        "success_requirement": "stage_3_complete",
+        "critical": true,
+        "allows_phs": true
+      }
+    ],
+    "special_effects": {
+      "rapport_preservation": true,
+      "rapport_preservation_desc": "Even if detected, seems like natural mirroring rather than manipulation (+5 rapport loss mitigation)",
+      "builds_trust": true,
+      "trust_bonus": "Successful use grants +2 rapport even without PHS",
+      "reusable": true,
+      "cooldown_hours": 24,
+      "stacks_with_conversational": true,
+      "advanced_unlock": {
+        "required_successful_uses": 3,
+        "unlocks": "technique_deep_mirror_induction",
+        "description": "Master the technique to unlock Deep Mirror Induction"
+      }
+    },
+    "dialogue": {
+      "start": "You settle into the conversation, carefully observing {target}'s natural rhythms...",
+      "stage_1_success": "You've identified their baseline patterns. Time to match them.",
+      "stage_2_success": "Your breathing syncs with theirs. They don't notice consciously.",
+      "stage_3_success": "You shift your posture slightly... and they mirror YOU. Perfect.",
+      "stage_3_failure": "They don't follow your lead. The rapport isn't deep enough yet.",
+      "stage_4_success": "In this synchronized state, your suggestion flows naturally into their mind.",
+      "detected": "{target} pauses. 'Why are you copying me?' The technique is blown.",
+      "success": "The suggestion is planted seamlessly. They felt only a comfortable conversation.",
+      "failure": "You couldn't establish the necessary behavioral rapport. The technique fails."
+    },
+    "tips": [
+      "Requires patience - don't rush the stages",
+      "Best used with high rapport (8+)",
+      "Private locations reduce detection risk",
+      "Low suspicion targets are ideal",
+      "Can build genuine rapport even without PHS",
+      "Avoid using on defensive or anxious targets"
+    ]
+  }
+}

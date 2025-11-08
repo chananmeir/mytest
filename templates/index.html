@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Family Dynamics RPG - Main Menu{% endblock %}
+
+{% block content %}
+<div class="main-menu">
+    <h1 class="game-title">Family Dynamics RPG</h1>
+    <p class="game-subtitle">Master the art of influence through conversational hypnosis</p>
+
+    <div class="menu-buttons">
+        <button class="btn btn-primary" onclick="startNewGame()">
+            <span>🎮</span> New Game
+        </button>
+        <button class="btn btn-secondary" onclick="loadGame()">
+            <span>💾</span> Load Game
+        </button>
+        <button class="btn btn-secondary" onclick="showAbout()">
+            <span>📖</span> About
+        </button>
+    </div>
+
+    <div id="loading" class="hidden" style="margin-top: 2rem;">
+        <div class="loading"></div>
+        <p style="margin-top: 1rem;">Loading game...</p>
+    </div>
+</div>
+
+<!-- About Modal -->
+<div id="aboutModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">About Family Dynamics RPG</h2>
+            <button class="close-modal" onclick="closeAbout()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin-bottom: 1rem; line-height: 1.8;">
+                You are a 38-year-old unemployed individual at the bottom of your family's social hierarchy.
+                Through the study and application of conversational hypnosis, you'll subtly shift the power
+                dynamics within your family.
+            </p>
+
+            <h3 style="color: var(--highlight-color); margin: 1.5rem 0 1rem;">Core Mechanics</h3>
+            <ul style="line-height: 2; margin-left: 1.5rem;">
+                <li><strong>Rapport (0-20):</strong> Build trust through meaningful conversations</li>
+                <li><strong>Emotional States:</strong> Observe and influence how family members feel</li>
+                <li><strong>Suggestion Points (SP):</strong> Earn and spend to plant hypnotic suggestions</li>
+                <li><strong>Hypnosis Learning:</strong> Study books, practice techniques, master the art</li>
+                <li><strong>Post-Hypnotic Suggestions:</strong> Plant triggers that activate later</li>
+            </ul>
+
+            <h3 style="color: var(--highlight-color); margin: 1.5rem 0 1rem;">Learning Path</h3>
+            <p style="line-height: 1.8;">
+                You must learn hypnosis techniques before you can influence family members. Study books,
+                practice your skills, and master 11 techniques across 4 difficulty tiers to become
+                a master of conversational hypnosis.
+            </p>
+
+            <div class="text-center mt-1">
+                <button class="btn btn-primary" onclick="closeAbout()">Ready to Play</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function startNewGame() {
+    document.getElementById('loading').classList.remove('hidden');
+
+    fetch('/new-game', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect;
+        } else {
+            alert('Failed to start new game');
+            document.getElementById('loading').classList.add('hidden');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to start game');
+        document.getElementById('loading').classList.add('hidden');
+    });
+}
+
+function loadGame() {
+    document.getElementById('loading').classList.remove('hidden');
+
+    fetch('/load-game', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect;
+        } else {
+            alert(data.error || 'No saved game found');
+            document.getElementById('loading').classList.add('hidden');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to load game');
+        document.getElementById('loading').classList.add('hidden');
+    });
+}
+
+function showAbout() {
+    document.getElementById('aboutModal').classList.add('active');
+}
+
+function closeAbout() {
+    document.getElementById('aboutModal').classList.remove('active');
+}
+</script>
+{% endblock %}

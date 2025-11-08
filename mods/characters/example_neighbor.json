@@ -1,0 +1,52 @@
+{
+  "metadata": {
+    "mod_id": "neighbor_sarah",
+    "name": "Sarah - The Nosy Neighbor",
+    "version": "1.0.0",
+    "author": "Example Modder",
+    "description": "Adds Sarah, a curious neighbor who sometimes visits the family. Can be befriended or becomes suspicious of unusual family dynamics.",
+    "mod_type": "character",
+    "dependencies": [],
+    "compatible_game_version": "1.0",
+    "tags": ["character", "neighbor", "visitor", "social"]
+  },
+  "character_data": {
+    "name": "Sarah",
+    "age": 38,
+    "gender": "female",
+    "personality_traits": [
+      "curious",
+      "gossipy",
+      "friendly",
+      "perceptive",
+      "chatty"
+    ],
+    "background": "Sarah has lived next door for 5 years. She's a stay-at-home mom with too much free time, leading her to take an keen interest in the neighborhood's affairs. She means well but can be intrusive.",
+    "initial_emotional_state": "curious",
+    "initial_rapport": 6,
+    "initial_suspicion": 0,
+    "relationships": {
+      "Ruth": 8,
+      "Tom": 6,
+      "Dawn": 7,
+      "Melanie": 5,
+      "Derek": 4,
+      "Vanessa": 3
+    },
+    "custom_dialogue": {
+      "greeting": "Oh hi! I was just in the neighborhood... thought I'd stop by!",
+      "high_rapport": "You know, you're one of the few people I can really talk to around here.",
+      "high_suspicion": "Is everything... okay with the family? You all seem... different lately.",
+      "low_rapport": "I should probably get going. Lots to do today.",
+      "phs_vulnerable": "You always give such good advice. I don't know what I'd do without you.",
+      "phs_resistant": "That's sweet, but I think I'll figure this out on my own."
+    },
+    "special_mechanics": {
+      "gossip_network": true,
+      "visits_randomly": true,
+      "observes_family_dynamics": true,
+      "can_spread_rumors": true,
+      "visit_frequency_days": 3
+    }
+  }
+}
