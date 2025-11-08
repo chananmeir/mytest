@@ -42,7 +42,14 @@ class PlayerState:
 class GameState:
     """Main game state manager"""
 
-    def __init__(self):
+    def __init__(self, procedural_mode: bool = False, procedural_seed: Optional[int] = None):
+        """
+        Initialize game state
+
+        Args:
+            procedural_mode: If True, use procedural generation for variety
+            procedural_seed: Optional seed for reproducible procedural generation
+        """
         self.player = PlayerState()
         self.characters: Dict[str, Character] = {}
         self.scene_history: list = []
@@ -59,8 +66,16 @@ class GameState:
         from systems.enhanced_ai_integration import EnhancedAIIntegration
         self.ai_integration: EnhancedAIIntegration = EnhancedAIIntegration()
 
-        # Initialize characters from database
-        self._initialize_characters()
+        # Procedural Generation
+        self.procedural_mode: bool = procedural_mode
+        self.procedural_generator: Optional['ProceduralGameMode'] = None
+        self.procedural_events: list = []  # Store generated events
+
+        # Initialize characters (procedural or standard)
+        if procedural_mode:
+            self._initialize_procedural_game(procedural_seed)
+        else:
+            self._initialize_characters()
 
     def _initialize_characters(self):
         """Initialize all characters from the character database"""
@@ -77,6 +92,19 @@ class GameState:
                 rapport=0,
                 emotional_state="neutral"
             )
+
+    def _initialize_procedural_game(self, seed: Optional[int] = None):
+        """Initialize game with procedural generation"""
+        from systems.procedural_generation import ProceduralGameMode
+
+        # Create procedural generator
+        self.procedural_generator = ProceduralGameMode(seed=seed)
+
+        # Generate characters and events
+        self.characters, self.procedural_events = self.procedural_generator.initialize_procedural_game()
+
+        # Display procedural summary
+        print(self.procedural_generator.get_procedural_summary(self.characters))
 
     def get_character(self, name: str) -> Optional[Character]:
         """Get a character by name"""
@@ -191,7 +219,9 @@ class GameState:
             'scene_history': self.scene_history,
             'current_scene_name': self.current_scene_name,
             'game_time': self.game_time.to_dict(),
-            'ai_integration': self.ai_integration.to_dict() if hasattr(self, 'ai_integration') else {}
+            'ai_integration': self.ai_integration.to_dict() if hasattr(self, 'ai_integration') else {},
+            'procedural_mode': self.procedural_mode if hasattr(self, 'procedural_mode') else False,
+            'procedural_generator': self.procedural_generator.to_dict() if hasattr(self, 'procedural_generator') and self.procedural_generator else None
         }
 
     def save_game(self, filename: str = config.SAVE_FILE) -> bool:
@@ -329,6 +359,15 @@ class GameState:
                 self.ai_integration = EnhancedAIIntegration.from_dict(save_data['ai_integration'])
             else:
                 self.ai_integration = EnhancedAIIntegration()  # Default for old saves
+
+            # Restore procedural generation (with backwards compatibility)
+            self.procedural_mode = save_data.get('procedural_mode', False)
+            if 'procedural_generator' in save_data and save_data['procedural_generator']:
+                from systems.procedural_generation import ProceduralGameMode
+                self.procedural_generator = ProceduralGameMode.from_dict(save_data['procedural_generator'])
+            else:
+                self.procedural_generator = None
+                self.procedural_events = []
 
             return True
         except FileNotFoundError:
