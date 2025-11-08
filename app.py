@@ -2276,6 +2276,94 @@ def api_plant_deep_phs():
     return jsonify(results)
 
 
+@app.route('/api/saved-games')
+def api_saved_games():
+    """Get information about all saved games"""
+    import glob
+    from pathlib import Path
+
+    save_files = []
+
+    # Look for game_save.json (default save file)
+    default_save = config.SAVE_FILE
+    if os.path.exists(default_save):
+        save_files.append(default_save)
+
+    # Look for any other save files
+    for json_file in glob.glob('*save*.json'):
+        if json_file not in save_files:
+            save_files.append(json_file)
+
+    games_info = []
+
+    for save_file in save_files:
+        try:
+            with open(save_file, 'r') as f:
+                save_data = json.load(f)
+
+            # Get file modification time
+            mod_time = datetime.fromtimestamp(os.path.getmtime(save_file))
+
+            player = save_data.get('player', {})
+            characters = save_data.get('characters', {})
+            game_time = save_data.get('game_time', {})
+
+            # Format game time
+            day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            day = day_names[game_time.get('day', 0)]
+            hour = game_time.get('hour', 9)
+            minute = game_time.get('minute', 0)
+            period = "AM" if hour < 12 else "PM"
+            display_hour = hour if hour <= 12 else hour - 12
+            if display_hour == 0:
+                display_hour = 12
+            time_str = f"{day}, {display_hour}:{minute:02d} {period}"
+
+            # Character summaries
+            char_summaries = []
+            for name, char_data in sorted(characters.items()):
+                char_summaries.append({
+                    'name': name,
+                    'rapport': char_data.get('rapport', 0),
+                    'emotional_state': char_data.get('emotional_state', 'neutral'),
+                    'active_phs': len(char_data.get('active_phs', []))
+                })
+
+            games_info.append({
+                'file_name': save_file,
+                'last_modified': mod_time.isoformat(),
+                'last_modified_display': mod_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'game_time': time_str,
+                'player': {
+                    'name': player.get('name', 'Unknown'),
+                    'location': player.get('current_location', 'Unknown'),
+                    'sp': player.get('suggestion_points', 0),
+                    'total_sp': player.get('total_sp_earned', 0),
+                    'money': player.get('money', 0),
+                    'total_money': player.get('total_money_earned', 0),
+                    'techniques_unlocked': len(player.get('hypnosis_knowledge', {}).get('unlocked_techniques', []))
+                },
+                'characters': char_summaries,
+                'scenes_completed': len(player.get('scenes_completed', []))
+            })
+
+        except Exception as e:
+            print(f"Error reading save file {save_file}: {e}")
+            continue
+
+    return jsonify({
+        'success': True,
+        'games': games_info,
+        'count': len(games_info)
+    })
+
+
+@app.route('/saved-games')
+def saved_games_page():
+    """View saved games page"""
+    return render_template('saved_games.html')
+
+
 if __name__ == '__main__':
     # Create templates and static directories if they don't exist
     os.makedirs('templates', exist_ok=True)

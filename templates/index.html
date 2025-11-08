@@ -14,6 +14,9 @@
         <button class="btn btn-secondary" onclick="loadGame()">
             <span>💾</span> Load Game
         </button>
+        <button class="btn btn-secondary" onclick="viewSavedGames()">
+            <span>📊</span> View Saved Games
+        </button>
         <button class="btn btn-secondary" onclick="showAbout()">
             <span>📖</span> About
         </button>
@@ -115,6 +118,10 @@ function showAbout() {
 
 function closeAbout() {
     document.getElementById('aboutModal').classList.remove('active');
+}
+
+function viewSavedGames() {
+    window.location.href = '/saved-games';
 }
 </script>
 {% endblock %}
