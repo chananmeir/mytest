@@ -202,6 +202,16 @@ TECHNICAL:
     def select_scene(self):
         """Select which scene/location to play"""
         from scenes.kitchen_scene import KitchenScene
+        from scenes.living_room_scene import LivingRoomScene
+        from scenes.your_room_scene import YourRoomScene
+        from scenes.backyard_scene import BackyardScene
+        from scenes.ruths_office_scene import RuthsOfficeScene
+        from scenes.fitness_center_scene import FitnessCenterScene
+        from scenes.elementary_school_scene import ElementarySchoolScene
+        from scenes.city_park_scene import CityParkScene
+        from scenes.coffee_cafe_scene import CoffeeCafeScene
+        from scenes.shopping_mall_scene import ShoppingMallScene
+        from scenes.restaurant_scene import RestaurantScene
 
         while True:
             print("\n" + "="*70)
@@ -210,40 +220,86 @@ TECHNICAL:
             print("\nWhere do you want to go?")
             print()
 
+            print("🏠 HOME LOCATIONS:")
             scenes = [
-                ("Family Dinner (Dining Room)", "The formal family gathering. Everyone is here."),
-                ("Kitchen", "Intimate setting. Good for one-on-one conversations."),
-                ("Back to Main Menu", "")
+                ("Family Dinner (Dining Room)", "Formal gathering. Everyone present. LOW privacy."),
+                ("Kitchen", "Intimate cooking space. MEDIUM privacy."),
+                ("Living Room", "Social hub. Multiple people. LOW privacy."),
+                ("Your Room", "Private sanctuary. 1-on-1 only. VERY HIGH privacy."),
+                ("Backyard", "Fresh air excuse. HIGH privacy."),
+                ("", ""),
+                ("💼 WORK LOCATIONS:", ""),
+                ("Ruth's Office", "Professional setting. Stress leverage. MEDIUM privacy."),
+                ("Fitness Center", "Marcus's gym. Ego manipulation. MEDIUM privacy."),
+                ("Elementary School", "Karen's domain. Structured environment. LOW privacy."),
+                ("", ""),
+                ("🌆 PUBLIC LOCATIONS:", ""),
+                ("City Park", "Peaceful, reflective. MEDIUM privacy."),
+                ("Coffee Café", "Intimate public space. HIGH privacy."),
+                ("Shopping Mall", "Busy, distracting. LOW privacy."),
+                ("Restaurant", "Upscale dining. Special bonding. HIGH privacy."),
+                ("", ""),
+                ("🚪 Back to Main Menu", "")
             ]
 
-            for i, (name, desc) in enumerate(scenes, 1):
-                print(f"{i}. {name}")
-                if desc:
-                    print(f"   {desc}")
-                print()
+            display_num = 1
+            choice_map = {}
+
+            for name, desc in scenes:
+                if name == "":
+                    print()
+                    continue
+                elif name.startswith("🏠") or name.startswith("💼") or name.startswith("🌆"):
+                    print(f"\n{name}")
+                    continue
+                else:
+                    choice_map[display_num] = name
+                    print(f"{display_num}. {name}")
+                    if desc:
+                        print(f"   {desc}")
+                    display_num += 1
+
+            print()
 
             try:
                 choice = input("Enter your choice: ").strip()
                 choice_num = int(choice)
 
-                if choice_num == 1:
-                    # Family Dinner
-                    self.play_scene(FamilyDinnerScene(self.game_state, self.llm_handler))
-                    # After scene, return to scene selection
+                if choice_num not in choice_map:
+                    print(f"Please enter a valid number")
                     continue
 
-                elif choice_num == 2:
-                    # Kitchen
-                    self.play_scene(KitchenScene(self.game_state, self.llm_handler))
-                    # After scene, return to scene selection
-                    continue
+                selected = choice_map[choice_num]
 
-                elif choice_num == 3:
-                    # Back to main menu
+                if selected == "🚪 Back to Main Menu":
                     return
+                elif selected == "Family Dinner (Dining Room)":
+                    self.play_scene(FamilyDinnerScene(self.game_state, self.llm_handler))
+                elif selected == "Kitchen":
+                    self.play_scene(KitchenScene(self.game_state, self.llm_handler))
+                elif selected == "Living Room":
+                    self.play_scene(LivingRoomScene(self.game_state, self.llm_handler))
+                elif selected == "Your Room":
+                    self.play_scene(YourRoomScene(self.game_state, self.llm_handler))
+                elif selected == "Backyard":
+                    self.play_scene(BackyardScene(self.game_state, self.llm_handler))
+                elif selected == "Ruth's Office":
+                    self.play_scene(RuthsOfficeScene(self.game_state, self.llm_handler))
+                elif selected == "Fitness Center":
+                    self.play_scene(FitnessCenterScene(self.game_state, self.llm_handler))
+                elif selected == "Elementary School":
+                    self.play_scene(ElementarySchoolScene(self.game_state, self.llm_handler))
+                elif selected == "City Park":
+                    self.play_scene(CityParkScene(self.game_state, self.llm_handler))
+                elif selected == "Coffee Café":
+                    self.play_scene(CoffeeCafeScene(self.game_state, self.llm_handler))
+                elif selected == "Shopping Mall":
+                    self.play_scene(ShoppingMallScene(self.game_state, self.llm_handler))
+                elif selected == "Restaurant":
+                    self.play_scene(RestaurantScene(self.game_state, self.llm_handler))
 
-                else:
-                    print(f"Please enter a number between 1 and {len(scenes)}")
+                # After scene, return to scene selection
+                continue
 
             except ValueError:
                 print("Please enter a valid number")
