@@ -27,7 +27,7 @@ class LLMHandler:
         model = config.CHARACTER_MODELS.get(character.name, config.DEFAULT_MODEL)
         return api_key, model
 
-    def _build_character_context(self, character: Character, location_context: str = "") -> str:
+    def _build_character_context(self, character: Character, location_context: str = "", game_state=None) -> str:
         """Build context string for the character"""
 
         # Character-specific behavioral guidelines
@@ -186,6 +186,14 @@ CRITICAL INSTRUCTIONS:
 
         context = base_context
 
+        # Add dynamic AI personality state if game_state available
+        if game_state:
+            try:
+                from systems.ai_personality import get_dynamic_personality_context
+                dynamic_personality = get_dynamic_personality_context(character, game_state)
+                context += "\n" + dynamic_personality
+            except ImportError:
+                pass  # AI personality system not available
 
         # Add relevant memories
         relevant_memories = self.memory_system.retrieve_relevant_memories(
@@ -215,7 +223,8 @@ CRITICAL INSTRUCTIONS:
         player_message: str,
         scene_context: str = "",
         location_context: str = "",
-        record_memory: bool = True
+        record_memory: bool = True,
+        game_state = None
     ) -> Optional[str]:
         """Get a response from the character via LLM"""
 
@@ -225,8 +234,8 @@ CRITICAL INSTRUCTIONS:
         if not api_key:
             return f"[{character.name} would respond, but API key is not configured]"
 
-        # Build the system prompt with character context (includes memories and location)
-        system_prompt = self._build_character_context(character, location_context)
+        # Build the system prompt with character context (includes memories, location, and AI personality)
+        system_prompt = self._build_character_context(character, location_context, game_state)
 
         if scene_context:
             system_prompt += f"\n\nSCENE CONTEXT: {scene_context}"

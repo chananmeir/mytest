@@ -448,13 +448,14 @@ def api_talk():
     if relationship_context:
         scene_context += f" {relationship_context}"
 
-    # Get LLM response with location and contradiction context
+    # Get LLM response with location, contradiction context, and AI personality
     response = llm_handler.get_character_response(
         char,
         player_message,
         scene_context=scene_context,
         location_context=location_context,
-        record_memory=True
+        record_memory=True,
+        game_state=game_state
     )
 
     # Check for PHS triggers from the conversation
@@ -603,6 +604,50 @@ def api_talk():
                                         'type': 'game_over',
                                         'message': f"🚨 GAME OVER: {observer.name} confronts you about manipulating the family!"
                                     })
+
+    # Update AI personality state based on conversation
+    from systems.ai_personality import update_character_personality
+
+    conversation_events = []
+
+    # Build events from changes
+    if analysis['rapport_change'] != 0:
+        conversation_events.append({
+            'type': 'rapport_change',
+            'amount': analysis['rapport_change']
+        })
+
+    if analysis['new_emotional_state'] != old_emotional_state:
+        conversation_events.append({
+            'type': 'emotional_state_change',
+            'old_state': old_emotional_state,
+            'new_state': analysis['new_emotional_state']
+        })
+
+    if successful_activations:
+        for activation in successful_activations:
+            conversation_events.append({
+                'type': 'phs_planted',
+                'phs': activation.get('phs')
+            })
+
+    # Update personality
+    personality_changes = update_character_personality(char, game_state, conversation_events)
+
+    # Add personality insights to changes if significant
+    if personality_changes.get('mood_changed'):
+        changes.append({
+            'type': 'personality_shift',
+            'message': f"💭 {char.name}'s mood has shifted noticeably."
+        })
+
+    if personality_changes.get('behavioral_shifts'):
+        for shift in personality_changes['behavioral_shifts']:
+            if shift == 'major_trust_loss':
+                changes.append({
+                    'type': 'personality_shift',
+                    'message': f"⚠️ {char.name} seems deeply unsettled by something."
+                })
 
     save_game_state(game_state)
 
@@ -1399,6 +1444,27 @@ def api_advance_time():
         if auto_event.visibility in ['public', 'subtle']:
             autonomous_messages.append(f"{auto_event.icon} {auto_event.description}")
 
+    # EMERGENT BEHAVIOR: Characters may take autonomous actions
+    from systems.ai_personality import trigger_emergent_behavior
+
+    emergent_behavior = trigger_emergent_behavior(game_state)
+    emergent_behavior_message = None
+
+    if emergent_behavior:
+        emergent_behavior_message = emergent_behavior['narrative']
+
+        # Apply game effects from emergent behavior
+        for effect in emergent_behavior.get('game_effects', []):
+            if effect['type'] == 'alliance_formed':
+                # Alliance already formed in trigger
+                pass
+            elif effect['type'] == 'crisis_event':
+                # Mark as current crisis
+                game_state.current_crisis = {
+                    'type': 'confrontation',
+                    'character': effect['character']
+                }
+
     # Save the updated game state
     save_game_state(game_state)
 
@@ -1410,7 +1476,8 @@ def api_advance_time():
         'period': game_state.game_time.period.capitalize(),
         'events': events,
         'messages': [],
-        'triggered_events': event_data_list  # Add story events
+        'triggered_events': event_data_list,  # Add story events
+        'emergent_behavior': emergent_behavior  # Add emergent behavior
     }
 
     # Add event messages
@@ -1436,6 +1503,10 @@ def api_advance_time():
     # Add autonomous event messages
     if autonomous_messages:
         response['messages'].extend(autonomous_messages)
+
+    # Add emergent behavior message
+    if emergent_behavior_message:
+        response['messages'].append(f"🎭 {emergent_behavior_message}")
 
     # Add dynamic random event
     if dynamic_event_triggered:
@@ -2883,6 +2954,130 @@ def api_validate_mod():
             'warnings': validation.warnings,
             'mod_id': validation.mod_id
         }
+    })
+
+
+# ==================== AI PERSONALITY ENDPOINTS ====================
+
+@app.route('/api/ai/personality/<character_name>')
+def api_get_personality_state(character_name):
+    """Get detailed personality state for a character"""
+    from systems.ai_personality import personality_simulator
+
+    game_state = get_game_state()
+    char = game_state.get_character(character_name)
+
+    if not char:
+        return jsonify({'success': False, 'error': 'Character not found'}), 404
+
+    state = personality_simulator.initialize_personality_state(char, game_state)
+
+    return jsonify({
+        'success': True,
+        'character': character_name,
+        'personality_state': {
+            'current_mood': state.current_mood,
+            'stress_level': state.stress_level,
+            'trust_in_player': state.trust_in_player,
+            'independence_level': state.independence_level,
+            'player_influence_awareness': state.player_influence_awareness,
+            'emotional_vulnerability': state.emotional_vulnerability,
+            'resistance_to_change': state.resistance_to_change,
+            'active_concerns': state.active_concerns,
+            'current_goals': state.current_goals,
+            'recent_observations': state.recent_observations,
+            'alliance_preferences': state.alliance_preferences,
+            'conflict_targets': state.conflict_targets,
+            'assertiveness': state.assertiveness,
+            'openness_to_player': state.openness_to_player,
+            'suspicion_tendency': state.suspicion_tendency
+        }
+    })
+
+
+@app.route('/api/ai/predict-reaction', methods=['POST'])
+def api_predict_reaction():
+    """Predict how character will react to an action"""
+    from systems.ai_personality import predict_reaction
+
+    data = request.json
+    character_name = data.get('character')
+    action_type = data.get('action_type')  # 'hypnosis_attempt', 'emotional_support', 'request_favor', etc.
+
+    if not character_name or not action_type:
+        return jsonify({'success': False, 'error': 'character and action_type required'}), 400
+
+    game_state = get_game_state()
+    char = game_state.get_character(character_name)
+
+    if not char:
+        return jsonify({'success': False, 'error': 'Character not found'}), 404
+
+    prediction = predict_reaction(char, action_type, game_state)
+
+    return jsonify({
+        'success': True,
+        'character': character_name,
+        'action_type': action_type,
+        'prediction': prediction
+    })
+
+
+@app.route('/api/ai/emergent-actions/<character_name>')
+def api_get_emergent_actions(character_name):
+    """Get possible emergent actions for a character"""
+    from systems.ai_personality import generate_emergent_actions
+
+    game_state = get_game_state()
+    char = game_state.get_character(character_name)
+
+    if not char:
+        return jsonify({'success': False, 'error': 'Character not found'}), 404
+
+    actions = generate_emergent_actions(char, game_state)
+
+    return jsonify({
+        'success': True,
+        'character': character_name,
+        'possible_actions': [
+            {
+                'action_id': action.action_id,
+                'action_type': action.action_type,
+                'description': action.description,
+                'target_character': action.target_character,
+                'trigger_reason': action.trigger_reason,
+                'potential_outcomes': action.potential_outcomes,
+                'likelihood': action.likelihood
+            }
+            for action in actions
+        ]
+    })
+
+
+@app.route('/api/ai/all-personalities')
+def api_get_all_personalities():
+    """Get personality states for all characters"""
+    from systems.ai_personality import personality_simulator
+
+    game_state = get_game_state()
+    all_states = {}
+
+    for char_name, char in game_state.characters.items():
+        state = personality_simulator.initialize_personality_state(char, game_state)
+
+        all_states[char_name] = {
+            'current_mood': state.current_mood,
+            'stress_level': state.stress_level,
+            'trust_in_player': state.trust_in_player,
+            'emotional_vulnerability': state.emotional_vulnerability,
+            'player_influence_awareness': state.player_influence_awareness,
+            'active_concerns': state.active_concerns[:2],  # Top 2
+            'current_goals': state.current_goals[:2]  # Top 2
+        }
+
+    return jsonify({
+        'success': True,
+        'personalities': all_states
     })
 
 
