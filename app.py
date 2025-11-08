@@ -2471,6 +2471,215 @@ def api_event_probabilities():
     })
 
 
+# ==================== SAVE SYSTEM ENDPOINTS ====================
+
+@app.route('/api/saves/list')
+def api_list_saves():
+    """List all available save slots"""
+    from systems.save_system import save_system
+
+    saves = save_system.list_saves()
+
+    return jsonify({
+        'success': True,
+        'saves': saves,
+        'max_slots': save_system.config.MAX_SAVE_SLOTS
+    })
+
+
+@app.route('/api/saves/save', methods=['POST'])
+def api_save_game_slot():
+    """Save game to a slot"""
+    from systems.save_system import save_system
+    from datetime import datetime
+
+    game_state = get_game_state()
+    data = request.json
+
+    slot_id = data.get('slot_id', 'slot_1')
+    save_name = data.get('save_name')
+
+    success, message = save_system.save_to_slot(game_state, slot_id, save_name)
+
+    if success:
+        return jsonify({
+            'success': True,
+            'message': message,
+            'slot_id': slot_id
+        })
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@app.route('/api/saves/load', methods=['POST'])
+def api_load_game_slot():
+    """Load game from a slot"""
+    from systems.save_system import save_system
+
+    data = request.json
+    slot_id = data.get('slot_id')
+
+    if not slot_id:
+        return jsonify({'error': 'slot_id required'}), 400
+
+    success, save_data, message = save_system.load_from_slot(slot_id)
+
+    if not success:
+        return jsonify({'success': False, 'error': message}), 404
+
+    # Load save data into session
+    session['game_state_data'] = save_data['game_state']
+
+    return jsonify({
+        'success': True,
+        'message': message,
+        'metadata': save_data['metadata']
+    })
+
+
+@app.route('/api/saves/delete', methods=['POST'])
+def api_delete_save_slot():
+    """Delete a save slot"""
+    from systems.save_system import save_system
+
+    data = request.json
+    slot_id = data.get('slot_id')
+
+    if not slot_id:
+        return jsonify({'error': 'slot_id required'}), 400
+
+    success, message = save_system.delete_slot(slot_id)
+
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@app.route('/api/saves/quicksave', methods=['POST'])
+def api_quicksave_game():
+    """Quick save"""
+    from systems.save_system import save_system
+
+    game_state = get_game_state()
+
+    success, message = save_system.quicksave(game_state)
+
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@app.route('/api/saves/autosave', methods=['POST'])
+def api_autosave_game():
+    """Trigger auto-save"""
+    from systems.save_system import save_system
+    from datetime import datetime
+
+    game_state = get_game_state()
+    data = request.json
+    reason = data.get('reason', 'manual')
+
+    # Check if should autosave
+    if not save_system.should_autosave(game_state, reason):
+        return jsonify({
+            'success': True,
+            'autosaved': False,
+            'message': 'Auto-save not triggered (conditions not met)'
+        })
+
+    success, message = save_system.autosave(game_state)
+
+    if success:
+        save_system._last_autosave_time = datetime.now()
+        return jsonify({
+            'success': True,
+            'autosaved': True,
+            'message': message
+        })
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@app.route('/api/saves/export', methods=['POST'])
+def api_export_save_file():
+    """Export save file"""
+    from systems.save_system import save_system
+
+    data = request.json
+    slot_id = data.get('slot_id')
+    export_name = data.get('export_name')
+
+    if not slot_id:
+        return jsonify({'error': 'slot_id required'}), 400
+
+    success, export_path, message = save_system.export_save(slot_id, export_name)
+
+    if success:
+        # Return file for download
+        from flask import send_file
+        return send_file(
+            export_path,
+            as_attachment=True,
+            download_name=os.path.basename(export_path)
+        )
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@app.route('/api/saves/import', methods=['POST'])
+def api_import_save_file():
+    """Import save file"""
+    from systems.save_system import save_system
+
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+
+    # Save uploaded file temporarily
+    import tempfile
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.fdrpg') as temp_file:
+        file.save(temp_file.name)
+        temp_path = temp_file.name
+
+    # Import
+    target_slot = request.form.get('target_slot')
+    success, message = save_system.import_save(temp_path, target_slot)
+
+    # Clean up temp file
+    os.unlink(temp_path)
+
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@app.route('/api/saves/config')
+def api_save_system_config():
+    """Get save system configuration"""
+    from systems.save_system import save_system
+
+    return jsonify({
+        'success': True,
+        'config': {
+            'max_save_slots': save_system.config.MAX_SAVE_SLOTS,
+            'max_autosaves': save_system.config.MAX_AUTOSAVES,
+            'autosave_enabled': save_system.config.AUTOSAVE_ENABLED,
+            'autosave_interval_minutes': save_system.config.AUTOSAVE_INTERVAL_MINUTES,
+            'autosave_on_major_events': save_system.config.AUTOSAVE_ON_MAJOR_EVENTS,
+            'autosave_on_location_change': save_system.config.AUTOSAVE_ON_LOCATION_CHANGE,
+            'autosave_on_scene_complete': save_system.config.AUTOSAVE_ON_SCENE_COMPLETE,
+            'backup_on_save': save_system.config.BACKUP_ON_SAVE
+        }
+    })
+
+
 if __name__ == '__main__':
     # Create templates and static directories if they don't exist
     os.makedirs('templates', exist_ok=True)
