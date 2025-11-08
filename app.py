@@ -1358,6 +1358,24 @@ def api_advance_time():
         gossip_msgs = SocialDynamics.trigger_gossip_session(game_state)
         gossip_messages.extend(gossip_msgs)
 
+    # DYNAMIC RANDOM EVENTS: Check if a random event should trigger
+    from systems.dynamic_events import DynamicEventSystem
+    from data.event_library import ALL_EVENTS
+    dynamic_event_triggered = None
+
+    should_trigger, event_type = DynamicEventSystem.should_trigger_event(game_state)
+    if should_trigger:
+        available_events = DynamicEventSystem.get_available_events(game_state, event_type, ALL_EVENTS)
+        if available_events:
+            selected_event = DynamicEventSystem.select_event(available_events)
+            if selected_event:
+                event_result = DynamicEventSystem.trigger_event(game_state, selected_event)
+                if event_result['success']:
+                    dynamic_event_triggered = event_result['event']
+
+    # Check for opportunity expiration
+    opportunity_expired_msg = DynamicEventSystem.check_opportunity_expiration(game_state)
+
     # Check for time-triggered events (character introductions, etc.)
     from systems.event_system import EventSystem
     triggered_events = EventSystem.check_time_triggered_events(game_state)
@@ -1418,6 +1436,14 @@ def api_advance_time():
     # Add autonomous event messages
     if autonomous_messages:
         response['messages'].extend(autonomous_messages)
+
+    # Add dynamic random event
+    if dynamic_event_triggered:
+        response['dynamic_event'] = dynamic_event_triggered
+
+    # Add opportunity expiration warning
+    if opportunity_expired_msg:
+        response['messages'].append(opportunity_expired_msg)
 
     # Check if any characters' schedules changed
     if events['new_period'] or events['new_day']:
@@ -2373,6 +2399,75 @@ def api_relationship_map():
     return jsonify({
         'success': True,
         'relationships': relationship_data
+    })
+
+
+@app.route('/api/events/respond', methods=['POST'])
+def api_respond_to_event():
+    """Respond to a dynamic random event"""
+    from systems.dynamic_events import DynamicEventSystem
+    from data.event_library import ALL_EVENTS
+
+    game_state = get_game_state()
+    data = request.json
+
+    event_id = data.get('event_id')
+    option_id = data.get('option_id')
+
+    if not event_id or not option_id:
+        return jsonify({'error': 'Missing event_id or option_id'}), 400
+
+    result = DynamicEventSystem.respond_to_event(
+        game_state, event_id, option_id, ALL_EVENTS
+    )
+
+    if not result['success']:
+        return jsonify(result), 400
+
+    save_game_state(game_state)
+
+    return jsonify(result)
+
+
+@app.route('/api/events/active')
+def api_get_active_event():
+    """Get currently active event or opportunity"""
+    game_state = get_game_state()
+
+    active_event = None
+
+    # Check for active opportunity
+    if hasattr(game_state, 'active_opportunity') and game_state.active_opportunity:
+        opp = game_state.active_opportunity
+        from data.event_library import get_event
+
+        event = get_event(opp['event_id'])
+        if event:
+            time_remaining = opp['expires_at'] - game_state.game_time.total_minutes
+            active_event = {
+                'event': event.to_dict(),
+                'time_remaining': max(0, time_remaining),
+                'type': 'opportunity'
+            }
+
+    return jsonify({
+        'success': True,
+        'active_event': active_event
+    })
+
+
+@app.route('/api/events/probabilities')
+def api_event_probabilities():
+    """Get current event probabilities (for debugging/UI)"""
+    from systems.dynamic_events import DynamicEventSystem
+
+    game_state = get_game_state()
+
+    probabilities = DynamicEventSystem.calculate_event_probability(game_state)
+
+    return jsonify({
+        'success': True,
+        'probabilities': probabilities
     })
 
 
