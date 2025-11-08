@@ -409,6 +409,7 @@ def api_talk():
     from systems.location_system import get_location_context_for_llm
     from systems.trigger_detection import TriggerDetector, format_activation_message
     from systems.contradiction_tracker import ContradictionTracker
+    from systems.social_dynamics import SocialDynamics
 
     data = request.json
     character_name = data.get('character')
@@ -439,6 +440,13 @@ def api_talk():
             contradiction_msg, char.rapport
         )
         scene_context += contradiction_context
+
+    # Add relationship context - character is aware of family dynamics
+    relationship_context = SocialDynamics.get_relationship_context_for_conversation(
+        char, game_state
+    )
+    if relationship_context:
+        scene_context += f" {relationship_context}"
 
     # Get LLM response with location and contradiction context
     response = llm_handler.get_character_response(
@@ -479,6 +487,11 @@ def api_talk():
 
     # Apply changes
     changes = []
+
+    # Track old values for social dynamics
+    old_rapport = char.rapport
+    old_emotional_state = char.emotional_state
+
     if analysis['rapport_change'] != 0:
         if analysis['rapport_change'] > 0:
             message = hypnosis_system.build_rapport(
@@ -492,6 +505,14 @@ def api_talk():
             message = f"Rapport decreased: {char.rapport}/20"
         changes.append({'type': 'rapport', 'message': message})
 
+        # SOCIAL DYNAMICS: Others notice rapport changes
+        if abs(analysis['rapport_change']) >= 2:
+            social_msgs = SocialDynamics.on_rapport_increase(
+                game_state, char, old_rapport, char.rapport
+            )
+            for msg in social_msgs:
+                changes.append({'type': 'social_observation', 'message': msg})
+
     if analysis['new_emotional_state'] != char.emotional_state:
         message = hypnosis_system.change_emotional_state(
             game_state,
@@ -500,6 +521,13 @@ def api_talk():
             analysis['reasoning']
         )
         changes.append({'type': 'emotional_state', 'message': message})
+
+        # SOCIAL DYNAMICS: Others notice emotional changes
+        social_msgs = SocialDynamics.on_emotional_state_change(
+            game_state, char, old_emotional_state, char.emotional_state
+        )
+        for msg in social_msgs:
+            changes.append({'type': 'social_observation', 'message': msg})
 
     # Track conversation for goals
     from systems.goal_system import GoalSystem
@@ -514,6 +542,13 @@ def api_talk():
         formatted_msg = format_activation_message(activation)
         if formatted_msg:
             changes.append({'type': 'phs_activation', 'message': formatted_msg})
+
+        # SOCIAL DYNAMICS: Others notice PHS-triggered behavior
+        phs = activation.get('phs')
+        if phs:
+            social_msgs = SocialDynamics.on_phs_activation(game_state, char, phs)
+            for msg in social_msgs:
+                changes.append({'type': 'social_observation', 'message': msg})
 
         # Track activation for goals
         activation_goal_messages = GoalSystem.track_suggestion_activated(game_state)
@@ -1316,6 +1351,13 @@ def api_advance_time():
         decay_msgs = SuspicionSystem.decay_suspicion_over_time(char, int(hours_passed))
         suspicion_messages.extend(decay_msgs)
 
+    # SOCIAL DYNAMICS: Characters gossip when time passes
+    from systems.social_dynamics import SocialDynamics
+    gossip_messages = []
+    if minutes >= 15:  # Only gossip if significant time passed
+        gossip_msgs = SocialDynamics.trigger_gossip_session(game_state)
+        gossip_messages.extend(gossip_msgs)
+
     # Check for time-triggered events (character introductions, etc.)
     from systems.event_system import EventSystem
     triggered_events = EventSystem.check_time_triggered_events(game_state)
@@ -1368,6 +1410,10 @@ def api_advance_time():
     # Add reset messages
     if reset_messages:
         response['messages'].extend(reset_messages)
+
+    # Add gossip messages
+    if gossip_messages:
+        response['messages'].extend(gossip_messages)
 
     # Add autonomous event messages
     if autonomous_messages:
@@ -2274,6 +2320,60 @@ def api_plant_deep_phs():
     save_game_state(game_state)
 
     return jsonify(results)
+
+
+@app.route('/api/social/alliances')
+def api_check_alliances():
+    """Check for character alliances forming against player"""
+    from systems.social_dynamics import SocialDynamics
+
+    game_state = get_game_state()
+
+    alliances = SocialDynamics.check_alliances(game_state)
+
+    return jsonify({
+        'success': True,
+        'alliances': alliances,
+        'alliance_count': len(alliances),
+        'threat_level': 'high' if any(a['threat_level'] == 'high' for a in alliances) else
+                       'medium' if alliances else 'none'
+    })
+
+
+@app.route('/api/social/relationship-map')
+def api_relationship_map():
+    """Get the full relationship map for visualization"""
+    from systems.relationship_web import RelationshipWeb
+
+    game_state = get_game_state()
+
+    # Build relationship map
+    relationship_data = []
+
+    for char_name, char in game_state.characters.items():
+        char_data = {
+            'name': char.name,
+            'player_suspicion': char.player_suspicion,
+            'relationships': {}
+        }
+
+        # Character-to-character relationships
+        for other_name, score in char.relationships.items():
+            char_data['relationships'][other_name] = {
+                'score': score,
+                'type': RelationshipWeb.get_relationship_type(score),
+                'protective_threshold': RelationshipWeb.get_protective_threshold(score)
+            }
+
+        # Character suspicions (who they think is acting weird)
+        char_data['character_suspicions'] = char.character_suspicions
+
+        relationship_data.append(char_data)
+
+    return jsonify({
+        'success': True,
+        'relationships': relationship_data
+    })
 
 
 if __name__ == '__main__':
