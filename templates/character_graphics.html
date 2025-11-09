@@ -256,6 +256,34 @@
 
             <div class="content">
                 <div id="alertContainer"></div>
+
+                <details style="background: #f0f4ff; border-left: 4px solid #667eea; padding: 15px; margin-bottom: 20px; border-radius: 6px;">
+                    <summary style="cursor: pointer; font-weight: bold; color: #667eea; margin-bottom: 10px;">📚 How to Create Character Images</summary>
+                    <div style="margin-top: 15px; line-height: 1.6; color: #4a5568;">
+                        <p style="margin-bottom: 10px;"><strong>Character images should include:</strong></p>
+                        <ul style="margin-left: 20px; margin-bottom: 15px;">
+                            <li><strong>Base Bodies:</strong> Full body images in <code>base/</code> folder</li>
+                            <li><strong>Expressions:</strong> Facial expressions in <code>expressions/</code> folder (neutral, happy, sad, angry, surprised, aroused, embarrassed, confused, confident)</li>
+                            <li><strong>Outfits:</strong> Different clothing variations in <code>outfits/</code> folder</li>
+                            <li><strong>Portraits:</strong> Close-up character portraits in <code>portraits/</code> folder</li>
+                        </ul>
+
+                        <p style="margin-bottom: 10px;"><strong>AI Image Generation Tips:</strong></p>
+                        <ul style="margin-left: 20px; margin-bottom: 15px;">
+                            <li>Use consistent style across all images for the same character</li>
+                            <li>Recommended size: 1024x1536 pixels (portrait orientation)</li>
+                            <li>Use PNG format with transparent background when possible</li>
+                            <li>Example prompt: "Full body portrait of [character description], standing straight, neutral expression, front view, realistic style, PNG transparent background, 1024x1536"</li>
+                        </ul>
+
+                        <p style="background: #fff3cd; padding: 10px; border-radius: 4px; border-left: 3px solid #ffc107;">
+                            💡 <strong>Tip:</strong> Create character-specific images in <code>characters/[Name]/</code> folders.
+                            Shared clothing should go in <code>shared_clothing/</code> to avoid duplication!
+                            See CHARACTER_GRAPHICS_GUIDE.md for full details.
+                        </p>
+                    </div>
+                </details>
+
                 <div id="charactersContainer">
                     <div class="empty-state">
                         <div class="empty-state-icon">📷</div>
