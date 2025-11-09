@@ -158,11 +158,13 @@ class SelfCareSystem:
         return warnings
 
     @staticmethod
-    def perform_action(self_care: SelfCareState, action: str, current_time: str) -> Dict[str, any]:
+    def perform_action(game_state, action: str, current_time: str) -> Dict[str, any]:
         """
         Perform a self-care action
         Returns: {'success': bool, 'message': str, 'time_cost': int, 'effects': dict}
         """
+        self_care = game_state.player.self_care
+
         result = {
             'success': False,
             'message': '',
@@ -171,24 +173,42 @@ class SelfCareSystem:
         }
 
         if action == 'eat_meal':
+            # Check if player has food
+            if game_state.player.food_meals <= 0:
+                result['message'] = "You're out of meals! You need to go grocery shopping."
+                return result
+
             if self_care.hunger >= 95:
                 result['message'] = "You're too full to eat right now!"
                 return result
+
+            # Consume a meal from inventory
+            game_state.player.food_meals -= 1
+
             self_care.hunger = min(100, self_care.hunger + 50)
             self_care.energy = min(100, self_care.energy + 5)
             self_care.last_meal_time = current_time
             result['success'] = True
-            result['message'] = "🍽️ You ate a satisfying meal. (+50 hunger, +5 energy)"
+            result['message'] = f"🍽️ You ate a satisfying meal. (+50 hunger, +5 energy)\n📦 Meals remaining: {game_state.player.food_meals}"
             result['time_cost'] = SelfCareSystem.ACTION_TIME_COSTS['eat_meal']
             result['effects'] = {'hunger': 50, 'energy': 5}
 
         elif action == 'quick_snack':
+            # Check if player has snacks
+            if game_state.player.food_snacks <= 0:
+                result['message'] = "You're out of snacks! You need to go grocery shopping."
+                return result
+
             if self_care.hunger >= 90:
                 result['message'] = "You're not hungry enough for a snack."
                 return result
+
+            # Consume a snack from inventory
+            game_state.player.food_snacks -= 1
+
             self_care.hunger = min(100, self_care.hunger + 20)
             result['success'] = True
-            result['message'] = "🍎 You grabbed a quick snack. (+20 hunger)"
+            result['message'] = f"🍎 You grabbed a quick snack. (+20 hunger)\n📦 Snacks remaining: {game_state.player.food_snacks}"
             result['time_cost'] = SelfCareSystem.ACTION_TIME_COSTS['quick_snack']
             result['effects'] = {'hunger': 20}
 

@@ -59,6 +59,26 @@ class Job:
             self.success_messages = [f"You completed {self.name} and earned ${self.pay}."]
 
 
+@dataclass
+class GroceryItem:
+    """Represents food/groceries that can be purchased"""
+    item_id: str
+    name: str
+    description: str
+    cost: int  # $ cost to purchase
+    category: str  # 'meal', 'snack', 'bulk'
+
+    # What you get
+    meals_qty: int = 0  # How many meals this provides
+    snacks_qty: int = 0  # How many snacks this provides
+
+    # Display
+    icon: str = "🛒"
+
+    def __post_init__(self):
+        pass
+
+
 class MoneySystem:
     """Manages money, shopping, gifts, and economy"""
 
@@ -308,6 +328,71 @@ class MoneySystem:
         **EXPENSIVE_GIFTS
     }
 
+    # ==================== GROCERY CATALOG ====================
+
+    GROCERIES = {
+        # Individual meals/snacks
+        'single_meal': GroceryItem(
+            item_id='single_meal',
+            name='Ready Meal',
+            description='A single prepared meal. Quick and convenient.',
+            cost=8,
+            category='meal',
+            meals_qty=1,
+            icon='🍱'
+        ),
+        'snack_pack': GroceryItem(
+            item_id='snack_pack',
+            name='Snack Pack',
+            description='A pack of 3 snacks. Chips, granola bars, fruit.',
+            cost=5,
+            category='snack',
+            snacks_qty=3,
+            icon='🍿'
+        ),
+
+        # Bulk purchases (better value)
+        'meal_pack_5': GroceryItem(
+            item_id='meal_pack_5',
+            name='Meal Pack (5)',
+            description='5 prepared meals. Saves time and money.',
+            cost=30,  # $6 each (save $2 per meal)
+            category='bulk',
+            meals_qty=5,
+            icon='🍽️'
+        ),
+        'meal_pack_10': GroceryItem(
+            item_id='meal_pack_10',
+            name='Meal Pack (10)',
+            description='10 prepared meals. Best value for meal prep.',
+            cost=50,  # $5 each (save $3 per meal)
+            category='bulk',
+            meals_qty=10,
+            icon='📦'
+        ),
+        'snack_box': GroceryItem(
+            item_id='snack_box',
+            name='Snack Box (12)',
+            description='A variety box of 12 snacks. Stock up!',
+            cost=15,  # $1.25 each (save money on bulk)
+            category='bulk',
+            snacks_qty=12,
+            icon='🎁'
+        ),
+
+        # Weekly groceries
+        'weekly_groceries': GroceryItem(
+            item_id='weekly_groceries',
+            name='Weekly Groceries',
+            description='A full week of meals and snacks. 7 meals + 10 snacks.',
+            cost=60,
+            category='bulk',
+            meals_qty=7,
+            snacks_qty=10,
+            icon='🛒'
+        ),
+    }
+
     # ==================== JOB OPPORTUNITIES ====================
 
     JOBS = {
@@ -487,6 +572,41 @@ class MoneySystem:
             importance=7,
             related_characters=['Player']
         )
+
+        return results
+
+    @staticmethod
+    def buy_groceries(game_state, grocery_item: GroceryItem) -> Dict:
+        """
+        Buy groceries to stock up on food
+
+        Returns dict with results
+        """
+        # Check if player can afford it
+        if game_state.player.money < grocery_item.cost:
+            return {'success': False, 'error': 'Not enough money'}
+
+        # Deduct cost
+        game_state.player.money -= grocery_item.cost
+
+        # Add food to inventory
+        game_state.player.food_meals += grocery_item.meals_qty
+        game_state.player.food_snacks += grocery_item.snacks_qty
+
+        results = {
+            'success': True,
+            'item_name': grocery_item.name,
+            'message': f"Purchased {grocery_item.name}!",
+            'changes': []
+        }
+
+        # Report what was added
+        if grocery_item.meals_qty > 0:
+            results['changes'].append(f"🍽️ +{grocery_item.meals_qty} meals (now {game_state.player.food_meals})")
+        if grocery_item.snacks_qty > 0:
+            results['changes'].append(f"🍿 +{grocery_item.snacks_qty} snacks (now {game_state.player.food_snacks})")
+
+        results['changes'].append(f"💰 Spent ${grocery_item.cost} (${game_state.player.money} remaining)")
 
         return results
 

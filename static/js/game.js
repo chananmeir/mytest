@@ -514,6 +514,12 @@ function updateGameState() {
             $('#skill-level').text(data.player.skill_level.toUpperCase());
             $('#techniques-count').text(`${data.player.techniques_mastered}/${data.player.total_techniques}`);
 
+            // Update food inventory displays
+            $('#food-meals-display').text(data.player.food_meals || 0);
+            $('#food-snacks-display').text(data.player.food_snacks || 0);
+            $('#selfcare-meals-display').text(data.player.food_meals || 0);
+            $('#selfcare-snacks-display').text(data.player.food_snacks || 0);
+
             // Update location display
             if (data.player.current_location) {
                 const locationName = data.player.current_location.replace(/_/g, ' ');
@@ -2161,6 +2167,104 @@ function buyGift(giftId) {
         },
         error: function(xhr) {
             const error = xhr.responseJSON?.error || 'Failed to give gift';
+            alert(`Error: ${error}`);
+        }
+    });
+}
+
+// ==================== GROCERY STORE ====================
+
+// Open grocery store modal
+function openGroceryStore() {
+    $.ajax({
+        url: '/api/shop/groceries',
+        method: 'GET',
+        success: function(data) {
+            // Update displays
+            $('#grocery-money').text(`$${data.player_money}`);
+            $('#grocery-meals').text(data.food_meals);
+            $('#grocery-snacks').text(data.food_snacks);
+
+            // Display groceries
+            displayGroceries(data.groceries);
+
+            openModal('groceryStoreModal');
+        },
+        error: function() {
+            alert('Failed to load grocery store');
+        }
+    });
+}
+
+// Display groceries grid
+function displayGroceries(groceries) {
+    const groceriesGrid = $('#groceries-grid');
+    groceriesGrid.empty();
+
+    if (groceries.length === 0) {
+        groceriesGrid.html('<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">No groceries available</p>');
+        return;
+    }
+
+    groceries.forEach(grocery => {
+        const canAfford = grocery.can_afford;
+
+        // Build contents list
+        let contentsList = [];
+        if (grocery.meals_qty > 0) contentsList.push(`${grocery.meals_qty} Meals`);
+        if (grocery.snacks_qty > 0) contentsList.push(`${grocery.snacks_qty} Snacks`);
+        const contentsText = contentsList.join(' + ');
+
+        const groceryHtml = `
+            <div class="grocery-card" style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; border: 2px solid ${canAfford ? 'var(--border-color)' : 'var(--danger-color)'}; ${canAfford ? 'cursor: pointer;' : 'opacity: 0.6; cursor: not-allowed;'}" ${canAfford ? `onclick="buyGrocery('${grocery.item_id}')"` : ''}>
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">${grocery.icon}</div>
+                    <div style="font-size: 1.1rem; font-weight: bold; color: var(--highlight-color); margin-bottom: 0.3rem;">${grocery.name}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">${grocery.description}</div>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 5px; margin-bottom: 1rem;">
+                    <div style="font-size: 0.9rem; color: var(--text-primary); text-align: center; font-weight: bold;">
+                        ${contentsText}
+                    </div>
+                </div>
+
+                <div style="text-align: center;">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: ${canAfford ? 'var(--success-color)' : 'var(--danger-color)'};">$${grocery.cost}</div>
+                    ${!canAfford ? '<div style="color: var(--danger-color); font-size: 0.85rem; margin-top: 0.3rem;">⚠️ Not Enough Money</div>' : '<div style="color: var(--success-color); font-size: 0.85rem; margin-top: 0.3rem;">✓ Can Afford</div>'}
+                </div>
+            </div>
+        `;
+
+        groceriesGrid.append(groceryHtml);
+    });
+}
+
+// Buy a grocery item
+function buyGrocery(itemId) {
+    $.ajax({
+        url: '/api/shop/buy-grocery',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ item_id: itemId }),
+        success: function(data) {
+            if (data.success) {
+                let message = `${data.message}\n\n`;
+                message += data.changes.join('\n');
+
+                alert(message);
+
+                // Update game state and money display
+                updateGameState();
+
+                // Refresh the grocery store to show updated inventory and affordability
+                openGroceryStore();
+            } else {
+                alert(`Error: ${data.error || 'Failed to buy grocery'}`);
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to buy grocery';
             alert(`Error: ${error}`);
         }
     });

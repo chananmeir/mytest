@@ -123,7 +123,10 @@ def api_game_state():
             'money': game_state.player.money,
             'skill_level': game_state.player.hypnosis_knowledge.skill_level,
             'techniques_mastered': len(game_state.player.hypnosis_knowledge.known_techniques),
-            'total_techniques': 11
+            'total_techniques': 11,
+            'food_meals': getattr(game_state.player, 'food_meals', 5),
+            'food_snacks': getattr(game_state.player, 'food_snacks', 8),
+            'current_location': game_state.player.current_location
         },
         'characters': [
             {
@@ -2180,6 +2183,60 @@ def api_give_gift():
     return jsonify(results)
 
 
+@app.route('/api/shop/groceries')
+def api_shop_groceries():
+    """Get available groceries"""
+    from systems.money_system import MoneySystem
+
+    game_state = get_game_state()
+    player_money = game_state.player.money
+
+    groceries = []
+    for grocery in MoneySystem.GROCERIES.values():
+        groceries.append({
+            'item_id': grocery.item_id,
+            'name': grocery.name,
+            'description': grocery.description,
+            'cost': grocery.cost,
+            'category': grocery.category,
+            'icon': grocery.icon,
+            'meals_qty': grocery.meals_qty,
+            'snacks_qty': grocery.snacks_qty,
+            'can_afford': player_money >= grocery.cost
+        })
+
+    return jsonify({
+        'groceries': groceries,
+        'player_money': player_money,
+        'food_meals': game_state.player.food_meals,
+        'food_snacks': game_state.player.food_snacks
+    })
+
+
+@app.route('/api/shop/buy-grocery', methods=['POST'])
+def api_buy_grocery():
+    """Buy groceries"""
+    from systems.money_system import MoneySystem
+
+    data = request.json
+    item_id = data.get('item_id')
+
+    game_state = get_game_state()
+
+    grocery = MoneySystem.GROCERIES.get(item_id)
+    if not grocery:
+        return jsonify({'error': 'Grocery item not found'}), 404
+
+    results = MoneySystem.buy_groceries(game_state, grocery)
+
+    if not results['success']:
+        return jsonify(results), 400
+
+    save_game_state(game_state)
+
+    return jsonify(results)
+
+
 @app.route('/api/jobs')
 def api_jobs():
     """Get available jobs"""
@@ -3189,7 +3246,7 @@ def perform_self_care_action():
 
     # Perform the action
     current_time = game_state.game_time.get_formatted_time()
-    result = SelfCareSystem.perform_action(game_state.player.self_care, action, current_time)
+    result = SelfCareSystem.perform_action(game_state, action, current_time)
 
     if not result['success']:
         error_msg = result['message'] if result['message'] else f'Unknown action: {action}'

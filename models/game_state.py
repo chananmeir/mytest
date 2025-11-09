@@ -35,6 +35,10 @@ class PlayerState:
     # Self-care tracking
     self_care: 'SelfCareState' = None  # Will be initialized in __post_init__
 
+    # Food inventory
+    food_meals: int = 5  # Full meals (for eat_meal action)
+    food_snacks: int = 8  # Quick snacks (for quick_snack action)
+
     def __post_init__(self):
         """Initialize mastery level and self-care if not loaded from save"""
         if self.mastery_level is None:
@@ -244,7 +248,9 @@ class GameState:
                 'mastery_level': self.player.mastery_level.to_dict() if self.player.mastery_level else {},
                 'active_combos': [combo.to_dict() for combo in self.player.active_combos] if hasattr(self.player, 'active_combos') else [],
                 'active_conflicts': [conflict.to_dict() for conflict in self.player.active_conflicts] if hasattr(self.player, 'active_conflicts') else [],
-                'self_care': self.player.self_care.to_dict() if self.player.self_care else {}
+                'self_care': self.player.self_care.to_dict() if self.player.self_care else {},
+                'food_meals': self.player.food_meals if hasattr(self.player, 'food_meals') else 5,
+                'food_snacks': self.player.food_snacks if hasattr(self.player, 'food_snacks') else 8
             },
             'characters': {
                 name: char.to_dict()
@@ -347,7 +353,9 @@ class GameState:
                 mastery_level=mastery_level,
                 active_combos=active_combos,
                 active_conflicts=active_conflicts,
-                self_care=self_care
+                self_care=self_care,
+                food_meals=player_data.get('food_meals', 5),  # Default for old saves
+                food_snacks=player_data.get('food_snacks', 8)  # Default for old saves
             )
 
             # Restore characters
