@@ -3553,6 +3553,10 @@ function travelToLocation(locationId) {
                     message += `\n\n👥 People here: ${data.characters_present.join(', ')}`;
                 }
 
+                // Update location display immediately
+                const locationIcon = getLocationIcon(data.location.id);
+                $('#location-display').text(`${locationIcon} ${data.new_location}`);
+
                 alert(message);
 
                 // Update game state
@@ -3577,6 +3581,7 @@ function travelToLocation(locationId) {
 // Load self-care status when page loads
 $(document).ready(function() {
     updateSelfCareDisplay();
+    updateGameState(); // Update location and other stats on page load
 
     // Update self-care display every 30 seconds
     setInterval(updateSelfCareDisplay, 30000);
