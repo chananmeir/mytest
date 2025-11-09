@@ -3124,8 +3124,12 @@ function switchActionTab(tabName) {
         selectedContent.classList.add('active');
     }
 
-    // Mark tab as active
-    event.target.classList.add('active');
+    // Mark the correct tab button as active
+    document.querySelectorAll('.action-tab').forEach(tab => {
+        if (tab.onclick && tab.onclick.toString().includes(`'${tabName}'`)) {
+            tab.classList.add('active');
+        }
+    });
 
     // Sync activities list if switching to World tab
     if (tabName === 'world') {
