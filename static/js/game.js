@@ -3489,7 +3489,11 @@ function openTravelMap() {
         url: '/api/locations',
         method: 'GET',
         success: function(data) {
-            $('#current-location-display').text(getLocationIcon(data.current_location) + ' ' + data.current_location_name);
+            // Find current location name
+            const currentLoc = data.locations.find(loc => loc.is_current);
+            const currentName = currentLoc ? currentLoc.name : 'Unknown';
+
+            $('#current-location-display').text(getLocationIcon(data.current_location) + ' ' + currentName);
             displayLocations(data.locations, data.current_location);
             openModal('travelMapModal');
         },
@@ -3510,7 +3514,7 @@ function displayLocations(locations, currentLocation) {
     }
 
     locations.forEach(loc => {
-        const isCurrent = loc.id === currentLocation;
+        const isCurrent = loc.is_current || loc.id === currentLocation;
         const isOpen = loc.is_open;
 
         const locationHtml = `

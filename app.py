@@ -3317,40 +3317,6 @@ def get_mastery_level():
 
 # ===== TRAVEL SYSTEM =====
 
-@app.route('/api/locations')
-def api_locations():
-    """Get all available locations"""
-    from systems.location_system import ALL_LOCATIONS
-
-    game_state = get_game_state()
-    current_location = game_state.player.current_location
-    current_hour = game_state.game_time.hour
-
-    locations = []
-    for loc_id, loc in ALL_LOCATIONS.items():
-        # Skip home sub-locations in the main travel list
-        if loc.parent_location == 'home':
-            continue
-
-        locations.append({
-            'id': loc.id,
-            'name': loc.name,
-            'description': loc.description,
-            'travel_time': loc.travel_time_from_home,
-            'is_open': loc.is_open(current_hour)
-        })
-
-    # Get current location name
-    current_loc_obj = ALL_LOCATIONS.get(current_location)
-    current_location_name = current_loc_obj.name if current_loc_obj else current_location.replace('_', ' ').title()
-
-    return jsonify({
-        'locations': locations,
-        'current_location': current_location,
-        'current_location_name': current_location_name
-    })
-
-
 @app.route('/api/travel', methods=['POST'])
 def api_travel():
     """Travel to a location"""
