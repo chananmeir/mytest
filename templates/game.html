@@ -5,24 +5,31 @@
 {% block content %}
 <!-- Game Header -->
 <div class="game-header">
-    <div class="player-stats" style="cursor: pointer;" onclick="openPlayerProfile()" title="Click to view your profile">
-        <div class="stat-item">
+    <div class="player-stats">
+        <div class="stat-item" onclick="openSkillTree()" style="cursor: pointer;" title="💡 SP: Used to learn techniques and perform hypnosis
+Click to open Skill Tree">
             <span class="stat-label">Suggestion Points</span>
             <span class="stat-value" id="sp-display">{{ game_state.player.suggestion_points }}</span>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" onclick="switchActionTab('resources')" style="cursor: pointer;" title="💰 MONEY: Earn from jobs, spend on gifts
+Click to open Resources (Jobs & Gift Shop)">
             <span class="stat-label">Money</span>
             <span class="stat-value" id="money-display">${{ game_state.player.money }}</span>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" onclick="openSkillTree()" style="cursor: pointer;" title="📚 SKILL LEVEL: Your hypnosis expertise
+Novice → Beginner → Intermediate → Advanced → Expert → Master
+Click to view progress">
             <span class="stat-label">Skill Level</span>
             <span class="stat-value" id="skill-level">{{ game_state.player.hypnosis_knowledge.skill_level|upper }}</span>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" onclick="openSkillTree()" style="cursor: pointer;" title="🎯 TECHNIQUES: Hypnosis techniques you've mastered
+11 total techniques available to learn
+Click to view all techniques">
             <span class="stat-label">Techniques</span>
             <span class="stat-value" id="techniques-count">{{ game_state.player.hypnosis_knowledge.known_techniques|length }}/11</span>
         </div>
-        <div class="stat-item">
+        <div class="stat-item" onclick="openMap()" style="cursor: pointer;" title="📍 LOCATION: Where you currently are
+Click to travel to different locations">
             <span class="stat-label">Location</span>
             <span class="stat-value" id="location-display" style="font-size: 1.2rem;">🏠 Home</span>
         </div>
