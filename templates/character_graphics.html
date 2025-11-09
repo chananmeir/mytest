@@ -304,7 +304,50 @@
             <form id="uploadForm" onsubmit="uploadImage(event)">
                 <div class="form-group">
                     <label>Character *</label>
-                    <input type="text" id="uploadCharacter" required placeholder="e.g., Ruth, Sarah">
+                    <select id="uploadCharacter" required>
+                        <option value="">Select a character...</option>
+                        <option value="Ruth">Ruth</option>
+                        <option value="Melanie">Melanie</option>
+                        <option value="Tom">Tom</option>
+                        <option value="Dawn">Dawn</option>
+                        <option value="Vanessa">Vanessa</option>
+                        <option value="Derek">Derek</option>
+                        <option value="Karen">Karen</option>
+                        <option value="Emma">Emma</option>
+                        <option value="Michael">Michael</option>
+                        <option value="Sofia">Sofia</option>
+                        <option value="Jessica">Jessica</option>
+                        <option value="David">David</option>
+                        <option value="Amber">Amber</option>
+                        <option value="Robert">Robert</option>
+                        <option value="Chloe">Chloe</option>
+                        <option value="Tyler">Tyler</option>
+                        <option value="Ashley">Ashley</option>
+                        <option value="Jake">Jake</option>
+                        <option value="Mia">Mia</option>
+                        <option value="Olivia">Olivia</option>
+                        <option value="Ethan">Ethan</option>
+                        <option value="Isabella">Isabella</option>
+                        <option value="Noah">Noah</option>
+                        <option value="Sophia">Sophia</option>
+                        <option value="Liam">Liam</option>
+                        <option value="Ava">Ava</option>
+                        <option value="Daniel">Daniel</option>
+                        <option value="William">William</option>
+                        <option value="Madison">Madison</option>
+                        <option value="Lucas">Lucas</option>
+                        <option value="Grace">Grace</option>
+                        <option value="Henry">Henry</option>
+                        <option value="Zoe">Zoe</option>
+                        <option value="Ryan">Ryan</option>
+                        <option value="Natalie">Natalie</option>
+                        <option value="Alex">Alex</option>
+                        <option value="Custom">📝 Custom (type name below)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="customCharacterGroup" style="display: none;">
+                    <label>Custom Character Name *</label>
+                    <input type="text" id="customCharacterName" placeholder="Enter custom character name">
                 </div>
                 <div class="form-group">
                     <label>Category *</label>
@@ -316,6 +359,7 @@
                         <option value="underwear">Underwear</option>
                         <option value="tops">Tops</option>
                         <option value="bottoms">Bottoms</option>
+                        <option value="base">Base Body</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -477,12 +521,38 @@
             }
         }
 
+        // Handle character selection change
+        document.getElementById('uploadCharacter')?.addEventListener('change', function() {
+            const customGroup = document.getElementById('customCharacterGroup');
+            const customInput = document.getElementById('customCharacterName');
+
+            if (this.value === 'Custom') {
+                customGroup.style.display = 'block';
+                customInput.required = true;
+            } else {
+                customGroup.style.display = 'none';
+                customInput.required = false;
+            }
+        });
+
         async function uploadImage(event) {
             event.preventDefault();
 
+            // Determine character name
+            const charSelect = document.getElementById('uploadCharacter');
+            let characterName = charSelect.value;
+
+            if (characterName === 'Custom') {
+                characterName = document.getElementById('customCharacterName').value;
+                if (!characterName || characterName.trim() === '') {
+                    showAlert('Please enter a custom character name', 'error');
+                    return;
+                }
+            }
+
             const formData = new FormData();
             formData.append('file', document.getElementById('fileInput').files[0]);
-            formData.append('character', document.getElementById('uploadCharacter').value);
+            formData.append('character', characterName);
             formData.append('category', document.getElementById('uploadCategory').value);
 
             try {
