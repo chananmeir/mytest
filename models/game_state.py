@@ -27,11 +27,28 @@ class PlayerState:
     current_location: str = "home_living_room"  # Player's current location
     statement_history: list = field(default_factory=list)  # Track player statements for contradiction detection
 
+    # Advanced Hypnosis tracking
+    mastery_level: 'MasteryLevel' = None  # Will be initialized in __post_init__
+    active_combos: list = field(default_factory=list)  # List of ComboSuggestion objects
+    active_conflicts: list = field(default_factory=list)  # List of ConflictingPHS objects
+
+    def __post_init__(self):
+        """Initialize mastery level if not loaded from save"""
+        if self.mastery_level is None:
+            from systems.advanced_hypnosis import MasteryLevel
+            self.mastery_level = MasteryLevel()
 
 class GameState:
     """Main game state manager"""
 
-    def __init__(self):
+    def __init__(self, procedural_mode: bool = False, procedural_seed: Optional[int] = None):
+        """
+        Initialize game state
+
+        Args:
+            procedural_mode: If True, use procedural generation for variety
+            procedural_seed: Optional seed for reproducible procedural generation
+        """
         self.player = PlayerState()
         self.characters: Dict[str, Character] = {}
         self.scene_history: list = []
@@ -44,8 +61,20 @@ class GameState:
         self.unlocked_locations: list = []  # Manually unlocked locations
         self.unlocked_characters: list = ['Ruth', 'Tom']  # Starting characters
 
-        # Initialize characters from database
-        self._initialize_characters()
+        # Enhanced AI Integration
+        from systems.enhanced_ai_integration import EnhancedAIIntegration
+        self.ai_integration: EnhancedAIIntegration = EnhancedAIIntegration()
+
+        # Procedural Generation
+        self.procedural_mode: bool = procedural_mode
+        self.procedural_generator: Optional['ProceduralGameMode'] = None
+        self.procedural_events: list = []  # Store generated events
+
+        # Initialize characters (procedural or standard)
+        if procedural_mode:
+            self._initialize_procedural_game(procedural_seed)
+        else:
+            self._initialize_characters()
 
     def _initialize_characters(self):
         """Initialize all characters from the character database"""
@@ -62,6 +91,19 @@ class GameState:
                 rapport=0,
                 emotional_state="neutral"
             )
+
+    def _initialize_procedural_game(self, seed: Optional[int] = None):
+        """Initialize game with procedural generation"""
+        from systems.procedural_generation import ProceduralGameMode
+
+        # Create procedural generator
+        self.procedural_generator = ProceduralGameMode(seed=seed)
+
+        # Generate characters and events
+        self.characters, self.procedural_events = self.procedural_generator.initialize_procedural_game()
+
+        # Display procedural summary
+        print(self.procedural_generator.get_procedural_summary(self.characters))
 
     def get_character(self, name: str) -> Optional[Character]:
         """Get a character by name"""
@@ -164,7 +206,10 @@ class GameState:
                         'topic': stmt.topic,
                         'keywords': stmt.keywords
                     } for stmt in self.player.statement_history
-                ] if hasattr(self.player, 'statement_history') else []
+                ] if hasattr(self.player, 'statement_history') else [],
+                'mastery_level': self.player.mastery_level.to_dict() if self.player.mastery_level else {},
+                'active_combos': [combo.to_dict() for combo in self.player.active_combos] if hasattr(self.player, 'active_combos') else [],
+                'active_conflicts': [conflict.to_dict() for conflict in self.player.active_conflicts] if hasattr(self.player, 'active_conflicts') else []
             },
             'characters': {
                 name: char.to_dict()
@@ -172,7 +217,10 @@ class GameState:
             },
             'scene_history': self.scene_history,
             'current_scene_name': self.current_scene_name,
-            'game_time': self.game_time.to_dict()
+            'game_time': self.game_time.to_dict(),
+            'ai_integration': self.ai_integration.to_dict() if hasattr(self, 'ai_integration') else {},
+            'procedural_mode': self.procedural_mode if hasattr(self, 'procedural_mode') else False,
+            'procedural_generator': self.procedural_generator.to_dict() if hasattr(self, 'procedural_generator') and self.procedural_generator else None
         }
 
     def save_game(self, filename: str = config.SAVE_FILE) -> bool:
@@ -217,6 +265,29 @@ class GameState:
                     ) for stmt in player_data['statement_history']
                 ]
 
+            # Restore mastery level
+            from systems.advanced_hypnosis import MasteryLevel, ComboSuggestion, ConflictingPHS
+            if 'mastery_level' in player_data and player_data['mastery_level']:
+                mastery_level = MasteryLevel.from_dict(player_data['mastery_level'])
+            else:
+                mastery_level = MasteryLevel()  # Default for old saves
+
+            # Restore active combos
+            active_combos = []
+            if 'active_combos' in player_data:
+                active_combos = [
+                    ComboSuggestion.from_dict(combo_data)
+                    for combo_data in player_data['active_combos']
+                ]
+
+            # Restore active conflicts
+            active_conflicts = []
+            if 'active_conflicts' in player_data:
+                active_conflicts = [
+                    ConflictingPHS.from_dict(conflict_data)
+                    for conflict_data in player_data['active_conflicts']
+                ]
+
             self.player = PlayerState(
                 name=player_data['name'],
                 age=player_data['age'],
@@ -230,7 +301,10 @@ class GameState:
                 scenes_completed=player_data['scenes_completed'],
                 hypnosis_knowledge=hypnosis_knowledge,
                 current_location=player_data.get('current_location', 'home_living_room'),  # Default for old saves
-                statement_history=statement_history
+                statement_history=statement_history,
+                mastery_level=mastery_level,
+                active_combos=active_combos,
+                active_conflicts=active_conflicts
             )
 
             # Restore characters
@@ -277,6 +351,22 @@ class GameState:
                 self.game_time = GameTime.from_dict(save_data['game_time'])
             else:
                 self.game_time = GameTime()  # Default time for old saves
+
+            # Restore AI integration (with backwards compatibility)
+            from systems.enhanced_ai_integration import EnhancedAIIntegration
+            if 'ai_integration' in save_data and save_data['ai_integration']:
+                self.ai_integration = EnhancedAIIntegration.from_dict(save_data['ai_integration'])
+            else:
+                self.ai_integration = EnhancedAIIntegration()  # Default for old saves
+
+            # Restore procedural generation (with backwards compatibility)
+            self.procedural_mode = save_data.get('procedural_mode', False)
+            if 'procedural_generator' in save_data and save_data['procedural_generator']:
+                from systems.procedural_generation import ProceduralGameMode
+                self.procedural_generator = ProceduralGameMode.from_dict(save_data['procedural_generator'])
+            else:
+                self.procedural_generator = None
+                self.procedural_events = []
 
             return True
         except FileNotFoundError:
