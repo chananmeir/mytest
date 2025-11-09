@@ -287,6 +287,322 @@ CHARACTERS = {
         resistance=35,
         gender='female'
     ),
+
+    # Grocery Store Staff
+    'Emma': Character(
+        name='Emma',
+        age=22,
+        occupation='Grocery Store Cashier',
+        clothing='Store uniform, name tag, ponytail',
+        clothing_meaning='Young, approachable, friendly service worker',
+        personality='Bubbly, talkative, easily trusts people, naive',
+        resistance=32,
+        gender='female'
+    ),
+    'Michael': Character(
+        name='Michael',
+        age=45,
+        occupation='Grocery Store Manager',
+        clothing='Button-down shirt, slacks, manager badge',
+        clothing_meaning='Professional authority, takes job seriously',
+        personality='Stressed, overworked, values efficiency, secretly lonely',
+        resistance=58,
+        gender='male'
+    ),
+    'Sofia': Character(
+        name='Sofia',
+        age=28,
+        occupation='Produce Section Worker',
+        clothing='Apron, fitness watch, athletic build',
+        clothing_meaning='Health-conscious, takes pride in fresh food',
+        personality='Health nut, judgmental about food choices, helpful',
+        resistance=48,
+        gender='female'
+    ),
+
+    # Neighbors
+    'Jessica': Character(
+        name='Jessica',
+        age=32,
+        occupation='Stay-at-Home Mom',
+        clothing='Yoga pants, oversized sweater, messy bun',
+        clothing_meaning='Comfortable but frazzled, always rushing',
+        personality='Gossipy, knows everyone\'s business, needs validation',
+        resistance=42,
+        gender='female'
+    ),
+    'David': Character(
+        name='David',
+        age=41,
+        occupation='Divorced Dad / Accountant',
+        clothing='Business casual, tired eyes, wedding ring tan line',
+        clothing_meaning='Still adjusting to single life',
+        personality='Lonely, desperate for connection, vulnerable',
+        resistance=28,
+        gender='male'
+    ),
+    'Amber': Character(
+        name='Amber',
+        age=25,
+        occupation='Bartender',
+        clothing='Trendy club wear, heavy makeup, confident posture',
+        clothing_meaning='Wants attention, party lifestyle',
+        personality='Wild, impulsive, hides insecurity with boldness',
+        resistance=55,
+        gender='female'
+    ),
+    'Robert': Character(
+        name='Robert',
+        age=58,
+        occupation='Retired Professor',
+        clothing='Cardigan, slacks, reading glasses on chain',
+        clothing_meaning='Academic, traditional, wise elder',
+        personality='Intellectual, patient, sees through manipulation, curious',
+        resistance=72,
+        gender='male'
+    ),
+    'Chloe': Character(
+        name='Chloe',
+        age=19,
+        occupation='College Student',
+        clothing='Hoodie, jeans, backpack, casual sneakers',
+        clothing_meaning='Student life, still figuring herself out',
+        personality='Naive, eager to please authority, wants to be liked',
+        resistance=30,
+        gender='female'
+    ),
+
+    # Gym/Fitness
+    'Tyler': Character(
+        name='Tyler',
+        age=29,
+        occupation='Personal Trainer',
+        clothing='Tight athletic wear, protein shaker, muscular',
+        clothing_meaning='Body is his brand, confidence through fitness',
+        personality='Motivating, competitive, shallow but well-meaning',
+        resistance=62,
+        gender='male'
+    ),
+    'Ashley': Character(
+        name='Ashley',
+        age=34,
+        occupation='Yoga Instructor',
+        clothing='Yoga pants, sports bra, zen jewelry',
+        clothing_meaning='Spiritual, flexible in body and mind',
+        personality='Calm, open-minded, suggestible to "energy" talk',
+        resistance=38,
+        gender='female'
+    ),
+    'Jake': Character(
+        name='Jake',
+        age=26,
+        occupation='Bodybuilder / Supplement Sales',
+        clothing='Tank top, gym shorts, excessive cologne',
+        clothing_meaning='Ego wrapped in muscles',
+        personality='Arrogant, insecure underneath, needs constant validation',
+        resistance=68,
+        gender='male'
+    ),
+    'Mia': Character(
+        name='Mia',
+        age=23,
+        occupation='Fitness Influencer',
+        clothing='Color-coordinated workout sets, always camera-ready',
+        clothing_meaning='Life is content, appearance is everything',
+        personality='Energetic, superficial, craves attention and followers',
+        resistance=52,
+        gender='female'
+    ),
+
+    # Café/Social
+    'Olivia': Character(
+        name='Olivia',
+        age=21,
+        occupation='Barista / Art Student',
+        clothing='Vintage band tee, apron, dyed hair, piercings',
+        clothing_meaning='Artistic, alternative, nonconformist',
+        personality='Creative, dreamy, easily influenced by "deep" conversations',
+        resistance=35,
+        gender='female'
+    ),
+    'Ethan': Character(
+        name='Ethan',
+        age=37,
+        occupation='Freelance Writer',
+        clothing='Rumpled shirt, laptop bag, coffee stains',
+        clothing_meaning='Struggling artist, disheveled intellectual',
+        personality='Cynical, lonely, overthinks everything, seeking meaning',
+        resistance=64,
+        gender='male'
+    ),
+    'Isabella': Character(
+        name='Isabella',
+        age=30,
+        occupation='Librarian',
+        clothing='Glasses, cardigans, book-themed jewelry',
+        clothing_meaning='Quiet intelligence, loves order and stories',
+        personality='Shy, bookish, opens up about literature, trusting once comfortable',
+        resistance=40,
+        gender='female'
+    ),
+    'Noah': Character(
+        name='Noah',
+        age=27,
+        occupation='Musician / Barista',
+        clothing='Band merch, skinny jeans, guitar case nearby',
+        clothing_meaning='Artist trying to make it, passionate',
+        personality='Passionate, emotional, dramatic, seeks validation for art',
+        resistance=44,
+        gender='male'
+    ),
+
+    # Mall/Shopping
+    'Sophia': Character(
+        name='Sophia',
+        age=35,
+        occupation='Fashion Boutique Owner',
+        clothing='Designer outfit, immaculate style, jewelry',
+        clothing_meaning='Image is business, perfection required',
+        personality='Stylish, judgmental, values appearances, surprisingly insecure',
+        resistance=70,
+        gender='female'
+    ),
+    'Liam': Character(
+        name='Liam',
+        age=24,
+        occupation='Electronics Store Clerk',
+        clothing='Store polo, jeans, gaming merch accessories',
+        clothing_meaning='Tech nerd, casual geek culture',
+        personality='Nerdy, enthusiastic about tech, socially awkward',
+        resistance=36,
+        gender='male'
+    ),
+    'Ava': Character(
+        name='Ava',
+        age=29,
+        occupation='Beauty Consultant',
+        clothing='Perfect makeup, fashionable, name brand everything',
+        clothing_meaning='Beauty is power and confidence',
+        personality='Confident, flirty, uses charm to sell, actually quite sharp',
+        resistance=56,
+        gender='female'
+    ),
+
+    # Professional/Work
+    'Daniel': Character(
+        name='Daniel',
+        age=42,
+        occupation='Corporate Lawyer',
+        clothing='Expensive suit, luxury watch, briefcase',
+        clothing_meaning='Success, power, intimidation',
+        personality='Ambitious, analytical, hard to fool, respects power',
+        resistance=78,
+        gender='male'
+    ),
+    'Emma_R': Character(
+        name='Emma_R',
+        age=38,
+        occupation='Family Doctor',
+        clothing='Professional but warm, stethoscope, kind eyes',
+        clothing_meaning='Approachable authority, caregiver',
+        personality='Caring, empathetic, tired from work, needs someone to lean on',
+        resistance=46,
+        gender='female'
+    ),
+    'William': Character(
+        name='William',
+        age=33,
+        occupation='High School Teacher',
+        clothing='Casual professional, somewhat worn out',
+        clothing_meaning='Dedicated but underpaid, stressed',
+        personality='Patient, idealistic, exhausted, yearns for appreciation',
+        resistance=40,
+        gender='male'
+    ),
+    'Madison': Character(
+        name='Madison',
+        age=31,
+        occupation='Real Estate Agent',
+        clothing='Sharp blazer, heels, confident smile',
+        clothing_meaning='Sales mode always on, persuasive',
+        personality='Persuasive, charming, competitive, hides vulnerability',
+        resistance=60,
+        gender='female'
+    ),
+
+    # Service Workers
+    'Lucas': Character(
+        name='Lucas',
+        age=26,
+        occupation='Delivery Driver',
+        clothing='Company shirt, shorts, always moving',
+        clothing_meaning='Working class, hustling',
+        personality='Friendly, hustler mentality, dreams bigger, easy-going',
+        resistance=34,
+        gender='male'
+    ),
+    'Grace': Character(
+        name='Grace',
+        age=28,
+        occupation='Restaurant Waitress',
+        clothing='Uniform, apron, comfortable shoes, tired smile',
+        clothing_meaning='Service with a smile, working hard',
+        personality='Bubbly but tired, people-pleaser, needs encouragement',
+        resistance=38,
+        gender='female'
+    ),
+    'Henry': Character(
+        name='Henry',
+        age=50,
+        occupation='Handyman',
+        clothing='Work clothes, tool belt, practical boots',
+        clothing_meaning='Blue collar pride, gets things done',
+        personality='Practical, no-nonsense, secretly appreciates being needed',
+        resistance=54,
+        gender='male'
+    ),
+
+    # Random Encounters
+    'Zoe': Character(
+        name='Zoe',
+        age=24,
+        occupation='Street Artist',
+        clothing='Paint-splattered clothes, creative chaos',
+        clothing_meaning='Free spirit, rejects conventions',
+        personality='Free-spirited, spontaneous, open to new experiences',
+        resistance=42,
+        gender='female'
+    ),
+    'Ryan': Character(
+        name='Ryan',
+        age=36,
+        occupation='Police Officer',
+        clothing='Uniform or casual authority clothes',
+        clothing_meaning='Law and order, protective',
+        personality='Protective, suspicious of manipulation, values honesty',
+        resistance=74,
+        gender='male'
+    ),
+    'Natalie': Character(
+        name='Natalie',
+        age=40,
+        occupation='Social Worker',
+        clothing='Professional casual, warm demeanor',
+        clothing_meaning='Approachable helper, empathetic',
+        personality='Empathetic, sees through lies, wants to help people',
+        resistance=66,
+        gender='female'
+    ),
+    'Alex': Character(
+        name='Alex',
+        age=32,
+        occupation='Photographer',
+        clothing='Artistic casual, camera always nearby',
+        clothing_meaning='Observer, captures moments',
+        personality='Observant, quiet, notices details others miss, creative',
+        resistance=50,
+        gender='male'
+    ),
 }
 
 

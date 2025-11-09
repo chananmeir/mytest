@@ -419,6 +419,202 @@ CHARACTER_LOCATION_SCHEDULES = {
             'availability': 0.4
         }
     },
+
+    # Grocery Store Staff
+    'Emma': {
+        'morning': {'location': 'grocery_store', 'activity': 'Working the register', 'mood_modifier': 'cheerful', 'availability': 0.8},
+        'afternoon': {'location': 'grocery_store', 'activity': 'Helping customers', 'mood_modifier': 'friendly', 'availability': 0.9},
+        'evening': {'location': 'coffee_shop', 'activity': 'Coffee after work', 'mood_modifier': 'relaxed', 'availability': 0.6},
+        'night': {'location': 'shopping_mall', 'activity': 'Window shopping', 'mood_modifier': 'social', 'availability': 0.5}
+    },
+    'Michael': {
+        'morning': {'location': 'grocery_store', 'activity': 'Managing inventory', 'mood_modifier': 'stressed', 'availability': 0.4},
+        'afternoon': {'location': 'grocery_store', 'activity': 'Overseeing staff', 'mood_modifier': 'professional', 'availability': 0.6},
+        'evening': {'location': 'restaurant', 'activity': 'Solo dinner', 'mood_modifier': 'lonely', 'availability': 0.7},
+        'night': {'location': 'fitness_center', 'activity': 'Late workout', 'mood_modifier': 'tired', 'availability': 0.5}
+    },
+    'Sofia': {
+        'morning': {'location': 'fitness_center', 'activity': 'Early workout', 'mood_modifier': 'energized', 'availability': 0.6},
+        'afternoon': {'location': 'grocery_store', 'activity': 'Arranging produce', 'mood_modifier': 'focused', 'availability': 0.8},
+        'evening': {'location': 'city_park', 'activity': 'Jogging', 'mood_modifier': 'healthy', 'availability': 0.7},
+        'night': {'location': 'coffee_shop', 'activity': 'Herbal tea', 'mood_modifier': 'calm', 'availability': 0.5}
+    },
+
+    # Neighbors
+    'Jessica': {
+        'morning': {'location': 'grocery_store', 'activity': 'Shopping for kids', 'mood_modifier': 'rushed', 'availability': 0.7},
+        'afternoon': {'location': 'city_park', 'activity': 'With her kids', 'mood_modifier': 'frazzled', 'availability': 0.6},
+        'evening': {'location': 'coffee_shop', 'activity': 'Gossiping with friends', 'mood_modifier': 'chatty', 'availability': 0.8},
+        'night': {'location': 'shopping_mall', 'activity': 'Quick errands', 'mood_modifier': 'tired', 'availability': 0.4}
+    },
+    'David': {
+        'morning': {'location': 'ruths_office', 'activity': 'Working at desk', 'mood_modifier': 'focused', 'availability': 0.3},
+        'afternoon': {'location': 'coffee_shop', 'activity': 'Working remotely', 'mood_modifier': 'lonely', 'availability': 0.7},
+        'evening': {'location': 'grocery_store', 'activity': 'Shopping alone', 'mood_modifier': 'melancholy', 'availability': 0.8},
+        'night': {'location': 'restaurant', 'activity': 'Solo meal', 'mood_modifier': 'sad', 'availability': 0.6}
+    },
+    'Amber': {
+        'morning': {'location': 'coffee_shop', 'activity': 'Recovering from night shift', 'mood_modifier': 'tired', 'availability': 0.6},
+        'afternoon': {'location': 'shopping_mall', 'activity': 'Shopping for outfits', 'mood_modifier': 'excited', 'availability': 0.8},
+        'evening': {'location': 'restaurant', 'activity': 'Pre-shift meal', 'mood_modifier': 'energetic', 'availability': 0.5},
+        'night': {'location': 'city_park', 'activity': 'Late night walk', 'mood_modifier': 'wild', 'availability': 0.4}
+    },
+    'Robert': {
+        'morning': {'location': 'coffee_shop', 'activity': 'Reading newspaper', 'mood_modifier': 'contemplative', 'availability': 0.8},
+        'afternoon': {'location': 'library', 'activity': 'Research and reading', 'mood_modifier': 'scholarly', 'availability': 0.9},
+        'evening': {'location': 'city_park', 'activity': 'Evening walk', 'mood_modifier': 'peaceful', 'availability': 0.7},
+        'night': {'location': 'restaurant', 'activity': 'Quiet dinner', 'mood_modifier': 'wise', 'availability': 0.6}
+    },
+    'Chloe': {
+        'morning': {'location': 'coffee_shop', 'activity': 'Studying with coffee', 'mood_modifier': 'stressed', 'availability': 0.7},
+        'afternoon': {'location': 'library', 'activity': 'Working on assignment', 'mood_modifier': 'focused', 'availability': 0.8},
+        'evening': {'location': 'shopping_mall', 'activity': 'Part-time job', 'mood_modifier': 'working', 'availability': 0.5},
+        'night': {'location': 'city_park', 'activity': 'Late study break', 'mood_modifier': 'exhausted', 'availability': 0.6}
+    },
+
+    # Gym/Fitness
+    'Tyler': {
+        'morning': {'location': 'fitness_center', 'activity': 'Training clients', 'mood_modifier': 'motivated', 'availability': 0.5},
+        'afternoon': {'location': 'fitness_center', 'activity': 'Personal workout', 'mood_modifier': 'competitive', 'availability': 0.7},
+        'evening': {'location': 'grocery_store', 'activity': 'Shopping for protein', 'mood_modifier': 'focused', 'availability': 0.6},
+        'night': {'location': 'coffee_shop', 'activity': 'Meal prep planning', 'mood_modifier': 'relaxed', 'availability': 0.5}
+    },
+    'Ashley': {
+        'morning': {'location': 'fitness_center', 'activity': 'Teaching yoga', 'mood_modifier': 'zen', 'availability': 0.6},
+        'afternoon': {'location': 'city_park', 'activity': 'Outdoor meditation', 'mood_modifier': 'peaceful', 'availability': 0.8},
+        'evening': {'location': 'coffee_shop', 'activity': 'Herbal tea', 'mood_modifier': 'calm', 'availability': 0.7},
+        'night': {'location': 'grocery_store', 'activity': 'Healthy food shopping', 'mood_modifier': 'mindful', 'availability': 0.5}
+    },
+    'Jake': {
+        'morning': {'location': 'fitness_center', 'activity': 'Heavy lifting', 'mood_modifier': 'pumped', 'availability': 0.4},
+        'afternoon': {'location': 'fitness_center', 'activity': 'Posing in mirrors', 'mood_modifier': 'vain', 'availability': 0.5},
+        'evening': {'location': 'shopping_mall', 'activity': 'Shopping for supplements', 'mood_modifier': 'arrogant', 'availability': 0.6},
+        'night': {'location': 'restaurant', 'activity': 'Protein meal', 'mood_modifier': 'self-absorbed', 'availability': 0.5}
+    },
+    'Mia': {
+        'morning': {'location': 'fitness_center', 'activity': 'Filming workout content', 'mood_modifier': 'energetic', 'availability': 0.7},
+        'afternoon': {'location': 'city_park', 'activity': 'Outdoor photoshoot', 'mood_modifier': 'performative', 'availability': 0.8},
+        'evening': {'location': 'shopping_mall', 'activity': 'Trying on activewear', 'mood_modifier': 'excited', 'availability': 0.7},
+        'night': {'location': 'coffee_shop', 'activity': 'Editing content', 'mood_modifier': 'busy', 'availability': 0.6}
+    },
+
+    # Café/Social
+    'Olivia': {
+        'morning': {'location': 'coffee_shop', 'activity': 'Opening shift', 'mood_modifier': 'sleepy', 'availability': 0.7},
+        'afternoon': {'location': 'coffee_shop', 'activity': 'Making lattes', 'mood_modifier': 'creative', 'availability': 0.8},
+        'evening': {'location': 'city_park', 'activity': 'Sketching', 'mood_modifier': 'artistic', 'availability': 0.7},
+        'night': {'location': 'library', 'activity': 'Art research', 'mood_modifier': 'dreamy', 'availability': 0.6}
+    },
+    'Ethan': {
+        'morning': {'location': 'coffee_shop', 'activity': 'Writing on laptop', 'mood_modifier': 'focused', 'availability': 0.8},
+        'afternoon': {'location': 'library', 'activity': 'Research', 'mood_modifier': 'intellectual', 'availability': 0.7},
+        'evening': {'location': 'coffee_shop', 'activity': 'Still writing', 'mood_modifier': 'frustrated', 'availability': 0.6},
+        'night': {'location': 'restaurant', 'activity': 'Late dinner alone', 'mood_modifier': 'melancholy', 'availability': 0.7}
+    },
+    'Isabella': {
+        'morning': {'location': 'library', 'activity': 'Organizing books', 'mood_modifier': 'peaceful', 'availability': 0.8},
+        'afternoon': {'location': 'library', 'activity': 'Helping patrons', 'mood_modifier': 'helpful', 'availability': 0.9},
+        'evening': {'location': 'coffee_shop', 'activity': 'Reading for pleasure', 'mood_modifier': 'content', 'availability': 0.7},
+        'night': {'location': 'city_park', 'activity': 'Evening walk', 'mood_modifier': 'thoughtful', 'availability': 0.5}
+    },
+    'Noah': {
+        'morning': {'location': 'coffee_shop', 'activity': 'Morning shift', 'mood_modifier': 'tired', 'availability': 0.6},
+        'afternoon': {'location': 'city_park', 'activity': 'Playing guitar', 'mood_modifier': 'passionate', 'availability': 0.8},
+        'evening': {'location': 'restaurant', 'activity': 'Open mic night', 'mood_modifier': 'performing', 'availability': 0.5},
+        'night': {'location': 'coffee_shop', 'activity': 'Writing songs', 'mood_modifier': 'creative', 'availability': 0.7}
+    },
+
+    # Mall/Shopping
+    'Sophia': {
+        'morning': {'location': 'shopping_mall', 'activity': 'Opening boutique', 'mood_modifier': 'professional', 'availability': 0.6},
+        'afternoon': {'location': 'shopping_mall', 'activity': 'Styling customers', 'mood_modifier': 'critical', 'availability': 0.7},
+        'evening': {'location': 'restaurant', 'activity': 'Business dinner', 'mood_modifier': 'elegant', 'availability': 0.5},
+        'night': {'location': 'fitness_center', 'activity': 'Maintaining figure', 'mood_modifier': 'determined', 'availability': 0.4}
+    },
+    'Liam': {
+        'morning': {'location': 'coffee_shop', 'activity': 'Gaming on laptop', 'mood_modifier': 'nerdy', 'availability': 0.7},
+        'afternoon': {'location': 'shopping_mall', 'activity': 'Working electronics', 'mood_modifier': 'enthusiastic', 'availability': 0.8},
+        'evening': {'location': 'library', 'activity': 'Tech magazines', 'mood_modifier': 'geeky', 'availability': 0.6},
+        'night': {'location': 'city_park', 'activity': 'Pokemon Go', 'mood_modifier': 'playful', 'availability': 0.5}
+    },
+    'Ava': {
+        'morning': {'location': 'fitness_center', 'activity': 'Beauty workout', 'mood_modifier': 'vain', 'availability': 0.5},
+        'afternoon': {'location': 'shopping_mall', 'activity': 'Beauty consulting', 'mood_modifier': 'flirty', 'availability': 0.8},
+        'evening': {'location': 'restaurant', 'activity': 'Dinner date', 'mood_modifier': 'confident', 'availability': 0.4},
+        'night': {'location': 'coffee_shop', 'activity': 'Social media', 'mood_modifier': 'self-focused', 'availability': 0.6}
+    },
+
+    # Professional/Work
+    'Daniel': {
+        'morning': {'location': 'ruths_office', 'activity': 'Legal work', 'mood_modifier': 'serious', 'availability': 0.3},
+        'afternoon': {'location': 'coffee_shop', 'activity': 'Client meeting', 'mood_modifier': 'professional', 'availability': 0.5},
+        'evening': {'location': 'restaurant', 'activity': 'Business dinner', 'mood_modifier': 'ambitious', 'availability': 0.4},
+        'night': {'location': 'fitness_center', 'activity': 'Stress relief', 'mood_modifier': 'tense', 'availability': 0.5}
+    },
+    'Emma_R': {
+        'morning': {'location': 'ruths_office', 'activity': 'Seeing patients', 'mood_modifier': 'caring', 'availability': 0.4},
+        'afternoon': {'location': 'ruths_office', 'activity': 'More appointments', 'mood_modifier': 'tired', 'availability': 0.3},
+        'evening': {'location': 'grocery_store', 'activity': 'Quick shopping', 'mood_modifier': 'exhausted', 'availability': 0.7},
+        'night': {'location': 'coffee_shop', 'activity': 'Unwinding', 'mood_modifier': 'drained', 'availability': 0.6}
+    },
+    'William': {
+        'morning': {'location': 'karens_school', 'activity': 'Teaching class', 'mood_modifier': 'patient', 'availability': 0.3},
+        'afternoon': {'location': 'karens_school', 'activity': 'Grading papers', 'mood_modifier': 'frustrated', 'availability': 0.4},
+        'evening': {'location': 'library', 'activity': 'Lesson planning', 'mood_modifier': 'dedicated', 'availability': 0.7},
+        'night': {'location': 'coffee_shop', 'activity': 'Decompressing', 'mood_modifier': 'worn out', 'availability': 0.8}
+    },
+    'Madison': {
+        'morning': {'location': 'coffee_shop', 'activity': 'Client calls', 'mood_modifier': 'persuasive', 'availability': 0.6},
+        'afternoon': {'location': 'shopping_mall', 'activity': 'Shopping for work clothes', 'mood_modifier': 'professional', 'availability': 0.7},
+        'evening': {'location': 'restaurant', 'activity': 'Networking dinner', 'mood_modifier': 'charming', 'availability': 0.5},
+        'night': {'location': 'fitness_center', 'activity': 'Maintaining appearance', 'mood_modifier': 'competitive', 'availability': 0.4}
+    },
+
+    # Service Workers
+    'Lucas': {
+        'morning': {'location': 'grocery_store', 'activity': 'Picking up packages', 'mood_modifier': 'busy', 'availability': 0.6},
+        'afternoon': {'location': 'shopping_mall', 'activity': 'Making deliveries', 'mood_modifier': 'rushed', 'availability': 0.5},
+        'evening': {'location': 'coffee_shop', 'activity': 'Quick break', 'mood_modifier': 'friendly', 'availability': 0.8},
+        'night': {'location': 'restaurant', 'activity': 'Late deliveries', 'mood_modifier': 'tired', 'availability': 0.4}
+    },
+    'Grace': {
+        'morning': {'location': 'coffee_shop', 'activity': 'Coffee before shift', 'mood_modifier': 'preparing', 'availability': 0.7},
+        'afternoon': {'location': 'restaurant', 'activity': 'Waiting tables', 'mood_modifier': 'bubbly', 'availability': 0.5},
+        'evening': {'location': 'restaurant', 'activity': 'Busy dinner shift', 'mood_modifier': 'stressed', 'availability': 0.3},
+        'night': {'location': 'city_park', 'activity': 'Unwinding after work', 'mood_modifier': 'exhausted', 'availability': 0.8}
+    },
+    'Henry': {
+        'morning': {'location': 'grocery_store', 'activity': 'Picking up supplies', 'mood_modifier': 'practical', 'availability': 0.7},
+        'afternoon': {'location': 'fitness_center', 'activity': 'Fixing equipment', 'mood_modifier': 'working', 'availability': 0.5},
+        'evening': {'location': 'coffee_shop', 'activity': 'Evening coffee', 'mood_modifier': 'relaxed', 'availability': 0.7},
+        'night': {'location': 'city_park', 'activity': 'Walking the dog', 'mood_modifier': 'content', 'availability': 0.6}
+    },
+
+    # Random Encounters
+    'Zoe': {
+        'morning': {'location': 'coffee_shop', 'activity': 'Sketching ideas', 'mood_modifier': 'creative', 'availability': 0.8},
+        'afternoon': {'location': 'city_park', 'activity': 'Painting murals', 'mood_modifier': 'inspired', 'availability': 0.9},
+        'evening': {'location': 'shopping_mall', 'activity': 'Art supply shopping', 'mood_modifier': 'spontaneous', 'availability': 0.6},
+        'night': {'location': 'restaurant', 'activity': 'Late night sketching', 'mood_modifier': 'artistic', 'availability': 0.7}
+    },
+    'Ryan': {
+        'morning': {'location': 'grocery_store', 'activity': 'Morning patrol', 'mood_modifier': 'alert', 'availability': 0.5},
+        'afternoon': {'location': 'fitness_center', 'activity': 'Staying in shape', 'mood_modifier': 'disciplined', 'availability': 0.6},
+        'evening': {'location': 'restaurant', 'activity': 'Dinner break', 'mood_modifier': 'watchful', 'availability': 0.6},
+        'night': {'location': 'city_park', 'activity': 'Night patrol', 'mood_modifier': 'protective', 'availability': 0.7}
+    },
+    'Natalie': {
+        'morning': {'location': 'ruths_office', 'activity': 'Meeting clients', 'mood_modifier': 'empathetic', 'availability': 0.5},
+        'afternoon': {'location': 'coffee_shop', 'activity': 'Case work', 'mood_modifier': 'focused', 'availability': 0.7},
+        'evening': {'location': 'grocery_store', 'activity': 'Shopping for groceries', 'mood_modifier': 'tired', 'availability': 0.8},
+        'night': {'location': 'library', 'activity': 'Research', 'mood_modifier': 'dedicated', 'availability': 0.6}
+    },
+    'Alex': {
+        'morning': {'location': 'city_park', 'activity': 'Golden hour photos', 'mood_modifier': 'artistic', 'availability': 0.8},
+        'afternoon': {'location': 'coffee_shop', 'activity': 'Editing photos', 'mood_modifier': 'focused', 'availability': 0.7},
+        'evening': {'location': 'shopping_mall', 'activity': 'Street photography', 'mood_modifier': 'observant', 'availability': 0.6},
+        'night': {'location': 'restaurant', 'activity': 'Food photography', 'mood_modifier': 'creative', 'availability': 0.5}
+    },
 }
 
 
