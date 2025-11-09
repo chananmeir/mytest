@@ -932,6 +932,100 @@
     </div>
 </div>
 
+<!-- Advanced Hypnosis Modal -->
+<div id="advancedHypnosisModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">⚡ Advanced Hypnosis Techniques</h2>
+            <button class="close-modal" onclick="closeModal('advancedHypnosisModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Mastery Level Display -->
+            <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem; color: white; text-align: center;">
+                <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">Mastery Level: <span id="mastery-level">0</span> / 10</div>
+                <div style="font-size: 0.9rem; opacity: 0.9;" id="mastery-description">Novice - Just beginning your journey</div>
+                <div style="margin-top: 1rem; display: flex; justify-content: space-around; font-size: 0.85rem;">
+                    <div>
+                        <div style="opacity: 0.9;">Success Rate</div>
+                        <div style="font-size: 1.3rem; font-weight: bold;" id="mastery-success-rate">0%</div>
+                    </div>
+                    <div>
+                        <div style="opacity: 0.9;">Bonuses</div>
+                        <div style="font-size: 1.3rem; font-weight: bold;" id="mastery-bonuses">+0% / -0 SP</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technique Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); gap: 1.5rem;">
+                <!-- Combo Suggestions -->
+                <div class="advanced-technique-card" style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; border: 2px solid var(--border-color);">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🔗 Combo Suggestions</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Chain multiple suggestions together. When one triggers, it causes the next one to activate!
+                    </p>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 5px; margin-bottom: 1rem; font-size: 0.85rem;">
+                        <strong>Cost:</strong> 8 SP base + 2 SP per step<br>
+                        <strong>Bonus:</strong> +15% success rate on all steps<br>
+                        <strong>Max Chain:</strong> 5 steps
+                    </div>
+                    <button class="btn btn-primary" onclick="openComboBuilder()" style="width: 100%;">
+                        Build Combo Chain
+                    </button>
+                </div>
+
+                <!-- Group Hypnosis -->
+                <div class="advanced-technique-card" style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; border: 2px solid var(--border-color);">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">👥 Group Hypnosis</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Hypnotize multiple people at once with a shared trigger. Perfect for influencing groups!
+                    </p>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 5px; margin-bottom: 1rem; font-size: 0.85rem;">
+                        <strong>Cost:</strong> 10 SP base + 4 SP per person<br>
+                        <strong>Penalty:</strong> -10% per additional person<br>
+                        <strong>Max Targets:</strong> 4 people
+                    </div>
+                    <button class="btn btn-primary" onclick="openGroupHypnosis()" style="width: 100%;">
+                        Start Group Session
+                    </button>
+                </div>
+
+                <!-- Resistance Breaking -->
+                <div class="advanced-technique-card" style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; border: 2px solid var(--border-color);">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🛡️ Resistance Breaking</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Reduce a character's resistance through various psychological techniques.
+                    </p>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 5px; margin-bottom: 1rem; font-size: 0.85rem;">
+                        <strong>Cost:</strong> 5 SP per attempt<br>
+                        <strong>Reduction:</strong> -10 to -15 resistance<br>
+                        <strong>Risk:</strong> Increases suspicion on failure
+                    </div>
+                    <button class="btn btn-primary" onclick="openResistanceBreaking()" style="width: 100%;">
+                        Break Resistance
+                    </button>
+                </div>
+
+                <!-- Conflicting Suggestions -->
+                <div class="advanced-technique-card" style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; border: 2px solid var(--border-color);">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">⚔️ Conflicting Suggestions</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Plant contradictory suggestions to create internal conflict. Dangerous but powerful!
+                    </p>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 5px; margin-bottom: 1rem; font-size: 0.85rem;">
+                        <strong>Cost:</strong> Standard PHS costs (x2)<br>
+                        <strong>Warning:</strong> May cause mental breakdown<br>
+                        <strong>Uses:</strong> Confusion, manipulation
+                    </div>
+                    <button class="btn btn-primary" onclick="openConflictingPHS()" style="width: 100%;">
+                        Create Conflict
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="{{ url_for('static', filename='js/sprite_renderer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/game.js') }}"></script>
 <script src="{{ url_for('static', filename='js/map.js') }}"></script>

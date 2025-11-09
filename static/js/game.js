@@ -3186,9 +3186,38 @@ function switchActionTab(tabName) {
 
 // ===== ADVANCED HYPNOSIS =====
 function openAdvancedHypnosis() {
-    // Placeholder for Advanced Hypnosis modal
-    // Will contain: Combo Suggestions, Conflicting PHS, Group Hypnosis, Resistance Breaking
-    alert('⚡ Advanced Hypnosis System\n\nComing soon:\n• 🔗 Combo Suggestions\n• ⚔️ Conflicting PHS\n• 👥 Group Hypnosis\n• 🛡️ Resistance Breaking\n\nCheck ADVANCED_HYPNOSIS_GUIDE.md for full documentation!');
+    // Load mastery level data
+    $.ajax({
+        url: '/api/mastery-level',
+        method: 'GET',
+        success: function(data) {
+            if (data.success) {
+                const mastery = data.mastery;
+                $('#mastery-level').text(mastery.level);
+                $('#mastery-description').text(mastery.description);
+                $('#mastery-success-rate').text(mastery.success_rate.toFixed(1) + '%');
+                $('#mastery-bonuses').text(`+${mastery.success_bonus}% / -${mastery.sp_reduction} SP`);
+            }
+        }
+    });
+
+    openModal('advancedHypnosisModal');
+}
+
+function openComboBuilder() {
+    alert('🔗 Combo Builder\n\nThis feature allows you to chain suggestions together!\n\nExample:\n1. Ruth feels guilty → defends you\n2. Tom hears Ruth → agrees with her\n3. Lisa sees both agree → reconsiders\n\nFull implementation coming soon!');
+}
+
+function openGroupHypnosis() {
+    alert('👥 Group Hypnosis\n\nHypnotize multiple people at once!\n\nPerfect for:\n• Family dinners\n• Group gatherings\n• Shared experiences\n\nFull implementation coming soon!');
+}
+
+function openResistanceBreaking() {
+    alert('🛡️ Resistance Breaking\n\nChoose your approach:\n• Rapport (safe, slow)\n• Manipulation (balanced)\n• Pressure (fast, risky)\n\nFull implementation coming soon!');
+}
+
+function openConflictingPHS() {
+    alert('⚔️ Conflicting Suggestions\n\nPlant contradictory suggestions!\n\nExample:\n"Trust me completely" vs "Be suspicious of everyone"\n\nWarning: Can cause mental breakdown!\n\nFull implementation coming soon!');
 }
 
 // ===== SELF-CARE SYSTEM =====

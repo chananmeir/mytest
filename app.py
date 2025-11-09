@@ -3182,6 +3182,44 @@ def perform_self_care_action():
     })
 
 
+# ===== ADVANCED HYPNOSIS SYSTEM =====
+
+@app.route('/api/mastery-level')
+def get_mastery_level():
+    """Get player's hypnosis mastery level and stats"""
+    game_state = get_game_state()
+
+    from systems.advanced_hypnosis import AdvancedHypnosisSystem
+
+    # Ensure mastery level exists
+    if not hasattr(game_state.player, 'mastery_level'):
+        from systems.advanced_hypnosis import MasteryLevel
+        game_state.player.mastery_level = MasteryLevel()
+
+    mastery = game_state.player.mastery_level
+    sp_reduction, success_bonus = mastery.get_mastery_bonuses()
+
+    return jsonify({
+        'success': True,
+        'mastery': {
+            'level': mastery.get_overall_mastery(),
+            'description': AdvancedHypnosisSystem.get_mastery_level_description(mastery.get_overall_mastery()),
+            'success_rate': mastery.get_success_rate(),
+            'sp_reduction': sp_reduction,
+            'success_bonus': success_bonus,
+            'stats': {
+                'total_phs_planted': mastery.total_phs_planted,
+                'successful_activations': mastery.successful_activations,
+                'failed_activations': mastery.failed_activations,
+                'reinforcements': mastery.reinforcements_done,
+                'combos': mastery.combos_completed,
+                'group_sessions': mastery.group_sessions_done,
+                'resistance_breaks': mastery.resistance_breaks
+            }
+        }
+    })
+
+
 if __name__ == '__main__':
     # Create templates and static directories if they don't exist
     os.makedirs('templates', exist_ok=True)
