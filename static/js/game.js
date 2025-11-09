@@ -1411,8 +1411,21 @@ function readBook(bookId, bookTitle) {
                     });
                 }
 
+                // Show time advancement
+                if (data.time_passed) {
+                    message += `\n\n⏱️ Time passed: ${data.time_passed} minutes → ${data.new_time}`;
+                }
+
+                // Show self-care warnings
+                if (data.warnings && data.warnings.length > 0) {
+                    data.warnings.forEach(warning => {
+                        message += `\n${warning}`;
+                    });
+                }
+
                 alert(message);
                 updateGameState();
+                updateSelfCareDisplay();
                 closeModal('booksModal');
                 openSkillTree();
             }
@@ -1437,12 +1450,28 @@ function researchOnline() {
         }),
         success: function(data) {
             if (data.success) {
+                let message = '';
                 if (data.mastered) {
-                    alert(`🎓 MASTERED: ${data.mastered} through online research!`);
+                    message = `🎓 MASTERED: ${data.mastered} through online research!`;
                 } else {
-                    alert(`🌐 Researched ${data.technique}: ${data.progress}%`);
+                    message = `🌐 Researched ${data.technique}: ${data.progress}%`;
                 }
+
+                // Show time advancement
+                if (data.time_passed) {
+                    message += `\n\n⏱️ Time passed: ${data.time_passed} minutes → ${data.new_time}`;
+                }
+
+                // Show self-care warnings
+                if (data.warnings && data.warnings.length > 0) {
+                    data.warnings.forEach(warning => {
+                        message += `\n${warning}`;
+                    });
+                }
+
+                alert(message);
                 updateGameState();
+                updateSelfCareDisplay();
                 closeModal('studyModal');
             } else {
                 alert(data.error || 'No techniques available to research');

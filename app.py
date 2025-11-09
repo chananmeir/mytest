@@ -1114,11 +1114,17 @@ def api_study():
             if progress_made or learned:
                 game_state.add_sp(1, "Studied hypnosis")
 
+            # Advance time - reading takes 45 minutes
+            time_warnings = game_state.advance_time_with_needs(45)
+
             result = {
                 'success': True,
                 'learned': learned,
                 'progress_made': progress_made,
-                'book_title': book['title']
+                'book_title': book['title'],
+                'time_passed': 45,
+                'new_time': game_state.game_time.get_formatted_time(),
+                'warnings': list(time_warnings.values())
             }
 
     elif action == 'practice':
@@ -1144,6 +1150,12 @@ def api_study():
                     'technique': tech.name
                 }
 
+            # Advance time - practicing takes 40 minutes
+            time_warnings = game_state.advance_time_with_needs(40)
+            result['time_passed'] = 40
+            result['new_time'] = game_state.game_time.get_formatted_time()
+            result['warnings'] = list(time_warnings.values())
+
     elif action == 'research':
         available = knowledge.get_available_techniques()
         if available:
@@ -1168,6 +1180,12 @@ def api_study():
                     'progress': final_progress,
                     'technique': tech.name
                 }
+
+            # Advance time - researching takes 30 minutes
+            time_warnings = game_state.advance_time_with_needs(30)
+            result['time_passed'] = 30
+            result['new_time'] = game_state.game_time.get_formatted_time()
+            result['warnings'] = list(time_warnings.values())
         else:
             result = {'success': False, 'error': 'No techniques available to research'}
 
