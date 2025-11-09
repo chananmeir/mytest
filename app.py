@@ -29,36 +29,49 @@ game_master = GameMaster()
 memory_system = MemorySystem()
 
 
+def get_session_save_path():
+    """Get the save file path for current session"""
+    import uuid
+
+    # Get or create session ID
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+
+    session_id = session['session_id']
+    save_dir = 'saves/sessions'
+    os.makedirs(save_dir, exist_ok=True)
+    return os.path.join(save_dir, f'session_{session_id}.json')
+
+
 def get_game_state():
-    """Get or create game state from session"""
-    if 'game_state_data' not in session:
-        # Create new game
+    """Get or create game state from file"""
+    save_path = get_session_save_path()
+
+    # Try to load from session save file
+    if os.path.exists(save_path):
         game_state = GameState()
-        session['game_state_data'] = game_state.to_dict()
-        return game_state
+        try:
+            game_state.load_game(save_path)
+            return game_state
+        except:
+            # If load fails, create new game
+            pass
 
-    # Reconstruct from session data
+    # Create new game
     game_state = GameState()
-
-    # Save to temp file and load (reuse existing load logic)
-    import tempfile
-    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
-        json.dump(session['game_state_data'], f)
-        temp_file = f.name
-
-    try:
-        game_state.load_game(temp_file)
-        os.unlink(temp_file)
-    except:
-        # If load fails, return fresh game state
-        pass
-
+    save_game_state(game_state)  # Save immediately
     return game_state
 
 
 def save_game_state(game_state):
-    """Save game state to session"""
-    session['game_state_data'] = game_state.to_dict()
+    """Save game state to file (not session cookie)"""
+    save_path = get_session_save_path()
+
+    # Save to file
+    save_data = game_state.to_dict()
+    with open(save_path, 'w') as f:
+        json.dump(save_data, f, indent=2)
+
     session.modified = True
 
 
@@ -74,10 +87,9 @@ def new_game():
     # Clear existing session
     session.clear()
 
-    # Create new game state
+    # Create new game state and save to file
     game_state = GameState()
-    session['game_state_id'] = id(game_state)
-    session['game_state_data'] = game_state.to_dict()
+    save_game_state(game_state)
     session['current_scene'] = 'family_dinner'
 
     return jsonify({'success': True, 'redirect': '/game'})
@@ -89,8 +101,8 @@ def load_game():
     try:
         game_state = GameState()
         if game_state.load_game():
-            session['game_state_id'] = id(game_state)
-            session['game_state_data'] = game_state.to_dict()
+            # Save to session file
+            save_game_state(game_state)
             session['current_scene'] = 'family_dinner'
             return jsonify({'success': True, 'redirect': '/game'})
         else:
