@@ -28,9 +28,9 @@ body {
 }
 
 .game-container {
-    max-width: 1400px;
+    max-width: 1800px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 10px 15px;
 }
 
 /* ===== MAIN MENU ===== */
@@ -248,7 +248,7 @@ body {
 /* ===== GAME CONTENT ===== */
 .game-content {
     display: grid;
-    grid-template-columns: 300px 1fr 350px;
+    grid-template-columns: 320px 1fr 380px;
     gap: 2rem;
     min-height: 600px;
 }
