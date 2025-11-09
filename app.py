@@ -115,7 +115,13 @@ def game():
 @app.route('/api/game-state')
 def api_game_state():
     """Get current game state as JSON"""
+    from systems.location_system import ALL_LOCATIONS
+
     game_state = get_game_state()
+
+    # Get location name
+    current_loc = ALL_LOCATIONS.get(game_state.player.current_location)
+    location_name = current_loc.name if current_loc else game_state.player.current_location.replace('_', ' ').title()
 
     return jsonify({
         'player': {
@@ -126,7 +132,8 @@ def api_game_state():
             'total_techniques': 11,
             'food_meals': getattr(game_state.player, 'food_meals', 5),
             'food_snacks': getattr(game_state.player, 'food_snacks', 8),
-            'current_location': game_state.player.current_location
+            'current_location': game_state.player.current_location,
+            'current_location_name': location_name
         },
         'characters': [
             {

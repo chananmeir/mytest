@@ -528,7 +528,7 @@ function updateGameState() {
 
             // Update location display
             if (data.player.current_location) {
-                const locationName = data.player.current_location.replace(/_/g, ' ');
+                const locationName = data.player.current_location_name || data.player.current_location.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 const locationIcon = getLocationIcon(data.player.current_location);
                 $('#location-display').text(`${locationIcon} ${locationName}`);
             }
