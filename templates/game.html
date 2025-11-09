@@ -1,0 +1,1196 @@
+{% extends "base.html" %}
+
+{% block title %}Family Dynamics RPG - Game{% endblock %}
+
+{% block content %}
+<!-- Game Header -->
+<div class="game-header">
+    <div class="player-stats">
+        <div class="stat-item" onclick="openSkillTree()" style="cursor: pointer;" title="💡 SP: Used to learn techniques and perform hypnosis
+Click to open Skill Tree">
+            <span class="stat-label">Suggestion Points</span>
+            <span class="stat-value" id="sp-display">{{ game_state.player.suggestion_points }}</span>
+        </div>
+        <div class="stat-item" onclick="switchActionTab('resources')" style="cursor: pointer;" title="💰 MONEY: Earn from jobs, spend on gifts
+Click to open Resources (Jobs & Gift Shop)">
+            <span class="stat-label">Money</span>
+            <span class="stat-value" id="money-display">${{ game_state.player.money }}</span>
+        </div>
+        <div class="stat-item" onclick="openSkillTree()" style="cursor: pointer;" title="📚 SKILL LEVEL: Your hypnosis expertise
+Novice → Beginner → Intermediate → Advanced → Expert → Master
+Click to view progress">
+            <span class="stat-label">Skill Level</span>
+            <span class="stat-value" id="skill-level">{{ game_state.player.hypnosis_knowledge.skill_level|upper }}</span>
+        </div>
+        <div class="stat-item" onclick="openSkillTree()" style="cursor: pointer;" title="🎯 TECHNIQUES: Hypnosis techniques you've mastered
+11 total techniques available to learn
+Click to view all techniques">
+            <span class="stat-label">Techniques</span>
+            <span class="stat-value" id="techniques-count">{{ game_state.player.hypnosis_knowledge.known_techniques|length }}/11</span>
+        </div>
+        <div class="stat-item" onclick="switchActionTab('world')" style="cursor: pointer;" title="📍 LOCATION: Where you currently are
+Click to travel to different locations">
+            <span class="stat-label">Location</span>
+            <span class="stat-value" id="location-display" style="font-size: 1.2rem;">🏠 Home</span>
+        </div>
+    </div>
+
+    <div class="game-actions">
+        <button class="btn btn-small" onclick="saveGame()">💾 Save</button>
+        <button class="btn btn-small" onclick="exitGame()">🚪 Exit</button>
+    </div>
+
+    <!-- Self-Care Status Bar (Always Visible) -->
+    <div class="self-care-status-bar">
+        <div class="need-item" onclick="switchActionTab('selfcare')" style="cursor: pointer;" title="🍔 HUNGER: How well-fed you are (decays -8/hour)
+Keep above 40 to avoid penalties!
+• Below 40: -25% SP gain
+• Below 20: -50% SP gain, -10% success rate
+Restore by eating meals or snacks.
+[Click to open Self-Care menu]">
+            <span class="need-icon" id="header-hunger-emoji">🍔</span>
+            <div class="need-bar-container">
+                <div class="need-bar" id="header-hunger-bar" style="width: 80%; background: #4caf50;"></div>
+            </div>
+            <span class="need-value" id="header-hunger-value">80</span>
+        </div>
+        <div class="need-item" onclick="switchActionTab('selfcare')" style="cursor: pointer;" title="⚡ ENERGY: How well-rested you are (decays -5/hour)
+Keep above 30 to avoid penalties!
+• Below 30: -20% SP gain, -5% success rate
+• Below 15: -40% SP gain, -15% success rate
+Restore by sleeping or taking naps.
+[Click to open Self-Care menu]">
+            <span class="need-icon" id="header-energy-emoji">⚡</span>
+            <div class="need-bar-container">
+                <div class="need-bar" id="header-energy-bar" style="width: 75%; background: #4caf50;"></div>
+            </div>
+            <span class="need-value" id="header-energy-value">75</span>
+        </div>
+        <div class="need-item" onclick="switchActionTab('selfcare')" style="cursor: pointer;" title="🚿 HYGIENE: How clean you are (decays -2/hour)
+Keep above 50 to avoid penalties!
+• Below 50: -1 rapport gain with others
+• Below 30: -2 rapport gain with others
+Restore by showering or washing up.
+[Click to open Self-Care menu]">
+            <span class="need-icon" id="header-hygiene-emoji">🚿</span>
+            <div class="need-bar-container">
+                <div class="need-bar" id="header-hygiene-bar" style="width: 85%; background: #4caf50;"></div>
+            </div>
+            <span class="need-value" id="header-hygiene-value">85</span>
+        </div>
+        <div class="need-item" onclick="switchActionTab('selfcare')" style="cursor: pointer;" title="🚻 BLADDER: How urgently you need the bathroom (increases +12/hour)
+Keep below 70 to avoid penalties!
+• Above 70: -10% success rate (distracted)
+• Above 90: -20% success rate (URGENT!)
+Restore by using the bathroom.
+[Click to open Self-Care menu]">
+            <span class="need-icon" id="header-bladder-emoji">🚻</span>
+            <div class="need-bar-container">
+                <div class="need-bar" id="header-bladder-bar" style="width: 20%; background: #4caf50;"></div>
+            </div>
+            <span class="need-value" id="header-bladder-value">20</span>
+        </div>
+    </div>
+
+    <div class="time-display">
+        <div class="time-item">
+            <span class="time-icon">🕐</span>
+            <span class="time-value" id="current-time">6:00 PM</span>
+        </div>
+        <div class="time-item">
+            <span class="time-icon">📅</span>
+            <span class="time-value" id="current-date">Monday, January 15</span>
+        </div>
+        <div class="time-item">
+            <span class="time-icon">🌆</span>
+            <span class="time-value" id="current-period">Evening</span>
+        </div>
+        <div class="time-item" title="Active Post-Hypnotic Suggestions across all characters">
+            <span class="time-icon">✨</span>
+            <span class="time-value" id="active-phs-count">0 PHS</span>
+        </div>
+    </div>
+</div>
+
+<!-- Main Game Content -->
+<div class="game-content">
+    <!-- Left: Character List -->
+    <div class="character-list">
+        <h2 id="character-list-header">Characters</h2>
+        <div id="character-cards">
+            {% for character in game_state.characters.values() %}
+            <div class="character-card" data-character="{{ character.name }}">
+                <!-- Character Sprite Preview -->
+                <div id="sprite-{{ character.name }}" class="character-sprite-small" style="margin: 0 auto 0.5rem auto;"></div>
+
+                <div class="character-name">{{ character.name }}</div>
+                <div class="character-info">{{ character.age }} - {{ character.occupation }}</div>
+                <div class="rapport-bar">
+                    <div class="rapport-fill" style="width: {{ (character.rapport / 20 * 100)|int }}%"></div>
+                </div>
+                <div class="character-info" style="margin-top: 0.3rem;">
+                    Rapport: <span class="rapport-value" data-character="{{ character.name }}">{{ character.rapport }}</span>/20 | {{ character.emotional_state|title }}
+                </div>
+
+                <!-- Mood Indicator -->
+                <div class="mood-indicator" data-character="{{ character.name }}" style="background: rgba(102, 126, 234, 0.1); border-left: 3px solid var(--text-secondary); padding: 0.5rem; margin-top: 0.5rem; border-radius: 5px; font-size: 0.75rem;">
+                    <div class="mood-display" style="font-weight: 600; margin-bottom: 0.3rem;">
+                        😐 Neutral
+                    </div>
+                    <div class="mood-recommendation" style="color: var(--text-secondary); font-size: 0.7rem;">
+                        • Loading...
+                    </div>
+                </div>
+
+                <!-- Milestone indicator -->
+                {% set next_milestone = (((character.rapport // 5) + 1) * 5) if character.rapport < 20 else 20 %}
+                {% if character.rapport < 20 %}
+                <div class="milestone-indicator" data-character="{{ character.name }}" style="font-size: 0.75rem; color: var(--warning-color); margin-top: 0.3rem; text-align: center;">
+                    ⭐ Next milestone: {{ next_milestone }}/20 (+1 SP)
+                </div>
+                {% else %}
+                <div class="milestone-indicator" data-character="{{ character.name }}" style="font-size: 0.75rem; color: var(--success-color); margin-top: 0.3rem; text-align: center;">
+                    ✨ Maximum rapport!
+                </div>
+                {% endif %}
+
+                <!-- Character Actions -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-top: 0.8rem;">
+                    <button class="btn btn-small" onclick="selectCharacter('{{ character.name }}')"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="Start conversation">
+                        💬 Talk
+                    </button>
+                    <button class="btn btn-small" onclick="openCharacterProfile('{{ character.name }}')"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="View full profile">
+                        👤 Profile
+                    </button>
+                    <button class="btn btn-small" onclick="openPlantSuggestionFor('{{ character.name }}')"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="Plant hypnotic suggestion">
+                        🎯 Suggest
+                    </button>
+                    <button class="btn btn-small" onclick="openCharacterDressUp('{{ character.name }}', {{ character.outfit|tojson }})"
+                            style="font-size: 0.75rem; padding: 0.4rem;" title="Change outfit">
+                        👗 Outfit
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Center: Dialogue/Content Area -->
+    <div class="main-content">
+        <div class="dialogue-box" id="dialogue-box">
+            <div class="dialogue-message">
+                <div class="system-message">
+                    Welcome to the Family Dinner. Select a character to talk to, or use the actions panel to study hypnosis and view your skills.
+                </div>
+            </div>
+        </div>
+
+        <!-- Dialogue Choices (shown when contextual choices are available) -->
+        <div class="dialogue-choices" id="dialogue-choices" style="display: none;">
+            <div class="choices-header">Choose your response:</div>
+            <div class="choices-container" id="choices-container">
+                <!-- Choice buttons will be inserted here -->
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="message-input" placeholder="Select a character to start talking..." disabled>
+            <button class="btn" id="send-btn" onclick="sendMessage()" disabled>Send</button>
+        </div>
+    </div>
+
+    <!-- Right: Actions Panel with Tabs -->
+    <div class="action-panel">
+        <h2>Actions</h2>
+
+        <!-- Action Tabs -->
+        <div class="action-tabs">
+            <button class="action-tab active" onclick="switchActionTab('hypnosis')">🧠 Hypnosis</button>
+            <button class="action-tab" onclick="switchActionTab('social')">💬 Social</button>
+            <button class="action-tab" onclick="switchActionTab('selfcare')">🧘 Self-Care</button>
+            <button class="action-tab" onclick="switchActionTab('world')">🗺️ World</button>
+            <button class="action-tab" onclick="switchActionTab('resources')">💰 Resources</button>
+        </div>
+
+        <!-- Hypnosis Tab Content -->
+        <div id="tab-hypnosis" class="tab-content active">
+            <button class="action-button" id="plant-suggestion-btn" onclick="openPlantSuggestionFor()" disabled
+                    title="⚠️ REQUIREMENTS TO UNLOCK:
+1. Select a character (click their card on the left)
+2. Learn at least 1 technique (📚 Study Hypnosis → 📖 Read Books)
+3. Build rapport with the character (talk, do activities)
+
+Once unlocked: Plant hypnotic suggestions that trigger later!">
+                🎯 Plant Suggestion
+            </button>
+
+            <button class="action-button" onclick="openStudyMenu()"
+                    title="📚 STUDY HYPNOSIS
+Learn new techniques, practice skills, research methods
+• Read books to unlock techniques
+• Practice to improve success rates
+• Research to discover advanced methods">
+                📚 Study Hypnosis
+            </button>
+
+            <button class="action-button" onclick="openSkillTree()"
+                    title="🌳 SKILL TREE
+View all 11 hypnosis techniques and track your progress
+See what you've learned and what's still locked
+Track your skill level: Novice → Master">
+                🌳 Skill Tree
+            </button>
+
+            <button class="action-button" onclick="openDeepHypnosis()" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);"
+                    title="🌀 DEEP HYPNOSIS
+Put characters into a trance state for more powerful suggestions
+Requires character with lowered resistance
+Deeper trance = stronger effects">
+                🌀 Deep Hypnosis
+            </button>
+
+            <button class="action-button" onclick="openAdvancedHypnosis()" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);"
+                    title="⚡ ADVANCED HYPNOSIS TECHNIQUES
+Powerful advanced methods:
+• Combo Suggestions (chain multiple triggers)
+• Group Hypnosis (affect multiple people)
+• Resistance Breaking (overcome defenses)
+• Conflicting Suggestions (create internal conflict)">
+                ⚡ Advanced Hypnosis <span style="background: #ffd93d; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 4px;">NEW</span>
+            </button>
+
+            <button class="action-button" onclick="openBooks()"
+                    title="📖 READ BOOKS
+Browse the library of hypnosis books
+Each book teaches specific techniques
+Learn techniques to unlock new suggestion types">
+                📖 Read Books
+            </button>
+        </div>
+
+        <!-- Social Tab Content -->
+        <div id="tab-social" class="tab-content">
+            <button class="action-button" onclick="openCharacterProfile()">
+                👤 View Profile
+            </button>
+
+            <button class="action-button" onclick="openJournal()" style="background: linear-gradient(135deg, #5e35b1 0%, #1e88e5 100%);">
+                📖 Journal & Dossiers
+            </button>
+
+            <button class="action-button" onclick="openAddCharacter()">
+                ➕ Add Character
+            </button>
+
+            <div style="margin-top: 1rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Selected Character:</div>
+                <div style="font-size: 1.1rem; font-weight: bold;" id="selected-character-social">None</div>
+            </div>
+        </div>
+
+        <!-- Self-Care Tab Content -->
+        <div id="tab-selfcare" class="tab-content">
+            <!-- Self-Care Status Display -->
+            <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem; text-align: center; font-weight: bold;">Your Status</div>
+
+                <!-- Hunger -->
+                <div style="margin-bottom: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span id="hunger-emoji">🍔</span>
+                        <span style="font-size: 0.9rem;">Hunger</span>
+                        <span id="hunger-value" style="font-weight: bold;">80</span>
+                    </div>
+                    <div style="background: #222; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="hunger-bar" style="width: 80%; height: 100%; background: #4caf50; transition: all 0.3s;"></div>
+                    </div>
+                </div>
+
+                <!-- Energy -->
+                <div style="margin-bottom: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span id="energy-emoji">⚡</span>
+                        <span style="font-size: 0.9rem;">Energy</span>
+                        <span id="energy-value" style="font-weight: bold;">75</span>
+                    </div>
+                    <div style="background: #222; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="energy-bar" style="width: 75%; height: 100%; background: #4caf50; transition: all 0.3s;"></div>
+                    </div>
+                </div>
+
+                <!-- Hygiene -->
+                <div style="margin-bottom: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span id="hygiene-emoji">🚿</span>
+                        <span style="font-size: 0.9rem;">Hygiene</span>
+                        <span id="hygiene-value" style="font-weight: bold;">85</span>
+                    </div>
+                    <div style="background: #222; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="hygiene-bar" style="width: 85%; height: 100%; background: #4caf50; transition: all 0.3s;"></div>
+                    </div>
+                </div>
+
+                <!-- Bladder -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span id="bladder-emoji">🚻</span>
+                        <span style="font-size: 0.9rem;">Bladder</span>
+                        <span id="bladder-value" style="font-weight: bold;">20</span>
+                    </div>
+                    <div style="background: #222; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="bladder-bar" style="width: 20%; height: 100%; background: #4caf50; transition: all 0.3s;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Food Inventory -->
+            <div style="margin: 1rem 0; padding: 1rem; background: rgba(76, 175, 80, 0.1); border-radius: 10px; border: 2px solid rgba(76, 175, 80, 0.3);">
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.8rem; text-align: center; font-weight: bold;">Food Inventory</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem;">🍽️</div>
+                        <div style="font-size: 1rem; font-weight: bold;"><span id="selfcare-meals-display">0</span> Meals</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem;">🍿</div>
+                        <div style="font-size: 1rem; font-weight: bold;"><span id="selfcare-snacks-display">0</span> Snacks</div>
+                    </div>
+                </div>
+                <div style="margin-top: 0.8rem; text-align: center;">
+                    <button class="btn btn-small" onclick="switchActionTab('resources')" style="font-size: 0.85rem;">
+                        🛒 Go Shopping
+                    </button>
+                </div>
+            </div>
+
+            <!-- Self-Care Actions -->
+            <button class="action-button" onclick="performSelfCare('eat_meal')" style="background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);">
+                🍽️ Eat Meal (25 min)
+            </button>
+
+            <button class="action-button" onclick="performSelfCare('quick_snack')" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);">
+                🍎 Quick Snack (5 min)
+            </button>
+
+            <button class="action-button" onclick="performSelfCare('shower')" style="background: linear-gradient(135deg, #2196f3 0%, #03a9f4 100%);">
+                🚿 Take Shower (15 min)
+            </button>
+
+            <button class="action-button" onclick="performSelfCare('use_bathroom')" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);">
+                🚻 Use Bathroom (3 min)
+            </button>
+
+            <button class="action-button" onclick="performSelfCare('sleep')" style="background: linear-gradient(135deg, #3f51b5 0%, #5c6bc0 100%);">
+                💤 Sleep (8 hours)
+            </button>
+
+            <button class="action-button" onclick="performSelfCare('nap')" style="background: linear-gradient(135deg, #5e35b1 0%, #7e57c2 100%);">
+                😴 Quick Nap (1.5 hours)
+            </button>
+
+            <!-- Warnings display -->
+            <div id="self-care-warnings" style="margin-top: 1rem; padding: 0.8rem; background: rgba(255, 152, 0, 0.1); border-left: 3px solid #ff9800; border-radius: 5px; display: none;">
+                <div style="font-size: 0.85rem; color: #ff9800;" id="warnings-text"></div>
+            </div>
+        </div>
+
+        <!-- World Tab Content -->
+        <div id="tab-world" class="tab-content">
+            <button class="action-button" onclick="openTravelMap()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                🗺️ Travel
+            </button>
+
+            <button class="action-button" onclick="openEventLog()" style="background: linear-gradient(135deg, #7b1fa2 0%, #c2185b 100%);">
+                📋 Event Log
+            </button>
+
+            <div style="margin-top: 1.5rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+                <div style="font-size: 1rem; color: var(--highlight-color); margin-bottom: 0.8rem; font-weight: bold; text-align: center;">
+                    🎯 Available Activities
+                </div>
+                <div id="activities-list-world">
+                    <p class="no-activities">Loading activities...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resources Tab Content -->
+        <div id="tab-resources" class="tab-content">
+            <button class="action-button" onclick="switchActionTab('world')" style="background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);">
+                🛒 Go to Grocery Store
+            </button>
+
+            <button class="action-button" onclick="openGiftShop()" style="background: linear-gradient(135deg, #e94560 0%, #ff8c00 100%);">
+                🎁 Gift Shop
+            </button>
+
+            <button class="action-button" onclick="openJobBoard()" style="background: linear-gradient(135deg, #43a047 0%, #1e88e5 100%);">
+                💼 Job Board
+            </button>
+
+            <div style="margin-top: 1rem; padding: 1rem; background: var(--accent-color); border-radius: 10px; text-align: center;">
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Your Money</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: #43a047;">$<span id="money-display">0</span></div>
+            </div>
+
+            <div style="margin-top: 1rem; padding: 1rem; background: var(--accent-color); border-radius: 10px; text-align: center;">
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Food Inventory</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.8rem;">
+                    <div>
+                        <div style="font-size: 1.5rem;">🍽️</div>
+                        <div style="font-size: 1.2rem; font-weight: bold;"><span id="food-meals-display">0</span> Meals</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.5rem;">🍿</div>
+                        <div style="font-size: 1.2rem; font-weight: bold;"><span id="food-snacks-display">0</span> Snacks</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global: Time Control (always visible) -->
+        <div style="margin-top: 2rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-align: center;">⏱️ Time Control</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <button class="btn btn-small" onclick="advanceTime(15)" title="Skip 15 minutes">+15 min</button>
+                <button class="btn btn-small" onclick="advanceTime(60)" title="Skip 1 hour">+1 hour</button>
+                <button class="btn btn-small" onclick="advanceTime(180)" title="Skip 3 hours">+3 hours</button>
+                <button class="btn btn-small" onclick="advanceTime(480)" title="Skip to next period">Next Period</button>
+            </div>
+        </div>
+
+        <!-- Hidden: Activities list (synced to World tab) -->
+        <div id="activities-list" style="display: none;">
+            <p class="no-activities">Loading activities...</p>
+        </div>
+
+        <!-- Global: Selected Character (always visible) -->
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Selected Character:</div>
+            <div style="font-size: 1.1rem; font-weight: bold;" id="selected-character">None</div>
+        </div>
+    </div>
+</div>
+
+<!-- Skill Tree Modal -->
+<div id="skillTreeModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Hypnosis Skill Tree</h2>
+            <button class="close-modal" onclick="closeModal('skillTreeModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div style="font-size: 1.2rem;">
+                    <span id="modal-skill-level"></span> |
+                    <span id="modal-techniques-count"></span> Techniques Mastered
+                </div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                    Bonuses: <span id="modal-bonuses"></span>
+                </div>
+            </div>
+
+            <div id="skill-tree-content" class="skill-tree">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Character Profile Modal -->
+<div id="profileModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="profile-character-name"></h2>
+            <button class="close-modal" onclick="closeModal('profileModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="profile-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Plant Suggestion Modal -->
+<div id="plantSuggestionModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Plant Suggestion</h2>
+            <button class="close-modal" onclick="closeModal('plantSuggestionModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="plant-suggestion-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Study Menu Modal -->
+<div id="studyModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Study Hypnosis</h2>
+            <button class="close-modal" onclick="closeModal('studyModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="action-button" onclick="openBooks()">
+                📖 Read a Book
+            </div>
+            <div class="action-button" onclick="practiceMenu()">
+                🎓 Practice Techniques
+            </div>
+            <div class="action-button" onclick="researchOnline()">
+                🌐 Research Online
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Books Modal -->
+<div id="booksModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Available Books</h2>
+            <button class="close-modal" onclick="closeModal('booksModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="books-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Player Profile Modal -->
+<div id="playerProfileModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">👤 Your Profile</h2>
+            <button class="close-modal" onclick="closeModal('playerProfileModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="player-profile-content">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Add Character Modal -->
+<div id="addCharacterModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">➕ Add New Character</h2>
+            <button class="close-modal" onclick="closeModal('addCharacterModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+                Create a new family member or friend to interact with
+            </p>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Name *</label>
+                <input type="text" id="new-char-name" placeholder="e.g., Sarah"
+                       style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Age *</label>
+                    <input type="number" id="new-char-age" placeholder="25" min="1" max="120"
+                           style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Gender *</label>
+                    <select id="new-char-gender"
+                            style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Resistance (%) *</label>
+                    <input type="number" id="new-char-resistance" placeholder="50" min="0" max="100"
+                           style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                    <small style="color: var(--text-secondary);">Higher = harder to influence</small>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Occupation *</label>
+                <input type="text" id="new-char-occupation" placeholder="e.g., College Student"
+                       style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Personality *</label>
+                <textarea id="new-char-personality" placeholder="e.g., Shy, thoughtful, loves reading" rows="2"
+                          style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Clothing (Optional)</label>
+                <input type="text" id="new-char-clothing" placeholder="e.g., Hoodie and jeans"
+                       style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Clothing Meaning (Optional)</label>
+                <input type="text" id="new-char-clothing-meaning" placeholder="e.g., Comfort over style"
+                       style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+
+            <button class="btn btn-primary" onclick="createCharacter()" style="width: 100%;">
+                ✨ Create Character
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Dress-Up Modal -->
+<div id="dressUpModal" class="modal">
+    <div class="modal-content" style="max-width: 1200px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+            <h2 class="modal-title">👗 Dress-Up: <span id="dressup-character-name"></span></h2>
+            <button class="close-modal" onclick="closeDressUpModal()">&times;</button>
+        </div>
+        <div class="modal-body" style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem;">
+            <!-- Left: Character Preview -->
+            <div>
+                <h3 style="margin-bottom: 1rem; text-align: center;">Preview</h3>
+                <div id="dressup-preview" style="margin: 0 auto;"></div>
+            </div>
+
+            <!-- Right: Clothing Options -->
+            <div>
+                <h3 style="margin-bottom: 1rem;">Select Clothing</h3>
+                <div id="dressup-clothing-options" style="max-height: 600px; overflow-y: auto;">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid var(--border-color);">
+            <button class="btn btn-primary" onclick="closeDressUpModal()">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- Travel Map Modal -->
+<div id="mapModal" class="modal">
+    <div class="modal-content" style="max-width: 1200px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">🗺️ Travel Map</h2>
+            <button class="close-modal" onclick="closeModal('mapModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Current Location Display -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; margin-bottom: 1.5rem; text-align: center;">
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 0.3rem;">📍 Current Location</div>
+                <div style="font-size: 1.3rem; font-weight: bold; color: white;" id="current-location-name">Loading...</div>
+            </div>
+
+            <!-- Location Categories -->
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-small" onclick="filterLocations('all')" id="filter-all">All Locations</button>
+                    <button class="btn btn-small" onclick="filterLocations('home')" id="filter-home">🏠 Home</button>
+                    <button class="btn btn-small" onclick="filterLocations('work')" id="filter-work">💼 Work</button>
+                    <button class="btn btn-small" onclick="filterLocations('public')" id="filter-public">🌆 Public</button>
+                </div>
+            </div>
+
+            <!-- Locations Grid -->
+            <div id="locations-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; max-height: 500px; overflow-y: auto; padding: 0.5rem;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gift Shop Modal -->
+<div id="giftShopModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">🎁 Gift Shop</h2>
+            <button class="close-modal" onclick="closeModal('giftShopModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Money display -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #e94560 0%, #ff8c00 100%); border-radius: 10px; margin-bottom: 1.5rem; text-align: center;">
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 0.3rem;">💰 Your Money</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: white;" id="gift-shop-money">$0</div>
+            </div>
+
+            <!-- Character selector -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Give Gift To:</label>
+                <select id="gift-recipient" style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                    <option value="">Select a character...</option>
+                </select>
+            </div>
+
+            <!-- Gift categories filter -->
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-small" onclick="filterGifts('all')" id="filter-gifts-all">All Gifts</button>
+                    <button class="btn btn-small" onclick="filterGifts('cheap')" id="filter-gifts-cheap">💐 Cheap ($10-30)</button>
+                    <button class="btn btn-small" onclick="filterGifts('medium')" id="filter-gifts-medium">💎 Medium ($50-100)</button>
+                    <button class="btn btn-small" onclick="filterGifts('expensive')" id="filter-gifts-expensive">✨ Expensive ($150-300)</button>
+                </div>
+            </div>
+
+            <!-- Gifts grid -->
+            <div id="gifts-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; max-height: 500px; overflow-y: auto; padding: 0.5rem;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grocery Store Modal -->
+<div id="groceryStoreModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">🛒 Grocery Store</h2>
+            <button class="close-modal" onclick="closeModal('groceryStoreModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Money & Food Inventory display -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="padding: 1rem; background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%); border-radius: 10px; text-align: center;">
+                    <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 0.3rem;">💰 Money</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: white;" id="grocery-money">$0</div>
+                </div>
+                <div style="padding: 1rem; background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%); border-radius: 10px; text-align: center;">
+                    <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 0.3rem;">🍽️ Meals</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: white;" id="grocery-meals">0</div>
+                </div>
+                <div style="padding: 1rem; background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); border-radius: 10px; text-align: center;">
+                    <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 0.3rem;">🍿 Snacks</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: white;" id="grocery-snacks">0</div>
+                </div>
+            </div>
+
+            <!-- Info message -->
+            <div style="padding: 0.8rem; background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4caf50; border-radius: 5px; margin-bottom: 1.5rem;">
+                <div style="font-size: 0.9rem; color: var(--text-primary);">
+                    💡 <strong>Tip:</strong> Buy in bulk to save money! Meals are needed for "Eat Meal" and snacks for "Quick Snack".
+                </div>
+            </div>
+
+            <!-- Groceries grid -->
+            <div id="groceries-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; max-height: 500px; overflow-y: auto; padding: 0.5rem;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Job Board Modal -->
+<div id="jobBoardModal" class="modal">
+    <div class="modal-content" style="max-width: 800px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">💼 Job Board - Earn Money</h2>
+            <button class="close-modal" onclick="closeModal('jobBoardModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Money display -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #43a047 0%, #1e88e5 100%); border-radius: 10px; margin-bottom: 1.5rem; text-align: center;">
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-bottom: 0.3rem;">💰 Your Money</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: white;" id="job-board-money">$0</div>
+            </div>
+
+            <!-- Jobs list -->
+            <div id="jobs-list" style="max-height: 500px; overflow-y: auto;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Event Log Modal -->
+<div id="eventLogModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">📋 Event Log - What Happened While You Were Away</h2>
+            <button class="close-modal" onclick="closeModal('eventLogModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Info header -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #7b1fa2 0%, #c2185b 100%); border-radius: 10px; margin-bottom: 1.5rem; text-align: center;">
+                <div style="font-size: 1rem; color: rgba(255,255,255,0.95); margin-bottom: 0.3rem;">
+                    Characters act autonomously based on their active suggestions
+                </div>
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.8);">
+                    Recent events are listed below
+                </div>
+            </div>
+
+            <!-- Filter buttons -->
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-small" onclick="filterEventLog('all')" id="filter-events-all">All Events</button>
+                    <button class="btn btn-small" onclick="filterEventLog('phs')" id="filter-events-phs">✨ PHS Activations</button>
+                    <button class="btn btn-small" onclick="filterEventLog('clothing')" id="filter-events-clothing">👗 Clothing Changes</button>
+                    <button class="btn btn-small" onclick="filterEventLog('mood')" id="filter-events-mood">💭 Mood Changes</button>
+                    <button class="btn btn-small" onclick="filterEventLog('action')" id="filter-events-action">🚶 Actions</button>
+                </div>
+            </div>
+
+            <!-- Events timeline -->
+            <div id="events-timeline" style="max-height: 500px; overflow-y: auto; padding: 0.5rem;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Journal & Dossiers Modal -->
+<div id="journalModal" class="modal">
+    <div class="modal-content" style="max-width: 1100px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">📖 Journal & Character Dossiers</h2>
+            <button class="close-modal" onclick="closeModal('journalModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Tabs -->
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--accent-color);">
+                <button class="journal-tab active" onclick="switchJournalTab('entries')" data-tab="entries" style="flex: 1; padding: 0.8rem; background: var(--highlight-color); color: white; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600;">
+                    📝 My Journal
+                </button>
+                <button class="journal-tab" onclick="switchJournalTab('dossiers')" data-tab="dossiers" style="flex: 1; padding: 0.8rem; background: var(--accent-color); color: var(--text-primary); border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600;">
+                    📂 Character Dossiers
+                </button>
+            </div>
+
+            <!-- Journal Entries Tab -->
+            <div class="journal-tab-content" data-tab-content="entries">
+                <!-- New Entry Button -->
+                <button class="btn btn-primary" onclick="showNewEntryForm()" style="width: 100%; margin-bottom: 1rem;">
+                    ✏️ Write New Entry
+                </button>
+
+                <!-- New Entry Form (hidden by default) -->
+                <div id="new-entry-form" style="display: none; background: var(--accent-color); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem;">New Journal Entry</h3>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Entry Type:</label>
+                        <select id="journal-entry-type" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                            <option value="general">📝 General Note</option>
+                            <option value="character_note">👤 Character Note</option>
+                            <option value="goal">🎯 Goal</option>
+                            <option value="observation">👁️ Observation</option>
+                            <option value="phs_note">✨ PHS Note</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Character (optional):</label>
+                        <select id="journal-character" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                            <option value="">-- None --</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Title:</label>
+                        <input type="text" id="journal-title" placeholder="Brief title for this entry" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Content:</label>
+                        <textarea id="journal-content" rows="5" placeholder="Write your journal entry here..." style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" id="journal-important" style="width: 20px; height: 20px;">
+                            <span style="font-weight: bold;">⭐ Mark as Important</span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-primary" onclick="saveJournalEntry()" style="flex: 1;">Save Entry</button>
+                        <button class="btn btn-secondary" onclick="cancelNewEntry()" style="flex: 1;">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Filter Buttons -->
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn btn-small" onclick="filterJournal('all')" id="filter-journal-all">All Entries</button>
+                        <button class="btn btn-small" onclick="filterJournal('general')" id="filter-journal-general">📝 General</button>
+                        <button class="btn btn-small" onclick="filterJournal('character_note')" id="filter-journal-character_note">👤 Characters</button>
+                        <button class="btn btn-small" onclick="filterJournal('goal')" id="filter-journal-goal">🎯 Goals</button>
+                        <button class="btn btn-small" onclick="filterJournal('observation')" id="filter-journal-observation">👁️ Observations</button>
+                        <button class="btn btn-small" onclick="filterJournal('phs_note')" id="filter-journal-phs_note">✨ PHS Notes</button>
+                    </div>
+                </div>
+
+                <!-- Journal Entries List -->
+                <div id="journal-entries-list" style="max-height: 500px; overflow-y: auto;">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Character Dossiers Tab -->
+            <div class="journal-tab-content" data-tab-content="dossiers" style="display: none;">
+                <!-- Character Selection -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Select Character:</label>
+                    <select id="dossier-character-select" onchange="loadCharacterDossier(this.value)" style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                        <option value="">-- Select a character --</option>
+                    </select>
+                </div>
+
+                <!-- Dossier Content -->
+                <div id="dossier-content">
+                    <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📂</div>
+                        <div style="font-size: 1.2rem;">Select a character to view their dossier</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deep Hypnosis Modal -->
+<div id="deepHypnosisModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">🌀 Deep Hypnosis - Induction & Trance Depth</h2>
+            <button class="close-modal" onclick="closeModal('deepHypnosisModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Character Selection -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Select Character:</label>
+                <select id="hypnosis-character-select" onchange="loadHypnosisCharacter(this.value)" style="width: 100%; padding: 0.8rem; background: var(--accent-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                    <option value="">-- Select a character to hypnotize --</option>
+                </select>
+            </div>
+
+            <!-- Hypnosis Content (shown when character selected) -->
+            <div id="hypnosis-content" style="display: none;">
+                <!-- Trance State Display -->
+                <div id="trance-state-display" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem; color: white; text-align: center;">
+                    <div style="font-size: 1.2rem; margin-bottom: 0.5rem;" id="trance-status">Character Awake</div>
+                    <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Trance Depth</div>
+                            <div style="font-size: 1.8rem; font-weight: bold;" id="trance-depth">0%</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Depth Level</div>
+                            <div style="font-size: 1.3rem; font-weight: bold;" id="trance-level">Awake</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Fractionation Count</div>
+                            <div style="font-size: 1.3rem; font-weight: bold;" id="fraction-count">0</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Depth Multiplier</div>
+                            <div style="font-size: 1.3rem; font-weight: bold;" id="fraction-multiplier">1.0x</div>
+                        </div>
+                    </div>
+
+                    <!-- Depth Progress Bar -->
+                    <div style="margin-top: 1rem; background: rgba(255,255,255,0.2); height: 20px; border-radius: 10px; overflow: hidden;">
+                        <div id="depth-progress-bar" style="height: 100%; background: linear-gradient(90deg, #4caf50 0%, #ff9800 50%, #f44336 100%); width: 0%; transition: width 0.5s;"></div>
+                    </div>
+                </div>
+
+                <!-- Fractionation Button (shown when in trance) -->
+                <div id="fractionation-section" style="display: none; margin-bottom: 1.5rem;">
+                    <button class="btn btn-primary" onclick="wakeFromTrance()" style="width: 100%; font-size: 1.1rem; padding: 1rem;">
+                        👁️ Wake Them Up (Fractionation - Makes Next Induction Deeper!)
+                    </button>
+                    <div style="margin-top: 0.5rem; padding: 0.8rem; background: var(--accent-color); border-radius: 8px; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                        💡 Waking them and putting them back under makes them more suggestible each time
+                    </div>
+                </div>
+
+                <!-- Induction Techniques Grid -->
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🌀 Induction Techniques</h3>
+                    <div id="techniques-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Character Vulnerabilities -->
+                <div style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🎯 Character Vulnerabilities</h3>
+                    <div id="vulnerabilities-list" style="background: var(--accent-color); padding: 1rem; border-radius: 10px;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Plant Deep Suggestion Section (only when in trance) -->
+                <div id="plant-suggestion-section" style="display: none;">
+                    <div style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px;">
+                        <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">✨ Plant Deep Suggestion</h3>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Trigger:</label>
+                            <input type="text" id="deep-phs-trigger" placeholder="When do you want this to activate?" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                        </div>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Response:</label>
+                            <textarea id="deep-phs-response" rows="3" placeholder="What should they do when triggered?" style="width: 100%; padding: 0.8rem; background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+                        </div>
+
+                        <div id="depth-bonus-indicator" style="margin-bottom: 1rem; padding: 0.8rem; background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(255, 152, 0, 0.2) 100%); border-radius: 8px; text-align: center; color: var(--highlight-color); font-weight: bold;">
+                            <!-- Populated by JavaScript based on depth -->
+                        </div>
+
+                        <button class="btn btn-primary" onclick="plantDeepSuggestion()" style="width: 100%; font-size: 1.1rem;">
+                            🌀 Plant Deep Suggestion
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State (no character selected) -->
+            <div id="hypnosis-empty-state">
+                <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🌀</div>
+                    <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">Deep Hypnosis System</div>
+                    <div style="font-size: 0.9rem;">
+                        Select a character to begin hypnotic induction.<br>
+                        Multiple techniques available with varying depths and effects.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Travel Map Modal -->
+<div id="travelMapModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">🗺️ Travel Map</h2>
+            <button class="close-modal" onclick="closeModal('travelMapModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Current Location -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; margin-bottom: 1.5rem; color: white; text-align: center;">
+                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.3rem;">Current Location</div>
+                <div style="font-size: 1.5rem; font-weight: bold;" id="current-location-display">🏠 Home</div>
+            </div>
+
+            <!-- Locations Grid -->
+            <div id="locations-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; max-height: 500px; overflow-y: auto;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Hypnosis Modal -->
+<div id="advancedHypnosisModal" class="modal">
+    <div class="modal-content" style="max-width: 1000px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">⚡ Advanced Hypnosis Techniques</h2>
+            <button class="close-modal" onclick="closeModal('advancedHypnosisModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Mastery Level Display -->
+            <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem; color: white; text-align: center;">
+                <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">Mastery Level: <span id="mastery-level">0</span> / 10</div>
+                <div style="font-size: 0.9rem; opacity: 0.9;" id="mastery-description">Novice - Just beginning your journey</div>
+                <div style="margin-top: 1rem; display: flex; justify-content: space-around; font-size: 0.85rem;">
+                    <div>
+                        <div style="opacity: 0.9;">Success Rate</div>
+                        <div style="font-size: 1.3rem; font-weight: bold;" id="mastery-success-rate">0%</div>
+                    </div>
+                    <div>
+                        <div style="opacity: 0.9;">Bonuses</div>
+                        <div style="font-size: 1.3rem; font-weight: bold;" id="mastery-bonuses">+0% / -0 SP</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technique Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); gap: 1.5rem;">
+                <!-- Combo Suggestions -->
+                <div class="advanced-technique-card" style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; border: 2px solid var(--border-color);">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🔗 Combo Suggestions</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Chain multiple suggestions together. When one triggers, it causes the next one to activate!
+                    </p>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 5px; margin-bottom: 1rem; font-size: 0.85rem;">
+                        <strong>Cost:</strong> 8 SP base + 2 SP per step<br>
+                        <strong>Bonus:</strong> +15% success rate on all steps<br>
+                        <strong>Max Chain:</strong> 5 steps
+                    </div>
+                    <button class="btn btn-primary" onclick="openComboBuilder()" style="width: 100%;">
+                        Build Combo Chain
+                    </button>
+                </div>
+
+                <!-- Group Hypnosis -->
+                <div class="advanced-technique-card" style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; border: 2px solid var(--border-color);">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">👥 Group Hypnosis</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Hypnotize multiple people at once with a shared trigger. Perfect for influencing groups!
+                    </p>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 5px; margin-bottom: 1rem; font-size: 0.85rem;">
+                        <strong>Cost:</strong> 10 SP base + 4 SP per person<br>
+                        <strong>Penalty:</strong> -10% per additional person<br>
+                        <strong>Max Targets:</strong> 4 people
+                    </div>
+                    <button class="btn btn-primary" onclick="openGroupHypnosis()" style="width: 100%;">
+                        Start Group Session
+                    </button>
+                </div>
+
+                <!-- Resistance Breaking -->
+                <div class="advanced-technique-card" style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; border: 2px solid var(--border-color);">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">🛡️ Resistance Breaking</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Reduce a character's resistance through various psychological techniques.
+                    </p>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 5px; margin-bottom: 1rem; font-size: 0.85rem;">
+                        <strong>Cost:</strong> 5 SP per attempt<br>
+                        <strong>Reduction:</strong> -10 to -15 resistance<br>
+                        <strong>Risk:</strong> Increases suspicion on failure
+                    </div>
+                    <button class="btn btn-primary" onclick="openResistanceBreaking()" style="width: 100%;">
+                        Break Resistance
+                    </button>
+                </div>
+
+                <!-- Conflicting Suggestions -->
+                <div class="advanced-technique-card" style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; border: 2px solid var(--border-color);">
+                    <h3 style="color: var(--highlight-color); margin-bottom: 1rem;">⚔️ Conflicting Suggestions</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Plant contradictory suggestions to create internal conflict. Dangerous but powerful!
+                    </p>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 5px; margin-bottom: 1rem; font-size: 0.85rem;">
+                        <strong>Cost:</strong> Standard PHS costs (x2)<br>
+                        <strong>Warning:</strong> May cause mental breakdown<br>
+                        <strong>Uses:</strong> Confusion, manipulation
+                    </div>
+                    <button class="btn btn-primary" onclick="openConflictingPHS()" style="width: 100%;">
+                        Create Conflict
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/sprite_renderer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+<script>
+    // Initialize activities when page loads
+    $(function() {
+        loadActivities();
+
+        // Refresh activities when location or time changes
+        setInterval(loadActivities, 60000); // Refresh every minute
+    });
+</script>
+{% endblock %}

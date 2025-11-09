@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Manager - Family Dynamics RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+        }
+
+        .card-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .card h2 {
+            color: #333;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+
+        .card p {
+            color: #666;
+            font-size: 1.05em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .card-features {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .card-features li {
+            color: #555;
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .card-features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .stats {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .stats h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Asset Manager</h1>
+            <p>Manage clothing items, graphics, and visual content for your game</p>
+        </div>
+
+        <div class="cards">
+            <div class="card" onclick="location.href='/assets/clothing'">
+                <div class="card-icon">👔</div>
+                <h2>Clothing Manager</h2>
+                <p>Add, edit, and organize clothing items with their properties and visual assets.</p>
+                <ul class="card-features">
+                    <li>Add new clothing items</li>
+                    <li>Edit existing items</li>
+                    <li>Upload clothing images</li>
+                    <li>Set coverage & formality</li>
+                    <li>Manage tags & categories</li>
+                </ul>
+                <a href="/assets/clothing" class="btn">Manage Clothing</a>
+            </div>
+
+            <div class="card" onclick="location.href='/assets/characters'">
+                <div class="card-icon">👤</div>
+                <h2>Character Graphics</h2>
+                <p>Manage character portraits, expressions, and appearance variations.</p>
+                <ul class="card-features">
+                    <li>Upload character images</li>
+                    <li>Organize by expression</li>
+                    <li>Manage outfits</li>
+                    <li>Preview combinations</li>
+                </ul>
+                <a href="/assets/characters" class="btn">Manage Characters</a>
+            </div>
+
+            <div class="card" onclick="location.href='/assets/backgrounds'">
+                <div class="card-icon">🖼️</div>
+                <h2>Backgrounds & Scenes</h2>
+                <p>Upload and organize background images for different locations and times of day.</p>
+                <ul class="card-features">
+                    <li>Upload backgrounds</li>
+                    <li>Organize by location</li>
+                    <li>Time-of-day variants</li>
+                    <li>Preview scenes</li>
+                </ul>
+                <a href="/assets/backgrounds" class="btn">Manage Backgrounds</a>
+            </div>
+
+            <div class="card" onclick="location.href='/assets/ui'">
+                <div class="card-icon">🎯</div>
+                <h2>UI Elements</h2>
+                <p>Manage interface elements, icons, buttons, and other UI graphics.</p>
+                <ul class="card-features">
+                    <li>Upload UI elements</li>
+                    <li>Icons & buttons</li>
+                    <li>Dialog boxes</li>
+                    <li>Status indicators</li>
+                </ul>
+                <a href="/assets/ui" class="btn">Manage UI</a>
+            </div>
+
+            <div class="card" onclick="location.href='/assets/backup'">
+                <div class="card-icon">💾</div>
+                <h2>Backup & Restore</h2>
+                <p>Manage backups of your clothing data and asset configurations.</p>
+                <ul class="card-features">
+                    <li>View backups</li>
+                    <li>Restore from backup</li>
+                    <li>Create manual backup</li>
+                    <li>Export data</li>
+                </ul>
+                <a href="/assets/backup" class="btn">Manage Backups</a>
+            </div>
+
+            <div class="card" onclick="location.href='/assets/bulk'">
+                <div class="card-icon">📦</div>
+                <h2>Bulk Operations</h2>
+                <p>Perform batch operations on multiple assets at once.</p>
+                <ul class="card-features">
+                    <li>Bulk upload</li>
+                    <li>Batch rename</li>
+                    <li>Mass tag editing</li>
+                    <li>Quick import</li>
+                </ul>
+                <a href="/assets/bulk" class="btn">Bulk Tools</a>
+            </div>
+        </div>
+
+        <div class="stats">
+            <h3>📊 Asset Statistics</h3>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalClothing">--</div>
+                    <div class="stat-label">Clothing Items</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalImages">--</div>
+                    <div class="stat-label">Images Uploaded</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalBackups">--</div>
+                    <div class="stat-label">Backups Created</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="lastModified">--</div>
+                    <div class="stat-label">Last Modified</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load statistics
+        async function loadStats() {
+            try {
+                // Get clothing count
+                const clothingRes = await fetch('/assets/api/clothing/list');
+                const clothingData = await clothingRes.json();
+                document.getElementById('totalClothing').textContent = clothingData.count || 0;
+
+                // Get images count
+                const imagesRes = await fetch('/assets/api/images/list');
+                const imagesData = await imagesRes.json();
+                let imageCount = 0;
+                if (imagesData.images) {
+                    Object.values(imagesData.images).forEach(char => {
+                        Object.values(char).forEach(cat => {
+                            imageCount += cat.length;
+                        });
+                    });
+                }
+                document.getElementById('totalImages').textContent = imageCount;
+
+                // Get backups count
+                const backupsRes = await fetch('/assets/api/backup/list');
+                const backupsData = await backupsRes.json();
+                document.getElementById('totalBackups').textContent = backupsData.backups?.length || 0;
+
+                // Last modified (example)
+                document.getElementById('lastModified').textContent = 'Today';
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>
