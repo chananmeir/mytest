@@ -32,11 +32,17 @@ class PlayerState:
     active_combos: list = field(default_factory=list)  # List of ComboSuggestion objects
     active_conflicts: list = field(default_factory=list)  # List of ConflictingPHS objects
 
+    # Self-care tracking
+    self_care: 'SelfCareState' = None  # Will be initialized in __post_init__
+
     def __post_init__(self):
-        """Initialize mastery level if not loaded from save"""
+        """Initialize mastery level and self-care if not loaded from save"""
         if self.mastery_level is None:
             from systems.advanced_hypnosis import MasteryLevel
             self.mastery_level = MasteryLevel()
+        if self.self_care is None:
+            from systems.self_care import SelfCareState
+            self.self_care = SelfCareState()
 
 class GameState:
     """Main game state manager"""
@@ -122,6 +128,26 @@ class GameState:
             self.player.suggestion_points -= amount
             return True
         return False
+
+    def advance_time_with_needs(self, minutes: int) -> Dict[str, str]:
+        """
+        Advance time and decay player's needs
+        Returns warnings about low needs
+        """
+        from systems.self_care import SelfCareSystem
+
+        # Calculate hours passed
+        old_hour = self.game_time.hour
+        hours_passed = minutes / 60.0
+
+        # Advance game time
+        for _ in range(minutes):
+            self.game_time.advance_time(1)
+
+        # Decay needs based on time passed
+        warnings = SelfCareSystem.decay_needs(self.player.self_care, hours_passed)
+
+        return warnings
 
     def add_scene_to_history(self, scene_name: str, description: str = ""):
         """Record a scene in history"""
@@ -209,7 +235,8 @@ class GameState:
                 ] if hasattr(self.player, 'statement_history') else [],
                 'mastery_level': self.player.mastery_level.to_dict() if self.player.mastery_level else {},
                 'active_combos': [combo.to_dict() for combo in self.player.active_combos] if hasattr(self.player, 'active_combos') else [],
-                'active_conflicts': [conflict.to_dict() for conflict in self.player.active_conflicts] if hasattr(self.player, 'active_conflicts') else []
+                'active_conflicts': [conflict.to_dict() for conflict in self.player.active_conflicts] if hasattr(self.player, 'active_conflicts') else [],
+                'self_care': self.player.self_care.to_dict() if self.player.self_care else {}
             },
             'characters': {
                 name: char.to_dict()
@@ -288,6 +315,13 @@ class GameState:
                     for conflict_data in player_data['active_conflicts']
                 ]
 
+            # Restore self-care
+            from systems.self_care import SelfCareState
+            if 'self_care' in player_data and player_data['self_care']:
+                self_care = SelfCareState.from_dict(player_data['self_care'])
+            else:
+                self_care = SelfCareState()  # Default for old saves
+
             self.player = PlayerState(
                 name=player_data['name'],
                 age=player_data['age'],
@@ -304,7 +338,8 @@ class GameState:
                 statement_history=statement_history,
                 mastery_level=mastery_level,
                 active_combos=active_combos,
-                active_conflicts=active_conflicts
+                active_conflicts=active_conflicts,
+                self_care=self_care
             )
 
             # Restore characters
