@@ -72,7 +72,12 @@ class HypnosisSystem:
 
         # Apply clothing modifier
         clothing_modifier, clothing_desc = ClothingEffects.calculate_outfit_suggestibility(char)
-        final_success = ClothingEffects.apply_clothing_modifier_to_success_rate(base_success, clothing_modifier)
+        success_with_clothing = ClothingEffects.apply_clothing_modifier_to_success_rate(base_success, clothing_modifier)
+
+        # Apply self-care penalties
+        from systems.self_care import SelfCareSystem
+        self_care_mods = SelfCareSystem.get_gameplay_modifiers(game_state.player.self_care)
+        final_success = max(0, success_with_clothing - self_care_mods['success_rate_penalty'])
 
         phs = PostHypnoticSuggestion(
             target_name=target_name,
@@ -87,6 +92,8 @@ class HypnosisSystem:
         message = f"PHS planted on {target_name}. Success rate: {final_success}%"
         if clothing_modifier != 0:
             message += f" (base {base_success}%, {clothing_desc})"
+        if self_care_mods['success_rate_penalty'] > 0:
+            message += f"\n⚠️ Self-care penalty: -{self_care_mods['success_rate_penalty']}% (take care of yourself!)"
 
         return True, message
 
@@ -117,7 +124,12 @@ class HypnosisSystem:
 
         # Apply clothing modifier
         clothing_modifier, clothing_desc = ClothingEffects.calculate_outfit_suggestibility(char)
-        final_success = ClothingEffects.apply_clothing_modifier_to_success_rate(base_success, clothing_modifier)
+        success_with_clothing = ClothingEffects.apply_clothing_modifier_to_success_rate(base_success, clothing_modifier)
+
+        # Apply self-care penalties
+        from systems.self_care import SelfCareSystem
+        self_care_mods = SelfCareSystem.get_gameplay_modifiers(game_state.player.self_care)
+        final_success = max(0, success_with_clothing - self_care_mods['success_rate_penalty'])
 
         phs = PostHypnoticSuggestion(
             target_name=target_name,
@@ -132,6 +144,8 @@ class HypnosisSystem:
         message = f"PHS planted on {target_name}. Success rate: {final_success}%"
         if clothing_modifier != 0:
             message += f" (base {base_success}%, {clothing_desc})"
+        if self_care_mods['success_rate_penalty'] > 0:
+            message += f"\n⚠️ Self-care penalty: -{self_care_mods['success_rate_penalty']}% (take care of yourself!)"
 
         return True, message
 
@@ -167,7 +181,12 @@ class HypnosisSystem:
 
         # Apply clothing modifier
         clothing_modifier, clothing_desc = ClothingEffects.calculate_outfit_suggestibility(char)
-        final_success = ClothingEffects.apply_clothing_modifier_to_success_rate(base_success, clothing_modifier)
+        success_with_clothing = ClothingEffects.apply_clothing_modifier_to_success_rate(base_success, clothing_modifier)
+
+        # Apply self-care penalties
+        from systems.self_care import SelfCareSystem
+        self_care_mods = SelfCareSystem.get_gameplay_modifiers(game_state.player.self_care)
+        final_success = max(0, success_with_clothing - self_care_mods['success_rate_penalty'])
 
         phs = PostHypnoticSuggestion(
             target_name=target_name,
@@ -182,6 +201,8 @@ class HypnosisSystem:
         message = f"Strong PHS planted on {target_name}. Success rate: {final_success}%"
         if clothing_modifier != 0:
             message += f" (base {base_success}%, {clothing_desc})"
+        if self_care_mods['success_rate_penalty'] > 0:
+            message += f"\n⚠️ Self-care penalty: -{self_care_mods['success_rate_penalty']}% (take care of yourself!)"
 
         return True, message
 
@@ -216,20 +237,29 @@ class HypnosisSystem:
         amount: int,
         reason: str = ""
     ) -> str:
-        """Build rapport with a character, possibly earning SP"""
+        """Build rapport with a character, possibly earning SP (affected by self-care)"""
         char = game_state.get_character(target_name)
 
         if not char:
             return "Character not found"
 
+        # Apply self-care penalties to rapport gain
+        from systems.self_care import SelfCareSystem
+        modifiers = SelfCareSystem.get_gameplay_modifiers(game_state.player.self_care)
+        actual_amount = max(0, amount - modifiers['rapport_gain_penalty'])
+
         old_rapport = char.rapport
-        char.add_rapport(amount)
+        char.add_rapport(actual_amount)
         new_rapport = char.rapport
 
         message = f"Rapport with {target_name}: {old_rapport} → {new_rapport}"
 
         if reason:
             message += f" ({reason})"
+
+        if actual_amount < amount:
+            penalty = amount - actual_amount
+            message += f"\n⚠️ Self-care penalty: -{penalty} rapport (poor hygiene/energy)"
 
         # Track rapport gain for goals
         from systems.goal_system import GoalSystem

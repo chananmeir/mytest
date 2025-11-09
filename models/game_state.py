@@ -116,11 +116,22 @@ class GameState:
         return self.characters.get(name)
 
     def add_sp(self, amount: int, reason: str = "") -> None:
-        """Add suggestion points"""
-        self.player.suggestion_points += amount
-        self.player.total_sp_earned += amount
+        """Add suggestion points (with self-care modifiers applied)"""
+        from systems.self_care import SelfCareSystem
+
+        # Apply self-care multiplier
+        modifiers = SelfCareSystem.get_gameplay_modifiers(self.player.self_care)
+        actual_amount = int(amount * modifiers['sp_gain_multiplier'])
+
+        self.player.suggestion_points += actual_amount
+        self.player.total_sp_earned += actual_amount
+
         if reason:
-            print(f"\n[+{amount} SP] {reason}")
+            if actual_amount < amount:
+                penalty = amount - actual_amount
+                print(f"\n[+{actual_amount} SP] {reason} (⚠️ -{penalty} from poor self-care)")
+            else:
+                print(f"\n[+{actual_amount} SP] {reason}")
 
     def spend_sp(self, amount: int) -> bool:
         """Try to spend suggestion points"""
