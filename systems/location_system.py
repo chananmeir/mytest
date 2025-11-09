@@ -192,6 +192,18 @@ PUBLIC_LOCATIONS = {
         travel_time_from_home=20
     ),
 
+    'grocery_store': Location(
+        id='grocery_store',
+        name='Grocery Store',
+        description='A local supermarket. People shop for food here. You might run into someone you know.',
+        location_type='public',
+        atmosphere='casual',
+        conversation_modifiers=['food', 'shopping', 'casual', 'daily_life', 'public'],
+        opens_at=7,
+        closes_at=23,
+        travel_time_from_home=10
+    ),
+
     'restaurant': Location(
         id='restaurant',
         name='Nice Restaurant',

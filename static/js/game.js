@@ -555,7 +555,8 @@ function getLocationIcon(location) {
         'city_park': '🌳',
         'coffee_shop': '☕',
         'library': '📚',
-        'shopping_mall': '🛍️'
+        'shopping_mall': '🛍️',
+        'grocery_store': '🛒'
     };
     return icons[location] || '📍';
 }
@@ -676,6 +677,12 @@ function displayActivities(activities, characterPresent) {
 
 // Start an activity
 function startActivity(activityId, characterName) {
+    // Special case: buy_groceries opens the grocery shopping modal
+    if (activityId === 'buy_groceries') {
+        openGroceryStore();
+        return;
+    }
+
     if (!confirm('Start this activity? Time will pass.')) return;
 
     $.ajax({

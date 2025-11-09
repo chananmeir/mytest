@@ -669,6 +669,62 @@ class ActivitiesSystem:
         )
     }
 
+    # Grocery Store Activities
+    GROCERY_ACTIVITIES = {
+        'buy_groceries': Activity(
+            activity_id='buy_groceries',
+            name='Buy Groceries',
+            description='Shop for food and stock up your pantry.',
+            location='grocery_store',
+            duration_minutes=30,
+            requires_character='none',
+            activity_type='solo',
+            icon='🛒',
+            success_messages=[
+                "You fill your cart with essentials and check out.",
+                "The store is busy, but you get what you need.",
+                "A productive shopping trip. Your pantry is stocked."
+            ]
+        ),
+        'grocery_shop_together': Activity(
+            activity_id='grocery_shop_together',
+            name='Shop for Food Together',
+            description='Help them pick groceries. Casual, domestic activity.',
+            location='grocery_store',
+            duration_minutes=45,
+            requires_character='any',
+            min_rapport=4,
+            activity_type='social',
+            rapport_gain=2,
+            allows_phs=True,
+            phs_bonus=10,
+            resistance_change=-5,
+            emotional_outcome='relaxed',
+            icon='🛍️',
+            success_messages=[
+                "You walk the aisles together, discussing meal plans.",
+                "They ask your opinion on what to buy. Your input matters.",
+                "Simple domestic activity, but it feels intimate.",
+                "Picking food together makes you feel closer."
+            ]
+        ),
+        'chance_encounter': Activity(
+            activity_id='chance_encounter',
+            name='Browse the Store',
+            description='Walk around. You might run into someone.',
+            location='grocery_store',
+            duration_minutes=20,
+            requires_character='none',
+            activity_type='solo',
+            icon='👀',
+            success_messages=[
+                "You browse the aisles, looking at what's on sale.",
+                "Just taking your time, enjoying the mundane.",
+                "A quiet moment to yourself in a public space."
+            ]
+        )
+    }
+
     # Restaurant Activities
     RESTAURANT_ACTIVITIES = {
         'dinner_date': Activity(
@@ -816,6 +872,7 @@ class ActivitiesSystem:
         **PARK_ACTIVITIES,
         **CAFE_ACTIVITIES,
         **MALL_ACTIVITIES,
+        **GROCERY_ACTIVITIES,
         **RESTAURANT_ACTIVITIES,
         **FITNESS_ACTIVITIES
     }
