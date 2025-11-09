@@ -65,6 +65,12 @@ function selectCharacter(characterName) {
     $('#send-btn').prop('disabled', false);
     $('#plant-suggestion-btn').prop('disabled', false);
 
+    // Update plant suggestion button tooltip when enabled
+    $('#plant-suggestion-btn').attr('title', `🎯 PLANT SUGGESTION ON ${characterName.toUpperCase()}
+Plant a hypnotic suggestion that triggers later
+Requires: Learned techniques, sufficient rapport
+Click to choose trigger and response!`);
+
     // Focus the input so user can start typing immediately
     $('#message-input').focus();
 

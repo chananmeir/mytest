@@ -217,27 +217,56 @@ Restore by using the bathroom.
 
         <!-- Hypnosis Tab Content -->
         <div id="tab-hypnosis" class="tab-content active">
-            <button class="action-button" id="plant-suggestion-btn" onclick="openPlantSuggestionFor()" disabled>
+            <button class="action-button" id="plant-suggestion-btn" onclick="openPlantSuggestionFor()" disabled
+                    title="⚠️ REQUIREMENTS TO UNLOCK:
+1. Select a character (click their card on the left)
+2. Learn at least 1 technique (📚 Study Hypnosis → 📖 Read Books)
+3. Build rapport with the character (talk, do activities)
+
+Once unlocked: Plant hypnotic suggestions that trigger later!">
                 🎯 Plant Suggestion
             </button>
 
-            <button class="action-button" onclick="openStudyMenu()">
+            <button class="action-button" onclick="openStudyMenu()"
+                    title="📚 STUDY HYPNOSIS
+Learn new techniques, practice skills, research methods
+• Read books to unlock techniques
+• Practice to improve success rates
+• Research to discover advanced methods">
                 📚 Study Hypnosis
             </button>
 
-            <button class="action-button" onclick="openSkillTree()">
+            <button class="action-button" onclick="openSkillTree()"
+                    title="🌳 SKILL TREE
+View all 11 hypnosis techniques and track your progress
+See what you've learned and what's still locked
+Track your skill level: Novice → Master">
                 🌳 Skill Tree
             </button>
 
-            <button class="action-button" onclick="openDeepHypnosis()" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);">
+            <button class="action-button" onclick="openDeepHypnosis()" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);"
+                    title="🌀 DEEP HYPNOSIS
+Put characters into a trance state for more powerful suggestions
+Requires character with lowered resistance
+Deeper trance = stronger effects">
                 🌀 Deep Hypnosis
             </button>
 
-            <button class="action-button" onclick="openAdvancedHypnosis()" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);">
+            <button class="action-button" onclick="openAdvancedHypnosis()" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);"
+                    title="⚡ ADVANCED HYPNOSIS TECHNIQUES
+Powerful advanced methods:
+• Combo Suggestions (chain multiple triggers)
+• Group Hypnosis (affect multiple people)
+• Resistance Breaking (overcome defenses)
+• Conflicting Suggestions (create internal conflict)">
                 ⚡ Advanced Hypnosis <span style="background: #ffd93d; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 4px;">NEW</span>
             </button>
 
-            <button class="action-button" onclick="openBooks()">
+            <button class="action-button" onclick="openBooks()"
+                    title="📖 READ BOOKS
+Browse the library of hypnosis books
+Each book teaches specific techniques
+Learn techniques to unlock new suggestion types">
                 📖 Read Books
             </button>
         </div>
