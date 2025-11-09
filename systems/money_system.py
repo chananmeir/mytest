@@ -509,9 +509,9 @@ class MoneySystem:
         game_state.player.money += job.pay
         game_state.player.total_money_earned += job.pay
 
-        # Advance time
-        from systems.time_system import advance_time
-        time_msgs = advance_time(game_state, job.duration_minutes)
+        # Advance time and get warnings
+        time_warnings = game_state.advance_time_with_needs(job.duration_minutes)
+        time_msgs = list(time_warnings.values())
 
         results = {
             'success': True,

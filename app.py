@@ -2047,7 +2047,6 @@ def api_available_activities():
 def api_start_activity():
     """Start an activity"""
     from systems.activities import ActivitiesSystem
-    from systems.time_system import advance_time
     from systems.goal_system import GoalSystem
 
     data = request.json
@@ -2085,8 +2084,9 @@ def api_start_activity():
     # Perform activity
     results = ActivitiesSystem.perform_activity(activity, char, game_state)
 
-    # Advance time
-    time_msgs = advance_time(game_state, activity.duration_minutes)
+    # Advance time and get warnings
+    time_warnings = game_state.advance_time_with_needs(activity.duration_minutes)
+    time_msgs = list(time_warnings.values())
     results['changes'].extend(time_msgs)
 
     # Track time for goals
