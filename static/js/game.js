@@ -3190,34 +3190,34 @@ function updateSelfCareDisplay() {
                 }
             }
 
-            // Update hunger
-            $('#hunger-emoji').text(getStatusEmoji(sc.hunger));
-            $('#hunger-value').text(sc.hunger);
-            $('#hunger-bar').css({
+            // Update hunger (both header and tab)
+            $('#hunger-emoji, #header-hunger-emoji').text(getStatusEmoji(sc.hunger));
+            $('#hunger-value, #header-hunger-value').text(sc.hunger);
+            $('#hunger-bar, #header-hunger-bar').css({
                 'width': sc.hunger + '%',
                 'background': getStatusColor(sc.hunger)
             });
 
-            // Update energy
-            $('#energy-emoji').text(getStatusEmoji(sc.energy));
-            $('#energy-value').text(sc.energy);
-            $('#energy-bar').css({
+            // Update energy (both header and tab)
+            $('#energy-emoji, #header-energy-emoji').text(getStatusEmoji(sc.energy));
+            $('#energy-value, #header-energy-value').text(sc.energy);
+            $('#energy-bar, #header-energy-bar').css({
                 'width': sc.energy + '%',
                 'background': getStatusColor(sc.energy)
             });
 
-            // Update hygiene
-            $('#hygiene-emoji').text(getStatusEmoji(sc.hygiene));
-            $('#hygiene-value').text(sc.hygiene);
-            $('#hygiene-bar').css({
+            // Update hygiene (both header and tab)
+            $('#hygiene-emoji, #header-hygiene-emoji').text(getStatusEmoji(sc.hygiene));
+            $('#hygiene-value, #header-hygiene-value').text(sc.hygiene);
+            $('#hygiene-bar, #header-hygiene-bar').css({
                 'width': sc.hygiene + '%',
                 'background': getStatusColor(sc.hygiene)
             });
 
-            // Update bladder
-            $('#bladder-emoji').text(getStatusEmoji(sc.bladder, true));
-            $('#bladder-value').text(sc.bladder);
-            $('#bladder-bar').css({
+            // Update bladder (both header and tab)
+            $('#bladder-emoji, #header-bladder-emoji').text(getStatusEmoji(sc.bladder, true));
+            $('#bladder-value, #header-bladder-value').text(sc.bladder);
+            $('#bladder-bar, #header-bladder-bar').css({
                 'width': sc.bladder + '%',
                 'background': getStatusColor(sc.bladder, true)
             });

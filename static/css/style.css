@@ -127,6 +127,56 @@ body {
     justify-content: space-between;
     align-items: center;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+/* Self-Care Status Bar */
+.self-care-status-bar {
+    display: flex;
+    gap: 1.5rem;
+    padding: 0.8rem 1.2rem;
+    background: rgba(15, 52, 96, 0.5);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    flex: 1 1 100%;
+    justify-content: center;
+}
+
+.need-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 120px;
+}
+
+.need-icon {
+    font-size: 1.3rem;
+    width: 28px;
+    text-align: center;
+}
+
+.need-bar-container {
+    flex: 1;
+    height: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.need-bar {
+    height: 100%;
+    transition: all 0.3s ease;
+    border-radius: 6px;
+}
+
+.need-value {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    min-width: 25px;
+    text-align: right;
 }
 
 .player-stats {
