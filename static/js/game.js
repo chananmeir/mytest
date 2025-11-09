@@ -3546,12 +3546,11 @@ function travelToLocation(locationId) {
         data: JSON.stringify({ location_id: locationId }),
         success: function(data) {
             if (data.success) {
-                let message = `🗺️ Traveled to ${data.location_name}\n`;
-                message += `⏱️ Time passed: ${data.time_passed} minutes → ${data.new_time}`;
+                let message = `🗺️ Traveled to ${data.new_location}\n`;
+                message += `⏱️ Time passed: ${data.time_passed} minutes → ${data.current_time}`;
 
-                if (data.warnings && data.warnings.length > 0) {
-                    message += '\n\n';
-                    message += data.warnings.join('\n');
+                if (data.characters_present && data.characters_present.length > 0) {
+                    message += `\n\n👥 People here: ${data.characters_present.join(', ')}`;
                 }
 
                 alert(message);
