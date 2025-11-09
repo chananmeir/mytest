@@ -22,6 +22,10 @@
             <span class="stat-label">Techniques</span>
             <span class="stat-value" id="techniques-count">{{ game_state.player.hypnosis_knowledge.known_techniques|length }}/11</span>
         </div>
+        <div class="stat-item">
+            <span class="stat-label">Location</span>
+            <span class="stat-value" id="location-display" style="font-size: 1.2rem;">🏠 Home</span>
+        </div>
     </div>
 
     <!-- Self-Care Status Bar (Always Visible) -->
@@ -68,6 +72,10 @@
         <div class="time-item">
             <span class="time-icon">🌆</span>
             <span class="time-value" id="current-period">Evening</span>
+        </div>
+        <div class="time-item" title="Active Post-Hypnotic Suggestions across all characters">
+            <span class="time-icon">✨</span>
+            <span class="time-value" id="active-phs-count">0 PHS</span>
         </div>
     </div>
 

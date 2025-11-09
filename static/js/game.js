@@ -513,11 +513,45 @@ function updateGameState() {
             $('#money-display').text(`$${data.player.money}`);
             $('#skill-level').text(data.player.skill_level.toUpperCase());
             $('#techniques-count').text(`${data.player.techniques_mastered}/${data.player.total_techniques}`);
+
+            // Update location display
+            if (data.player.current_location) {
+                const locationName = data.player.current_location.replace(/_/g, ' ');
+                const locationIcon = getLocationIcon(data.player.current_location);
+                $('#location-display').text(`${locationIcon} ${locationName}`);
+            }
+
+            // Count total active PHS across all characters
+            let totalPHS = 0;
+            if (data.characters) {
+                Object.values(data.characters).forEach(char => {
+                    if (char.active_phs) {
+                        totalPHS += char.active_phs.length;
+                    }
+                });
+            }
+            $('#active-phs-count').text(`${totalPHS} PHS`);
         }
     });
 
     // Also update time display
     updateTimeDisplay();
+}
+
+// Get icon for location
+function getLocationIcon(location) {
+    const icons = {
+        'home': '🏠',
+        'living_room': '🛋️',
+        'kitchen': '🍳',
+        'your_room': '🚪',
+        'fitness_center': '💪',
+        'city_park': '🌳',
+        'coffee_shop': '☕',
+        'library': '📚',
+        'shopping_mall': '🛍️'
+    };
+    return icons[location] || '📍';
 }
 
 // Update time display
