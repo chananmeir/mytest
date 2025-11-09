@@ -454,3 +454,352 @@ def api_restore_backup(filename):
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ==================== CHARACTER GRAPHICS MANAGER ====================
+
+@asset_manager.route('/characters')
+def character_graphics():
+    """Character graphics manager page"""
+    return render_template('character_graphics.html')
+
+
+@asset_manager.route('/api/characters/list')
+def api_list_character_images():
+    """List all character images organized by character and type"""
+    characters = {}
+    base_path = os.path.join(UPLOAD_FOLDER, 'characters')
+
+    if os.path.exists(base_path):
+        for char_name in os.listdir(base_path):
+            char_path = os.path.join(base_path, char_name)
+            if not os.path.isdir(char_path):
+                continue
+
+            characters[char_name] = {}
+            for category in os.listdir(char_path):
+                cat_path = os.path.join(char_path, category)
+                if not os.path.isdir(cat_path):
+                    continue
+
+                characters[char_name][category] = []
+                for img in os.listdir(cat_path):
+                    if allowed_file(img):
+                        img_path = f'/static/images/characters/{char_name}/{category}/{img}'
+                        characters[char_name][category].append({
+                            'filename': img,
+                            'path': img_path,
+                            'category': category
+                        })
+
+    return jsonify({
+        'success': True,
+        'characters': characters
+    })
+
+
+@asset_manager.route('/api/characters/upload', methods=['POST'])
+def api_upload_character_image():
+    """Upload character image"""
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    character = request.form.get('character', 'general')
+    category = request.form.get('category', 'portraits')
+
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'error': f'Invalid file type'}), 400
+
+    # Create directory
+    upload_dir = os.path.join(UPLOAD_FOLDER, 'characters', character, category)
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # Save file
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(upload_dir, filename)
+    file.save(filepath)
+
+    return jsonify({
+        'success': True,
+        'message': 'Character image uploaded successfully',
+        'path': f'/static/images/characters/{character}/{category}/{filename}'
+    })
+
+
+@asset_manager.route('/api/characters/delete', methods=['POST'])
+def api_delete_character_image():
+    """Delete character image"""
+    data = request.json
+    character = data.get('character')
+    category = data.get('category')
+    filename = data.get('filename')
+
+    if not all([character, category, filename]):
+        return jsonify({'success': False, 'error': 'Missing parameters'}), 400
+
+    filepath = os.path.join(UPLOAD_FOLDER, 'characters', character, category, filename)
+
+    if not os.path.exists(filepath):
+        return jsonify({'success': False, 'error': 'File not found'}), 404
+
+    try:
+        os.remove(filepath)
+        return jsonify({'success': True, 'message': 'Image deleted successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ==================== BACKGROUNDS & SCENES ====================
+
+@asset_manager.route('/backgrounds')
+def backgrounds_manager():
+    """Backgrounds and scenes manager page"""
+    return render_template('backgrounds_manager.html')
+
+
+@asset_manager.route('/api/backgrounds/list')
+def api_list_backgrounds():
+    """List all background images"""
+    backgrounds = {}
+    base_path = os.path.join(UPLOAD_FOLDER, 'backgrounds')
+
+    if os.path.exists(base_path):
+        for location in os.listdir(base_path):
+            loc_path = os.path.join(base_path, location)
+            if not os.path.isdir(loc_path):
+                continue
+
+            backgrounds[location] = []
+            for img in os.listdir(loc_path):
+                if allowed_file(img):
+                    backgrounds[location].append({
+                        'filename': img,
+                        'path': f'/static/images/backgrounds/{location}/{img}',
+                        'location': location
+                    })
+
+    return jsonify({
+        'success': True,
+        'backgrounds': backgrounds
+    })
+
+
+@asset_manager.route('/api/backgrounds/upload', methods=['POST'])
+def api_upload_background():
+    """Upload background image"""
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    location = request.form.get('location', 'general')
+
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'error': 'Invalid file type'}), 400
+
+    # Create directory
+    upload_dir = os.path.join(UPLOAD_FOLDER, 'backgrounds', location)
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # Save file
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(upload_dir, filename)
+    file.save(filepath)
+
+    return jsonify({
+        'success': True,
+        'message': 'Background uploaded successfully',
+        'path': f'/static/images/backgrounds/{location}/{filename}'
+    })
+
+
+@asset_manager.route('/api/backgrounds/delete', methods=['POST'])
+def api_delete_background():
+    """Delete background image"""
+    data = request.json
+    location = data.get('location')
+    filename = data.get('filename')
+
+    if not all([location, filename]):
+        return jsonify({'success': False, 'error': 'Missing parameters'}), 400
+
+    filepath = os.path.join(UPLOAD_FOLDER, 'backgrounds', location, filename)
+
+    if not os.path.exists(filepath):
+        return jsonify({'success': False, 'error': 'File not found'}), 404
+
+    try:
+        os.remove(filepath)
+        return jsonify({'success': True, 'message': 'Background deleted successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ==================== UI ELEMENTS ====================
+
+@asset_manager.route('/ui')
+def ui_elements_manager():
+    """UI elements manager page"""
+    return render_template('ui_elements.html')
+
+
+@asset_manager.route('/api/ui/list')
+def api_list_ui_elements():
+    """List all UI elements"""
+    elements = {}
+    base_path = os.path.join(UPLOAD_FOLDER, 'ui')
+
+    if os.path.exists(base_path):
+        for category in os.listdir(base_path):
+            cat_path = os.path.join(base_path, category)
+            if not os.path.isdir(cat_path):
+                continue
+
+            elements[category] = []
+            for img in os.listdir(cat_path):
+                if allowed_file(img):
+                    elements[category].append({
+                        'filename': img,
+                        'path': f'/static/images/ui/{category}/{img}',
+                        'category': category
+                    })
+
+    return jsonify({
+        'success': True,
+        'elements': elements
+    })
+
+
+@asset_manager.route('/api/ui/upload', methods=['POST'])
+def api_upload_ui_element():
+    """Upload UI element"""
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    category = request.form.get('category', 'icons')
+
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'error': 'Invalid file type'}), 400
+
+    # Create directory
+    upload_dir = os.path.join(UPLOAD_FOLDER, 'ui', category)
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # Save file
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(upload_dir, filename)
+    file.save(filepath)
+
+    return jsonify({
+        'success': True,
+        'message': 'UI element uploaded successfully',
+        'path': f'/static/images/ui/{category}/{filename}'
+    })
+
+
+@asset_manager.route('/api/ui/delete', methods=['POST'])
+def api_delete_ui_element():
+    """Delete UI element"""
+    data = request.json
+    category = data.get('category')
+    filename = data.get('filename')
+
+    if not all([category, filename]):
+        return jsonify({'success': False, 'error': 'Missing parameters'}), 400
+
+    filepath = os.path.join(UPLOAD_FOLDER, 'ui', category, filename)
+
+    if not os.path.exists(filepath):
+        return jsonify({'success': False, 'error': 'File not found'}), 404
+
+    try:
+        os.remove(filepath)
+        return jsonify({'success': True, 'message': 'UI element deleted successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ==================== BACKUP & RESTORE PAGE ====================
+
+@asset_manager.route('/backup')
+def backup_manager():
+    """Backup manager page"""
+    return render_template('backup_manager.html')
+
+
+# ==================== BULK OPERATIONS ====================
+
+@asset_manager.route('/bulk')
+def bulk_operations():
+    """Bulk operations page"""
+    return render_template('bulk_operations.html')
+
+
+@asset_manager.route('/api/bulk/upload', methods=['POST'])
+def api_bulk_upload():
+    """Bulk upload images"""
+    if 'files' not in request.files:
+        return jsonify({'success': False, 'error': 'No files provided'}), 400
+
+    files = request.files.getlist('files')
+    asset_type = request.form.get('type', 'characters')
+    category = request.form.get('category', 'general')
+
+    results = {'success': [], 'failed': []}
+
+    for file in files:
+        if file.filename == '':
+            continue
+
+        if not allowed_file(file.filename):
+            results['failed'].append({
+                'filename': file.filename,
+                'error': 'Invalid file type'
+            })
+            continue
+
+        try:
+            # Determine upload path based on type
+            if asset_type == 'characters':
+                character = request.form.get('character', 'general')
+                upload_dir = os.path.join(UPLOAD_FOLDER, 'characters', character, category)
+            elif asset_type == 'backgrounds':
+                upload_dir = os.path.join(UPLOAD_FOLDER, 'backgrounds', category)
+            elif asset_type == 'ui':
+                upload_dir = os.path.join(UPLOAD_FOLDER, 'ui', category)
+            else:
+                upload_dir = os.path.join(UPLOAD_FOLDER, category)
+
+            os.makedirs(upload_dir, exist_ok=True)
+
+            # Save file
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(upload_dir, filename)
+            file.save(filepath)
+
+            results['success'].append({
+                'filename': filename,
+                'path': filepath.replace(UPLOAD_FOLDER, '/static/images')
+            })
+        except Exception as e:
+            results['failed'].append({
+                'filename': file.filename,
+                'error': str(e)
+            })
+
+    return jsonify({
+        'success': True,
+        'uploaded': len(results['success']),
+        'failed': len(results['failed']),
+        'results': results
+    })
