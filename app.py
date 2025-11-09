@@ -3315,6 +3315,87 @@ def get_mastery_level():
     })
 
 
+# ===== TRAVEL SYSTEM =====
+
+@app.route('/api/locations')
+def api_locations():
+    """Get all available locations"""
+    from systems.location_system import ALL_LOCATIONS
+
+    game_state = get_game_state()
+    current_location = game_state.player.current_location
+    current_hour = game_state.game_time.hour
+
+    locations = []
+    for loc_id, loc in ALL_LOCATIONS.items():
+        # Skip home sub-locations in the main travel list
+        if loc.parent_location == 'home':
+            continue
+
+        locations.append({
+            'id': loc.id,
+            'name': loc.name,
+            'description': loc.description,
+            'travel_time': loc.travel_time_from_home,
+            'is_open': loc.is_open(current_hour)
+        })
+
+    # Get current location name
+    current_loc_obj = ALL_LOCATIONS.get(current_location)
+    current_location_name = current_loc_obj.name if current_loc_obj else current_location.replace('_', ' ').title()
+
+    return jsonify({
+        'locations': locations,
+        'current_location': current_location,
+        'current_location_name': current_location_name
+    })
+
+
+@app.route('/api/travel', methods=['POST'])
+def api_travel():
+    """Travel to a location"""
+    from systems.location_system import ALL_LOCATIONS
+
+    data = request.json
+    location_id = data.get('location_id')
+
+    game_state = get_game_state()
+    current_hour = game_state.game_time.hour
+
+    # Get location
+    location = ALL_LOCATIONS.get(location_id)
+    if not location:
+        return jsonify({'error': 'Location not found'}), 404
+
+    # Check if open
+    if not location.is_open(current_hour):
+        return jsonify({'error': f'{location.name} is closed right now'}), 400
+
+    # Check if already there
+    if game_state.player.current_location == location_id:
+        return jsonify({'error': 'You are already here'}), 400
+
+    # Travel time
+    travel_time = location.travel_time_from_home
+
+    # Advance time and get warnings
+    time_warnings = game_state.advance_time_with_needs(travel_time)
+
+    # Update location
+    game_state.player.current_location = location_id
+
+    # Save state
+    save_game_state(game_state)
+
+    return jsonify({
+        'success': True,
+        'location_name': location.name,
+        'time_passed': travel_time,
+        'new_time': game_state.game_time.get_formatted_time(),
+        'warnings': list(time_warnings.values())
+    })
+
+
 if __name__ == '__main__':
     # Create templates and static directories if they don't exist
     os.makedirs('templates', exist_ok=True)

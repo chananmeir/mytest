@@ -28,7 +28,7 @@ Click to view all techniques">
             <span class="stat-label">Techniques</span>
             <span class="stat-value" id="techniques-count">{{ game_state.player.hypnosis_knowledge.known_techniques|length }}/11</span>
         </div>
-        <div class="stat-item" onclick="openMap()" style="cursor: pointer;" title="📍 LOCATION: Where you currently are
+        <div class="stat-item" onclick="switchActionTab('world')" style="cursor: pointer;" title="📍 LOCATION: Where you currently are
 Click to travel to different locations">
             <span class="stat-label">Location</span>
             <span class="stat-value" id="location-display" style="font-size: 1.2rem;">🏠 Home</span>
@@ -370,7 +370,7 @@ Restore by using the bathroom.
 
         <!-- World Tab Content -->
         <div id="tab-world" class="tab-content">
-            <button class="action-button" onclick="openMap()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <button class="action-button" onclick="openTravelMap()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 🗺️ Travel
             </button>
 
@@ -390,7 +390,7 @@ Restore by using the bathroom.
 
         <!-- Resources Tab Content -->
         <div id="tab-resources" class="tab-content">
-            <button class="action-button" onclick="travelTo('grocery_store')" style="background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);">
+            <button class="action-button" onclick="switchActionTab('world')" style="background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);">
                 🛒 Go to Grocery Store
             </button>
 
@@ -1031,6 +1031,28 @@ Restore by using the bathroom.
                         Multiple techniques available with varying depths and effects.
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Travel Map Modal -->
+<div id="travelMapModal" class="modal">
+    <div class="modal-content" style="max-width: 900px; max-height: 90vh;">
+        <div class="modal-header">
+            <h2 class="modal-title">🗺️ Travel Map</h2>
+            <button class="close-modal" onclick="closeModal('travelMapModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Current Location -->
+            <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; margin-bottom: 1.5rem; color: white; text-align: center;">
+                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.3rem;">Current Location</div>
+                <div style="font-size: 1.5rem; font-weight: bold;" id="current-location-display">🏠 Home</div>
+            </div>
+
+            <!-- Locations Grid -->
+            <div id="locations-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; max-height: 500px; overflow-y: auto;">
+                <!-- Populated by JavaScript -->
             </div>
         </div>
     </div>

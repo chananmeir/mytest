@@ -3475,6 +3475,96 @@ function performSelfCare(action) {
     });
 }
 
+// ==================== TRAVEL MAP ====================
+
+// Open travel map modal
+function openTravelMap() {
+    $.ajax({
+        url: '/api/locations',
+        method: 'GET',
+        success: function(data) {
+            $('#current-location-display').text(getLocationIcon(data.current_location) + ' ' + data.current_location_name);
+            displayLocations(data.locations, data.current_location);
+            openModal('travelMapModal');
+        },
+        error: function() {
+            alert('Failed to load locations');
+        }
+    });
+}
+
+// Display locations grid
+function displayLocations(locations, currentLocation) {
+    const locationsGrid = $('#locations-grid');
+    locationsGrid.empty();
+
+    if (locations.length === 0) {
+        locationsGrid.html('<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">No locations available</p>');
+        return;
+    }
+
+    locations.forEach(loc => {
+        const isCurrent = loc.id === currentLocation;
+        const isOpen = loc.is_open;
+
+        const locationHtml = `
+            <div class="location-card" style="background: var(--accent-color); padding: 1.5rem; border-radius: 10px; border: 2px solid ${isCurrent ? 'var(--highlight-color)' : 'var(--border-color)'}; ${!isCurrent && isOpen ? 'cursor: pointer;' : 'opacity: 0.6; cursor: not-allowed;'}" ${!isCurrent && isOpen ? `onclick="travelToLocation('${loc.id}')"` : ''}>
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">${getLocationIcon(loc.id)}</div>
+                    <div style="font-size: 1.1rem; font-weight: bold; color: var(--highlight-color); margin-bottom: 0.3rem;">${loc.name}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">${loc.description}</div>
+                </div>
+
+                ${isCurrent ? '<div style="background: rgba(255,193,7,0.2); padding: 0.5rem; border-radius: 5px; text-align: center; color: var(--warning-color); font-weight: bold; font-size: 0.9rem;">📍 You are here</div>' : ''}
+                ${!isCurrent && isOpen ? '<div style="background: rgba(76,175,80,0.2); padding: 0.5rem; border-radius: 5px; text-align: center; color: var(--success-color); font-weight: bold; font-size: 0.9rem; margin-top: 0.5rem;">✓ Click to Travel (${loc.travel_time} min)</div>' : ''}
+                ${!isOpen ? '<div style="background: rgba(244,67,54,0.2); padding: 0.5rem; border-radius: 5px; text-align: center; color: var(--danger-color); font-weight: bold; font-size: 0.9rem; margin-top: 0.5rem;">🔒 Closed</div>' : ''}
+            </div>
+        `;
+
+        locationsGrid.append(locationHtml);
+    });
+}
+
+// Travel to a location
+function travelToLocation(locationId) {
+    if (!confirm('Travel to this location? Time will pass.')) return;
+
+    $.ajax({
+        url: '/api/travel',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ location_id: locationId }),
+        success: function(data) {
+            if (data.success) {
+                let message = `🗺️ Traveled to ${data.location_name}\n`;
+                message += `⏱️ Time passed: ${data.time_passed} minutes → ${data.new_time}`;
+
+                if (data.warnings && data.warnings.length > 0) {
+                    message += '\n\n';
+                    message += data.warnings.join('\n');
+                }
+
+                alert(message);
+
+                // Update game state
+                updateGameState();
+                updateSelfCareDisplay();
+                loadActivities();
+                updateCharacterList();
+
+                // Close modal
+                closeModal('travelMapModal');
+            } else {
+                alert(`Error: ${data.error || 'Failed to travel'}`);
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to travel';
+            alert(`Error: ${error}`);
+        }
+    });
+}
+
 // Load self-care status when page loads
 $(document).ready(function() {
     updateSelfCareDisplay();
