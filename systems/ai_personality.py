@@ -275,7 +275,7 @@ class PersonalitySimulator:
             state.stress_level = max(30, state.stress_level - 1)
 
         # Suspicion fades if no new incidents
-        if state.suspicion_tendency > character.suspicion:
+        if state.suspicion_tendency > character.player_suspicion:
             state.suspicion_tendency -= 1
 
         # Trust slowly rebuilds
@@ -297,7 +297,7 @@ class PersonalitySimulator:
 
         # Low trust increases suspicion
         if state.trust_in_player < 30:
-            character.suspicion = min(100, character.suspicion + 2)
+            character.player_suspicion = min(100, character.player_suspicion + 2)
 
         # High influence awareness makes them more resistant
         if state.player_influence_awareness > 50:
@@ -495,7 +495,7 @@ class EmergentBehaviorEngine:
             ))
 
         # 2. Form alliances if suspicious of player
-        if state.player_influence_awareness > 60 or character.suspicion > 50:
+        if state.player_influence_awareness > 60 or character.player_suspicion > 50:
             # Find potential allies
             from systems.relationship_web import RelationshipWeb
 
@@ -504,7 +504,7 @@ class EmergentBehaviorEngine:
                     continue
 
                 relationship_score = character.relationships.get(other_name, 5)
-                other_suspicion = other_char.suspicion
+                other_suspicion = other_char.player_suspicion
 
                 if relationship_score > 12 and other_suspicion > 30:
                     possible_actions.append(EmergentAction(
