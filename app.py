@@ -2186,9 +2186,23 @@ def api_jobs():
     from systems.money_system import MoneySystem
 
     game_state = get_game_state()
+    player_sp = game_state.player.suggestion_points
+    player_skill_level = game_state.player.hypnosis_knowledge.skill_level
 
     jobs = []
     for job in MoneySystem.JOBS.values():
+        # Check if player can afford SP cost
+        can_afford_sp = player_sp >= job.sp_cost
+
+        # Check skill level requirement (if any)
+        requires_skill_level = getattr(job, 'requires_skill_level', 'novice')
+
+        # Skill level hierarchy: novice, beginner, intermediate, advanced, expert, master
+        skill_levels = ['novice', 'beginner', 'intermediate', 'advanced', 'expert', 'master']
+        player_level_idx = skill_levels.index(player_skill_level) if player_skill_level in skill_levels else 0
+        required_level_idx = skill_levels.index(requires_skill_level) if requires_skill_level in skill_levels else 0
+        meets_requirement = player_level_idx >= required_level_idx
+
         jobs.append({
             'job_id': job.job_id,
             'name': job.name,
@@ -2196,10 +2210,16 @@ def api_jobs():
             'duration_minutes': job.duration_minutes,
             'pay': job.pay,
             'sp_cost': job.sp_cost,
-            'icon': job.icon
+            'icon': job.icon,
+            'requires_skill_level': requires_skill_level,
+            'meets_requirement': meets_requirement,
+            'can_afford_sp': can_afford_sp
         })
 
-    return jsonify({'jobs': jobs})
+    return jsonify({
+        'jobs': jobs,
+        'player_money': game_state.player.money
+    })
 
 
 @app.route('/api/jobs/do-job', methods=['POST'])
