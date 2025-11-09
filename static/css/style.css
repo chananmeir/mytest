@@ -553,6 +553,50 @@ body {
     background: var(--accent-color);
 }
 
+/* Action Tabs */
+.action-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.action-tab {
+    flex: 1;
+    min-width: fit-content;
+    padding: 0.7rem 0.5rem;
+    background: var(--accent-color);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.action-tab:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.action-tab.active {
+    background: var(--highlight-color);
+    color: var(--text-primary);
+    font-weight: bold;
+    border-color: var(--highlight-color);
+    box-shadow: 0 0 10px rgba(233, 69, 96, 0.4);
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 /* ===== MODALS ===== */
 .modal {
     display: none;

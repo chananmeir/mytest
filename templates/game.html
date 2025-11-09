@@ -135,58 +135,102 @@
         </div>
     </div>
 
-    <!-- Right: Actions Panel -->
+    <!-- Right: Actions Panel with Tabs -->
     <div class="action-panel">
         <h2>Actions</h2>
 
-        <button class="action-button" id="plant-suggestion-btn" onclick="openPlantSuggestionFor()" disabled>
-            🎯 Plant Suggestion
-        </button>
+        <!-- Action Tabs -->
+        <div class="action-tabs">
+            <button class="action-tab active" onclick="switchActionTab('hypnosis')">🧠 Hypnosis</button>
+            <button class="action-tab" onclick="switchActionTab('social')">💬 Social</button>
+            <button class="action-tab" onclick="switchActionTab('world')">🗺️ World</button>
+            <button class="action-tab" onclick="switchActionTab('resources')">💰 Resources</button>
+        </div>
 
-        <button class="action-button" onclick="openCharacterProfile()">
-            👤 View Profile
-        </button>
+        <!-- Hypnosis Tab Content -->
+        <div id="tab-hypnosis" class="tab-content active">
+            <button class="action-button" id="plant-suggestion-btn" onclick="openPlantSuggestionFor()" disabled>
+                🎯 Plant Suggestion
+            </button>
 
-        <button class="action-button" onclick="openSkillTree()">
-            🌳 Skill Tree
-        </button>
+            <button class="action-button" onclick="openStudyMenu()">
+                📚 Study Hypnosis
+            </button>
 
-        <button class="action-button" onclick="openStudyMenu()">
-            📚 Study Hypnosis
-        </button>
+            <button class="action-button" onclick="openSkillTree()">
+                🌳 Skill Tree
+            </button>
 
-        <button class="action-button" onclick="openBooks()">
-            📖 Read Books
-        </button>
+            <button class="action-button" onclick="openDeepHypnosis()" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);">
+                🌀 Deep Hypnosis
+            </button>
 
-        <button class="action-button" onclick="openAddCharacter()">
-            ➕ Add Character
-        </button>
+            <button class="action-button" onclick="openAdvancedHypnosis()" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);">
+                ⚡ Advanced Hypnosis <span style="background: #ffd93d; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 4px;">NEW</span>
+            </button>
 
-        <button class="action-button" onclick="openMap()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            🗺️ Travel
-        </button>
+            <button class="action-button" onclick="openBooks()">
+                📖 Read Books
+            </button>
+        </div>
 
-        <button class="action-button" onclick="openGiftShop()" style="background: linear-gradient(135deg, #e94560 0%, #ff8c00 100%);">
-            🎁 Gift Shop
-        </button>
+        <!-- Social Tab Content -->
+        <div id="tab-social" class="tab-content">
+            <button class="action-button" onclick="openCharacterProfile()">
+                👤 View Profile
+            </button>
 
-        <button class="action-button" onclick="openJobBoard()" style="background: linear-gradient(135deg, #43a047 0%, #1e88e5 100%);">
-            💼 Job Board
-        </button>
+            <button class="action-button" onclick="openJournal()" style="background: linear-gradient(135deg, #5e35b1 0%, #1e88e5 100%);">
+                📖 Journal & Dossiers
+            </button>
 
-        <button class="action-button" onclick="openEventLog()" style="background: linear-gradient(135deg, #7b1fa2 0%, #c2185b 100%);">
-            📋 Event Log
-        </button>
+            <button class="action-button" onclick="openAddCharacter()">
+                ➕ Add Character
+            </button>
 
-        <button class="action-button" onclick="openJournal()" style="background: linear-gradient(135deg, #5e35b1 0%, #1e88e5 100%);">
-            📖 Journal & Dossiers
-        </button>
+            <div style="margin-top: 1rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Selected Character:</div>
+                <div style="font-size: 1.1rem; font-weight: bold;" id="selected-character-social">None</div>
+            </div>
+        </div>
 
-        <button class="action-button" onclick="openDeepHypnosis()" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);">
-            🌀 Deep Hypnosis
-        </button>
+        <!-- World Tab Content -->
+        <div id="tab-world" class="tab-content">
+            <button class="action-button" onclick="openMap()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                🗺️ Travel
+            </button>
 
+            <button class="action-button" onclick="openEventLog()" style="background: linear-gradient(135deg, #7b1fa2 0%, #c2185b 100%);">
+                📋 Event Log
+            </button>
+
+            <div style="margin-top: 1.5rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+                <div style="font-size: 1rem; color: var(--highlight-color); margin-bottom: 0.8rem; font-weight: bold; text-align: center;">
+                    🎯 Available Activities
+                </div>
+                <div id="activities-list-world">
+                    <p class="no-activities">Loading activities...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resources Tab Content -->
+        <div id="tab-resources" class="tab-content">
+            <button class="action-button" onclick="openGiftShop()" style="background: linear-gradient(135deg, #e94560 0%, #ff8c00 100%);">
+                🎁 Gift Shop
+            </button>
+
+            <button class="action-button" onclick="openJobBoard()" style="background: linear-gradient(135deg, #43a047 0%, #1e88e5 100%);">
+                💼 Job Board
+            </button>
+
+            <div style="margin-top: 1rem; padding: 1rem; background: var(--accent-color); border-radius: 10px; text-align: center;">
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Your Money</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: #43a047;">$<span id="money-display">0</span></div>
+            </div>
+        </div>
+
+        <!-- Global: Time Control (always visible) -->
         <div style="margin-top: 2rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
             <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-align: center;">⏱️ Time Control</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
@@ -197,16 +241,12 @@
             </div>
         </div>
 
-        <!-- Activities Section -->
-        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
-            <div style="font-size: 1rem; color: var(--highlight-color); margin-bottom: 0.8rem; font-weight: bold; text-align: center;">
-                🎯 Available Activities
-            </div>
-            <div id="activities-list">
-                <p class="no-activities">Loading activities...</p>
-            </div>
+        <!-- Hidden: Activities list (synced to World tab) -->
+        <div id="activities-list" style="display: none;">
+            <p class="no-activities">Loading activities...</p>
         </div>
 
+        <!-- Global: Selected Character (always visible) -->
         <div style="margin-top: 1rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
             <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Selected Character:</div>
             <div style="font-size: 1.1rem; font-weight: bold;" id="selected-character">None</div>

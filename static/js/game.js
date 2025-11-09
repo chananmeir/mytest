@@ -3105,3 +3105,50 @@ function plantDeepSuggestion() {
         }
     });
 }
+
+// ===== ACTION TABS =====
+function switchActionTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Remove active class from all tabs
+    document.querySelectorAll('.action-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Show selected tab content
+    const selectedContent = document.getElementById(`tab-${tabName}`);
+    if (selectedContent) {
+        selectedContent.classList.add('active');
+    }
+
+    // Mark tab as active
+    event.target.classList.add('active');
+
+    // Sync activities list if switching to World tab
+    if (tabName === 'world') {
+        const mainActivitiesList = document.getElementById('activities-list');
+        const worldActivitiesList = document.getElementById('activities-list-world');
+        if (mainActivitiesList && worldActivitiesList) {
+            worldActivitiesList.innerHTML = mainActivitiesList.innerHTML;
+        }
+    }
+
+    // Sync selected character if switching to Social tab
+    if (tabName === 'social') {
+        const mainSelectedChar = document.getElementById('selected-character');
+        const socialSelectedChar = document.getElementById('selected-character-social');
+        if (mainSelectedChar && socialSelectedChar) {
+            socialSelectedChar.textContent = mainSelectedChar.textContent;
+        }
+    }
+}
+
+// ===== ADVANCED HYPNOSIS =====
+function openAdvancedHypnosis() {
+    // Placeholder for Advanced Hypnosis modal
+    // Will contain: Combo Suggestions, Conflicting PHS, Group Hypnosis, Resistance Breaking
+    alert('⚡ Advanced Hypnosis System\n\nComing soon:\n• 🔗 Combo Suggestions\n• ⚔️ Conflicting PHS\n• 👥 Group Hypnosis\n• 🛡️ Resistance Breaking\n\nCheck ADVANCED_HYPNOSIS_GUIDE.md for full documentation!');
+}
