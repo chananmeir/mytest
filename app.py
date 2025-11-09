@@ -3139,6 +3139,10 @@ def perform_self_care_action():
 
     from systems.self_care import SelfCareSystem
 
+    # Validate action parameter
+    if not action:
+        return jsonify({'success': False, 'error': 'No action specified'})
+
     # Check if action is allowed
     action_category = 'self_care'
     can_do, reason = SelfCareSystem.can_perform_action(game_state.player.self_care, action_category)
@@ -3150,7 +3154,8 @@ def perform_self_care_action():
     result = SelfCareSystem.perform_action(game_state.player.self_care, action, current_time)
 
     if not result['success']:
-        return jsonify({'success': False, 'error': result['message']})
+        error_msg = result['message'] if result['message'] else f'Unknown action: {action}'
+        return jsonify({'success': False, 'error': error_msg})
 
     # Advance time by the action's cost
     time_warnings = game_state.advance_time_with_needs(result['time_cost'])
