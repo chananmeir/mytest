@@ -109,12 +109,13 @@ class PersonalitySimulator:
         """Calculate initial stress based on character traits"""
         stress = 50  # Base
 
-        # Trait-based adjustments
-        if 'anxious' in character.personality_traits:
+        # Trait-based adjustments (check personality string)
+        personality_lower = character.personality.lower()
+        if 'anxious' in personality_lower:
             stress += 20
-        if 'confident' in character.personality_traits:
+        if 'confident' in personality_lower:
             stress -= 15
-        if 'perfectionist' in character.personality_traits:
+        if 'perfectionist' in personality_lower:
             stress += 15
 
         # Job-based stress
@@ -127,13 +128,15 @@ class PersonalitySimulator:
         """Calculate independence level"""
         independence = 50
 
-        if 'assertive' in character.personality_traits:
+        # Check personality string for traits
+        personality_lower = character.personality.lower()
+        if 'assertive' in personality_lower:
             independence += 20
-        if 'submissive' in character.personality_traits:
+        if 'submissive' in personality_lower:
             independence -= 20
-        if 'leader' in character.personality_traits:
+        if 'leader' in personality_lower:
             independence += 15
-        if 'follower' in character.personality_traits:
+        if 'follower' in personality_lower:
             independence -= 15
 
         return max(0, min(100, independence))
@@ -149,7 +152,7 @@ class PersonalitySimulator:
             vulnerability -= 20
 
         # High suspicion reduces vulnerability
-        vulnerability -= character.suspicion
+        vulnerability -= character.player_suspicion
 
         return max(0, min(100, vulnerability))
 
