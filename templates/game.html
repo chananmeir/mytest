@@ -143,6 +143,7 @@
         <div class="action-tabs">
             <button class="action-tab active" onclick="switchActionTab('hypnosis')">🧠 Hypnosis</button>
             <button class="action-tab" onclick="switchActionTab('social')">💬 Social</button>
+            <button class="action-tab" onclick="switchActionTab('selfcare')">🧘 Self-Care</button>
             <button class="action-tab" onclick="switchActionTab('world')">🗺️ World</button>
             <button class="action-tab" onclick="switchActionTab('resources')">💰 Resources</button>
         </div>
@@ -191,6 +192,92 @@
             <div style="margin-top: 1rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
                 <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Selected Character:</div>
                 <div style="font-size: 1.1rem; font-weight: bold;" id="selected-character-social">None</div>
+            </div>
+        </div>
+
+        <!-- Self-Care Tab Content -->
+        <div id="tab-selfcare" class="tab-content">
+            <!-- Self-Care Status Display -->
+            <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--accent-color); border-radius: 10px;">
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem; text-align: center; font-weight: bold;">Your Status</div>
+
+                <!-- Hunger -->
+                <div style="margin-bottom: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span id="hunger-emoji">🍔</span>
+                        <span style="font-size: 0.9rem;">Hunger</span>
+                        <span id="hunger-value" style="font-weight: bold;">80</span>
+                    </div>
+                    <div style="background: #222; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="hunger-bar" style="width: 80%; height: 100%; background: #4caf50; transition: all 0.3s;"></div>
+                    </div>
+                </div>
+
+                <!-- Energy -->
+                <div style="margin-bottom: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span id="energy-emoji">⚡</span>
+                        <span style="font-size: 0.9rem;">Energy</span>
+                        <span id="energy-value" style="font-weight: bold;">75</span>
+                    </div>
+                    <div style="background: #222; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="energy-bar" style="width: 75%; height: 100%; background: #4caf50; transition: all 0.3s;"></div>
+                    </div>
+                </div>
+
+                <!-- Hygiene -->
+                <div style="margin-bottom: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span id="hygiene-emoji">🚿</span>
+                        <span style="font-size: 0.9rem;">Hygiene</span>
+                        <span id="hygiene-value" style="font-weight: bold;">85</span>
+                    </div>
+                    <div style="background: #222; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="hygiene-bar" style="width: 85%; height: 100%; background: #4caf50; transition: all 0.3s;"></div>
+                    </div>
+                </div>
+
+                <!-- Bladder -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                        <span id="bladder-emoji">🚻</span>
+                        <span style="font-size: 0.9rem;">Bladder</span>
+                        <span id="bladder-value" style="font-weight: bold;">20</span>
+                    </div>
+                    <div style="background: #222; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div id="bladder-bar" style="width: 20%; height: 100%; background: #4caf50; transition: all 0.3s;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Self-Care Actions -->
+            <button class="action-button" onclick="performSelfCare('eat_meal')" style="background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);">
+                🍽️ Eat Meal (25 min)
+            </button>
+
+            <button class="action-button" onclick="performSelfCare('quick_snack')" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);">
+                🍎 Quick Snack (5 min)
+            </button>
+
+            <button class="action-button" onclick="performSelfCare('shower')" style="background: linear-gradient(135deg, #2196f3 0%, #03a9f4 100%);">
+                🚿 Take Shower (15 min)
+            </button>
+
+            <button class="action-button" onclick="performSelfCare('use_bathroom')" style="background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);">
+                🚻 Use Bathroom (3 min)
+            </button>
+
+            <button class="action-button" onclick="performSelfCare('sleep')" style="background: linear-gradient(135deg, #3f51b5 0%, #5c6bc0 100%);">
+                💤 Sleep (8 hours)
+            </button>
+
+            <button class="action-button" onclick="performSelfCare('nap')" style="background: linear-gradient(135deg, #5e35b1 0%, #7e57c2 100%);">
+                😴 Quick Nap (1.5 hours)
+            </button>
+
+            <!-- Warnings display -->
+            <div id="self-care-warnings" style="margin-top: 1rem; padding: 0.8rem; background: rgba(255, 152, 0, 0.1); border-left: 3px solid #ff9800; border-radius: 5px; display: none;">
+                <div style="font-size: 0.85rem; color: #ff9800;" id="warnings-text"></div>
             </div>
         </div>
 

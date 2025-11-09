@@ -3152,3 +3152,126 @@ function openAdvancedHypnosis() {
     // Will contain: Combo Suggestions, Conflicting PHS, Group Hypnosis, Resistance Breaking
     alert('⚡ Advanced Hypnosis System\n\nComing soon:\n• 🔗 Combo Suggestions\n• ⚔️ Conflicting PHS\n• 👥 Group Hypnosis\n• 🛡️ Resistance Breaking\n\nCheck ADVANCED_HYPNOSIS_GUIDE.md for full documentation!');
 }
+
+// ===== SELF-CARE SYSTEM =====
+function updateSelfCareDisplay() {
+    $.get('/api/self-care/status', function(data) {
+        if (data.success) {
+            const sc = data.self_care;
+
+            // Helper function to get emoji and color
+            function getStatusEmoji(value, reverse = false) {
+                if (reverse) {  // For bladder
+                    if (value >= 80) return '🚨';
+                    if (value >= 60) return '⚠️';
+                    if (value >= 40) return '😐';
+                    return '✅';
+                } else {
+                    if (value >= 80) return '✅';
+                    if (value >= 60) return '😊';
+                    if (value >= 40) return '😐';
+                    if (value >= 20) return '⚠️';
+                    return '🚨';
+                }
+            }
+
+            function getStatusColor(value, reverse = false) {
+                if (reverse) {  // For bladder
+                    if (value >= 80) return '#f44336';
+                    if (value >= 60) return '#ff9800';
+                    if (value >= 40) return '#ffc107';
+                    return '#4caf50';
+                } else {
+                    if (value >= 80) return '#4caf50';
+                    if (value >= 60) return '#8bc34a';
+                    if (value >= 40) return '#ffc107';
+                    if (value >= 20) return '#ff9800';
+                    return '#f44336';
+                }
+            }
+
+            // Update hunger
+            $('#hunger-emoji').text(getStatusEmoji(sc.hunger));
+            $('#hunger-value').text(sc.hunger);
+            $('#hunger-bar').css({
+                'width': sc.hunger + '%',
+                'background': getStatusColor(sc.hunger)
+            });
+
+            // Update energy
+            $('#energy-emoji').text(getStatusEmoji(sc.energy));
+            $('#energy-value').text(sc.energy);
+            $('#energy-bar').css({
+                'width': sc.energy + '%',
+                'background': getStatusColor(sc.energy)
+            });
+
+            // Update hygiene
+            $('#hygiene-emoji').text(getStatusEmoji(sc.hygiene));
+            $('#hygiene-value').text(sc.hygiene);
+            $('#hygiene-bar').css({
+                'width': sc.hygiene + '%',
+                'background': getStatusColor(sc.hygiene)
+            });
+
+            // Update bladder
+            $('#bladder-emoji').text(getStatusEmoji(sc.bladder, true));
+            $('#bladder-value').text(sc.bladder);
+            $('#bladder-bar').css({
+                'width': sc.bladder + '%',
+                'background': getStatusColor(sc.bladder, true)
+            });
+
+            // Show modifiers/warnings if any
+            if (data.modifiers && data.modifiers.warnings && data.modifiers.warnings.length > 0) {
+                $('#warnings-text').html(data.modifiers.warnings.join('<br>'));
+                $('#self-care-warnings').show();
+            } else {
+                $('#self-care-warnings').hide();
+            }
+        }
+    });
+}
+
+function performSelfCare(action) {
+    $.ajax({
+        url: '/api/self-care/action',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ action: action }),
+        success: function(data) {
+            if (data.success) {
+                // Show message
+                addSystemMessage(data.message);
+
+                // Show time advancement
+                addSystemMessage(`⏱️ Time advanced: ${data.time_passed} minutes → ${data.new_time}`);
+
+                // Show warnings if any
+                if (data.warnings && data.warnings.length > 0) {
+                    data.warnings.forEach(warning => addSystemMessage(warning));
+                }
+
+                // Update self-care display
+                updateSelfCareDisplay();
+
+                // Update game state
+                updateGameState();
+            } else {
+                alert(data.error || 'Failed to perform action');
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to perform action';
+            alert(error);
+        }
+    });
+}
+
+// Load self-care status when page loads
+$(document).ready(function() {
+    updateSelfCareDisplay();
+
+    // Update self-care display every 30 seconds
+    setInterval(updateSelfCareDisplay, 30000);
+});

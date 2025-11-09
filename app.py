@@ -3105,6 +3105,78 @@ def api_get_all_personalities():
     })
 
 
+# ===== SELF-CARE SYSTEM =====
+
+@app.route('/api/self-care/status')
+def get_self_care_status():
+    """Get player's current self-care status"""
+    game_state = get_game_state()
+
+    from systems.self_care import SelfCareSystem
+
+    modifiers = SelfCareSystem.get_gameplay_modifiers(game_state.player.self_care)
+
+    return jsonify({
+        'success': True,
+        'self_care': {
+            'hunger': game_state.player.self_care.hunger,
+            'hygiene': game_state.player.self_care.hygiene,
+            'energy': game_state.player.self_care.energy,
+            'bladder': game_state.player.self_care.bladder,
+            'last_meal_time': game_state.player.self_care.last_meal_time,
+            'last_shower_time': game_state.player.self_care.last_shower_time,
+            'last_sleep_time': game_state.player.self_care.last_sleep_time
+        },
+        'modifiers': modifiers
+    })
+
+
+@app.route('/api/self-care/action', methods=['POST'])
+def perform_self_care_action():
+    """Perform a self-care action (eat, shower, sleep, etc.)"""
+    game_state = get_game_state()
+    action = request.json.get('action')
+
+    from systems.self_care import SelfCareSystem
+
+    # Check if action is allowed
+    action_category = 'self_care'
+    can_do, reason = SelfCareSystem.can_perform_action(game_state.player.self_care, action_category)
+    if not can_do:
+        return jsonify({'success': False, 'error': reason})
+
+    # Perform the action
+    current_time = game_state.game_time.get_formatted_time()
+    result = SelfCareSystem.perform_action(game_state.player.self_care, action, current_time)
+
+    if not result['success']:
+        return jsonify({'success': False, 'error': result['message']})
+
+    # Advance time by the action's cost
+    time_warnings = game_state.advance_time_with_needs(result['time_cost'])
+
+    # Save updated state
+    save_game_state(game_state)
+
+    # Get updated modifiers
+    modifiers = SelfCareSystem.get_gameplay_modifiers(game_state.player.self_care)
+
+    return jsonify({
+        'success': True,
+        'message': result['message'],
+        'time_passed': result['time_cost'],
+        'new_time': game_state.game_time.get_formatted_time(),
+        'warnings': list(time_warnings.values()),
+        'self_care': {
+            'hunger': game_state.player.self_care.hunger,
+            'hygiene': game_state.player.self_care.hygiene,
+            'energy': game_state.player.self_care.energy,
+            'bladder': game_state.player.self_care.bladder
+        },
+        'modifiers': modifiers
+    })
+
+
 if __name__ == '__main__':
     # Create templates and static directories if they don't exist
     os.makedirs('templates', exist_ok=True)
