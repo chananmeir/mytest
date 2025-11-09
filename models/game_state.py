@@ -137,12 +137,10 @@ class GameState:
         from systems.self_care import SelfCareSystem
 
         # Calculate hours passed
-        old_hour = self.game_time.hour
         hours_passed = minutes / 60.0
 
-        # Advance game time
-        for _ in range(minutes):
-            self.game_time.advance_time(1)
+        # Advance game time (efficiently in one call)
+        self.game_time.advance_minutes(minutes)
 
         # Decay needs based on time passed
         warnings = SelfCareSystem.decay_needs(self.player.self_care, hours_passed)
@@ -196,8 +194,7 @@ class GameState:
 
         # Advance time by travel time (in minutes)
         if location.travel_time_from_home > 0:
-            for _ in range(location.travel_time_from_home):
-                self.game_time.advance_time(1)  # Advance 1 minute at a time
+            self.game_time.advance_minutes(location.travel_time_from_home)
 
         # Update player location
         self.player.current_location = location_id
