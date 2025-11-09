@@ -35,28 +35,44 @@
 
     <!-- Self-Care Status Bar (Always Visible) -->
     <div class="self-care-status-bar">
-        <div class="need-item" title="Hunger: Higher is better">
+        <div class="need-item" title="🍔 HUNGER: How well-fed you are (decays -8/hour)
+Keep above 40 to avoid penalties!
+• Below 40: -25% SP gain
+• Below 20: -50% SP gain, -10% success rate
+Restore by eating meals or snacks.">
             <span class="need-icon" id="header-hunger-emoji">🍔</span>
             <div class="need-bar-container">
                 <div class="need-bar" id="header-hunger-bar" style="width: 80%; background: #4caf50;"></div>
             </div>
             <span class="need-value" id="header-hunger-value">80</span>
         </div>
-        <div class="need-item" title="Energy: Higher is better">
+        <div class="need-item" title="⚡ ENERGY: How well-rested you are (decays -5/hour)
+Keep above 30 to avoid penalties!
+• Below 30: -20% SP gain, -5% success rate
+• Below 15: -40% SP gain, -15% success rate
+Restore by sleeping or taking naps.">
             <span class="need-icon" id="header-energy-emoji">⚡</span>
             <div class="need-bar-container">
                 <div class="need-bar" id="header-energy-bar" style="width: 75%; background: #4caf50;"></div>
             </div>
             <span class="need-value" id="header-energy-value">75</span>
         </div>
-        <div class="need-item" title="Hygiene: Higher is better">
+        <div class="need-item" title="🚿 HYGIENE: How clean you are (decays -2/hour)
+Keep above 50 to avoid penalties!
+• Below 50: -1 rapport gain with others
+• Below 30: -2 rapport gain with others
+Restore by showering or washing up.">
             <span class="need-icon" id="header-hygiene-emoji">🚿</span>
             <div class="need-bar-container">
                 <div class="need-bar" id="header-hygiene-bar" style="width: 85%; background: #4caf50;"></div>
             </div>
             <span class="need-value" id="header-hygiene-value">85</span>
         </div>
-        <div class="need-item" title="Bladder: Lower is better">
+        <div class="need-item" title="🚻 BLADDER: How urgently you need the bathroom (increases +12/hour)
+Keep below 70 to avoid penalties!
+• Above 70: -10% success rate (distracted)
+• Above 90: -20% success rate (URGENT!)
+Restore by using the bathroom.">
             <span class="need-icon" id="header-bladder-emoji">🚻</span>
             <div class="need-bar-container">
                 <div class="need-bar" id="header-bladder-bar" style="width: 20%; background: #4caf50;"></div>
