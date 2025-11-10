@@ -211,6 +211,47 @@
                 </div>
             </details>
 
+            <!-- SMART CLOTHING UPLOAD -->
+            <div class="operation-card" style="border-color: #48bb78; background: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);">
+                <h3 style="color: #48bb78;">✨ Smart Clothing Bulk Upload (NEW!)</h3>
+                <p>Just drag & drop your clothing photos! System auto-detects type, positions correctly, and saves to shared_clothing. No manual setup needed!</p>
+
+                <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <strong>📝 Filename Tips for Auto-Detection:</strong>
+                    <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
+                        <li><code>bra_*.png</code> → Auto-detected as Bra, positioned at chest (420px)</li>
+                        <li><code>panties_*.png</code> or <code>thong_*.png</code> → Panties, positioned at hips (820px)</li>
+                        <li><code>shirt_*.png</code>, <code>blouse_*.png</code>, <code>top_*.png</code> → Tops, chest area</li>
+                        <li><code>pants_*.png</code>, <code>jeans_*.png</code>, <code>skirt_*.png</code> → Bottoms, waist to legs</li>
+                        <li><code>dress_*.png</code> → Dress, full body</li>
+                        <li>Examples: <code>bra_lace_red.jpg</code>, <code>shirt_white_casual.png</code>, <code>pants_blue_jeans.jpg</code></li>
+                    </ul>
+                </div>
+
+                <div class="upload-area" id="smartUploadArea" style="border-color: #48bb78;" onclick="document.getElementById('smartFilesInput').click()">
+                    <p style="font-size: 3em; margin-bottom: 10px;">🎨</p>
+                    <p><strong>Drop clothing photos here!</strong></p>
+                    <p style="margin: 10px 0;">System will automatically:</p>
+                    <small style="color: #48bb78;">✓ Detect clothing type from filename<br>✓ Resize to 1024x1536px<br>✓ Position correctly on canvas<br>✓ Save with transparency</small>
+                </div>
+                <input type="file" id="smartFilesInput" multiple accept="image/*" style="display: none;" onchange="smartFilesSelected()">
+
+                <div id="smartFileListContainer" style="display: none;">
+                    <h4 style="margin-bottom: 10px; color: #4a5568;">Detected Files (<span id="smartFileCount">0</span>)</h4>
+                    <div class="file-list" id="smartFileList" style="max-height: 400px;"></div>
+                </div>
+
+                <div id="smartProgressContainer" style="display: none; margin-top: 15px;">
+                    <div style="background: #e2e8f0; border-radius: 8px; height: 30px; position: relative; overflow: hidden;">
+                        <div id="smartProgressFill" style="background: linear-gradient(90deg, #48bb78 0%, #38a169 100%); height: 100%; width: 0%; transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.9em;">0%</div>
+                    </div>
+                    <p id="smartProgressText" style="margin-top: 8px; color: #718096; text-align: center;">Processing...</p>
+                </div>
+
+                <button type="button" class="btn btn-success" id="smartUploadBtn" disabled style="margin-top: 15px;" onclick="smartBulkUpload()">🚀 Auto-Process & Upload</button>
+            </div>
+
+            <!-- ORIGINAL BULK UPLOAD -->
             <div class="operation-card">
                 <h3>📤 Bulk Upload Images</h3>
                 <p>Upload multiple images at once. Select the asset type, category, and drag and drop your files.</p>
@@ -515,6 +556,165 @@
             alert.textContent = message;
             container.appendChild(alert);
             setTimeout(() => alert.remove(), 5000);
+        }
+
+        // ==================== SMART CLOTHING UPLOAD ====================
+
+        let smartFiles = [];
+
+        // Add drag and drop support for smart upload
+        const smartUploadArea = document.getElementById('smartUploadArea');
+        smartUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            smartUploadArea.classList.add('drag-over');
+        });
+        smartUploadArea.addEventListener('dragleave', () => {
+            smartUploadArea.classList.remove('drag-over');
+        });
+        smartUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            smartUploadArea.classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files);
+            document.getElementById('smartFilesInput').files = e.dataTransfer.files;
+            smartFilesSelected();
+        });
+
+        function detectClothingType(filename) {
+            const lower = filename.toLowerCase();
+
+            // Detect category and specific type
+            if (lower.includes('bra')) {
+                return { category: 'underwear', type: 'bra', icon: '👙' };
+            } else if (lower.includes('panties') || lower.includes('thong') || lower.includes('underwear')) {
+                return { category: 'underwear', type: 'panties', icon: '🩲' };
+            } else if (lower.includes('shirt') || lower.includes('blouse') || lower.includes('top') || lower.includes('tshirt') || lower.includes('t-shirt')) {
+                return { category: 'tops', type: 'top', icon: '👕' };
+            } else if (lower.includes('pants') || lower.includes('jeans') || lower.includes('skirt') || lower.includes('shorts') || lower.includes('leggings')) {
+                return { category: 'bottoms', type: 'bottom', icon: '👖' };
+            } else if (lower.includes('dress')) {
+                return { category: 'dresses', type: 'dress', icon: '👗' };
+            } else if (lower.includes('shoe') || lower.includes('boot') || lower.includes('sandal')) {
+                return { category: 'shoes', type: 'shoes', icon: '👠' };
+            } else if (lower.includes('jacket') || lower.includes('coat') || lower.includes('sweater')) {
+                return { category: 'outerwear', type: 'outerwear', icon: '🧥' };
+            } else if (lower.includes('necklace') || lower.includes('glasses') || lower.includes('jewelry')) {
+                return { category: 'accessories', type: 'accessories', icon: '💍' };
+            }
+
+            return { category: 'unknown', type: 'unknown', icon: '❓' };
+        }
+
+        function smartFilesSelected() {
+            const input = document.getElementById('smartFilesInput');
+            smartFiles = Array.from(input.files);
+
+            if (smartFiles.length === 0) {
+                document.getElementById('smartFileListContainer').style.display = 'none';
+                document.getElementById('smartUploadBtn').disabled = true;
+                return;
+            }
+
+            const fileList = document.getElementById('smartFileList');
+            document.getElementById('smartFileCount').textContent = smartFiles.length;
+            document.getElementById('smartFileListContainer').style.display = 'block';
+            document.getElementById('smartUploadBtn').disabled = false;
+
+            fileList.innerHTML = smartFiles.map((file, idx) => {
+                const detection = detectClothingType(file.name);
+                const typeClass = detection.category === 'unknown' ? 'failed' : 'success';
+
+                return `
+                    <div class="file-item ${typeClass}" id="smart-file-${idx}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #e2e8f0;">
+                        <div style="flex: 1;">
+                            <strong>${detection.icon} ${file.name}</strong>
+                            <div style="font-size: 0.85em; color: #718096; margin-top: 4px;">
+                                ${detection.category !== 'unknown'
+                                    ? `✓ Detected: <strong>${detection.category}</strong> (${detection.type}) | ${(file.size / 1024).toFixed(1)} KB`
+                                    : `⚠️ Unknown type - will skip | ${(file.size / 1024).toFixed(1)} KB`}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function smartBulkUpload() {
+            const btn = document.getElementById('smartUploadBtn');
+            const progressContainer = document.getElementById('smartProgressContainer');
+            const progressFill = document.getElementById('smartProgressFill');
+            const progressText = document.getElementById('smartProgressText');
+
+            btn.disabled = true;
+            progressContainer.style.display = 'block';
+
+            let uploaded = 0;
+            let failed = 0;
+            const results = [];
+
+            for (let i = 0; i < smartFiles.length; i++) {
+                const file = smartFiles[i];
+                const detection = detectClothingType(file.name);
+
+                if (detection.category === 'unknown') {
+                    failed++;
+                    results.push({ filename: file.name, success: false, error: 'Unknown clothing type' });
+                    continue;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('category', detection.category);
+                formData.append('filename', file.name);
+
+                try {
+                    const response = await fetch('/assets/api/smart-clothing-upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        uploaded++;
+                        results.push({ filename: file.name, success: true });
+                        document.getElementById(`smart-file-${i}`).style.background = '#c6f6d5';
+                    } else {
+                        failed++;
+                        results.push({ filename: file.name, success: false, error: data.error });
+                        document.getElementById(`smart-file-${i}`).style.background = '#fed7d7';
+                    }
+                } catch (error) {
+                    failed++;
+                    results.push({ filename: file.name, success: false, error: error.message });
+                    document.getElementById(`smart-file-${i}`).style.background = '#fed7d7';
+                }
+
+                const progress = Math.round(((i + 1) / smartFiles.length) * 100);
+                progressFill.style.width = progress + '%';
+                progressFill.textContent = progress + '%';
+                progressText.textContent = `Processing: ${i + 1} of ${smartFiles.length} (${uploaded} uploaded, ${failed} failed)`;
+            }
+
+            // Final results
+            progressText.textContent = `✓ Complete! ${uploaded} uploaded, ${failed} failed`;
+
+            if (uploaded > 0) {
+                showAlert(`Successfully uploaded ${uploaded} clothing item(s)!`, 'success');
+            }
+            if (failed > 0) {
+                showAlert(`${failed} file(s) failed to upload (check console or unknown types)`, 'error');
+            }
+
+            // Reset after 3 seconds
+            setTimeout(() => {
+                btn.disabled = false;
+                if (failed === 0) {
+                    smartFiles = [];
+                    document.getElementById('smartFilesInput').value = '';
+                    document.getElementById('smartFileListContainer').style.display = 'none';
+                    progressContainer.style.display = 'none';
+                }
+            }, 3000);
         }
 
         updateCategoryOptions();

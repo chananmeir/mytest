@@ -457,6 +457,52 @@ def api_upload_clothing_image():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@asset_manager.route('/api/smart-clothing-upload', methods=['POST'])
+def api_smart_clothing_upload():
+    """Smart bulk upload for clothing - auto-detects type and positions"""
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    category = request.form.get('category', '')
+    filename = request.form.get('filename', file.filename)
+
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'error': f'Invalid file type. Allowed: {", ".join(ALLOWED_EXTENSIONS)}'}), 400
+
+    if not category:
+        return jsonify({'success': False, 'error': 'Category detection failed'}), 400
+
+    try:
+        # Upload to shared_clothing directory
+        upload_dir = os.path.join(UPLOAD_FOLDER, 'shared_clothing', category)
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # Use secure filename
+        secure_name = secure_filename(filename)
+
+        # Auto-position the clothing item
+        positioned_image = auto_position_clothing(file, category, secure_name)
+
+        # Save the positioned image
+        filepath = os.path.join(upload_dir, secure_name)
+        positioned_image.save(filepath, 'PNG')
+
+        return jsonify({
+            'success': True,
+            'message': f'Smart upload successful! {secure_name} auto-positioned',
+            'path': f'/static/images/shared_clothing/{category}/{secure_name}',
+            'category': category,
+            'filename': secure_name
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @asset_manager.route('/api/upload/image', methods=['POST'])
 def api_upload_image():
     """Upload image file"""
