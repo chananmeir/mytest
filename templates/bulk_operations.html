@@ -581,27 +581,66 @@
 
         function detectClothingType(filename) {
             const lower = filename.toLowerCase();
+            let coverage, formality, tags;
 
-            // Detect category and specific type
+            // Detect category and specific type with auto-values
             if (lower.includes('bra')) {
-                return { category: 'underwear', type: 'bra', icon: '👙' };
+                coverage = 30;
+                formality = 40;
+                tags = ['sexy', 'revealing'];
+                if (lower.includes('lace')) { tags.push('elegant'); formality += 10; }
+                if (lower.includes('sports')) { tags.push('athletic'); formality = 20; }
+                return { category: 'underwear', type: 'bra', icon: '👙', coverage, formality, tags };
             } else if (lower.includes('panties') || lower.includes('thong') || lower.includes('underwear')) {
-                return { category: 'underwear', type: 'panties', icon: '🩲' };
+                coverage = lower.includes('thong') ? 25 : 40;
+                formality = 40;
+                tags = lower.includes('thong') ? ['sexy', 'revealing'] : ['revealing'];
+                if (lower.includes('lace')) { tags.push('elegant'); formality += 10; }
+                return { category: 'underwear', type: 'panties', icon: '🩲', coverage, formality, tags };
             } else if (lower.includes('shirt') || lower.includes('blouse') || lower.includes('top') || lower.includes('tshirt') || lower.includes('t-shirt')) {
-                return { category: 'tops', type: 'top', icon: '👕' };
+                coverage = 60;
+                formality = 50;
+                tags = ['casual'];
+                if (lower.includes('blouse')) { formality = 60; tags = ['elegant']; }
+                if (lower.includes('formal')) { formality = 70; tags.push('formal'); }
+                return { category: 'tops', type: 'top', icon: '👕', coverage, formality, tags };
             } else if (lower.includes('pants') || lower.includes('jeans') || lower.includes('skirt') || lower.includes('shorts') || lower.includes('leggings')) {
-                return { category: 'bottoms', type: 'bottom', icon: '👖' };
+                if (lower.includes('skirt')) {
+                    coverage = lower.includes('mini') ? 40 : 60;
+                    formality = 50;
+                    tags = lower.includes('mini') ? ['revealing'] : ['modest'];
+                } else if (lower.includes('shorts')) {
+                    coverage = 35;
+                    formality = 20;
+                    tags = ['casual', 'athletic'];
+                } else if (lower.includes('leggings')) {
+                    coverage = 70;
+                    formality = 25;
+                    tags = ['athletic', 'comfortable'];
+                } else {
+                    coverage = 70;
+                    formality = 40;
+                    tags = ['casual', 'comfortable'];
+                }
+                return { category: 'bottoms', type: 'bottom', icon: '👖', coverage, formality, tags };
             } else if (lower.includes('dress')) {
-                return { category: 'dresses', type: 'dress', icon: '👗' };
+                coverage = 65;
+                formality = 65;
+                tags = ['elegant'];
+                if (lower.includes('evening') || lower.includes('formal')) { formality = 80; tags.push('formal'); }
+                return { category: 'dresses', type: 'dress', icon: '👗', coverage, formality, tags };
             } else if (lower.includes('shoe') || lower.includes('boot') || lower.includes('sandal')) {
-                return { category: 'shoes', type: 'shoes', icon: '👠' };
+                return { category: 'shoes', type: 'shoes', icon: '👠', coverage: 5, formality: 40, tags: [] };
             } else if (lower.includes('jacket') || lower.includes('coat') || lower.includes('sweater')) {
-                return { category: 'outerwear', type: 'outerwear', icon: '🧥' };
+                coverage = lower.includes('sweater') ? 75 : 85;
+                formality = lower.includes('coat') ? 60 : 40;
+                tags = lower.includes('coat') ? ['formal'] : ['casual'];
+                return { category: 'outerwear', type: 'outerwear', icon: '🧥', coverage, formality, tags };
             } else if (lower.includes('necklace') || lower.includes('glasses') || lower.includes('jewelry')) {
-                return { category: 'accessories', type: 'accessories', icon: '💍' };
+                return { category: 'accessories', type: 'accessories', icon: '💍', coverage: 0, formality: 50, tags: ['elegant'] };
             }
 
-            return { category: 'unknown', type: 'unknown', icon: '❓' };
+            return { category: 'unknown', type: 'unknown', icon: '❓', coverage: 0, formality: 0, tags: [] };
         }
 
         function smartFilesSelected() {
@@ -624,12 +663,16 @@
                 const typeClass = detection.category === 'unknown' ? 'failed' : 'success';
 
                 return `
-                    <div class="file-item ${typeClass}" id="smart-file-${idx}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #e2e8f0;">
+                    <div class="file-item ${typeClass}" id="smart-file-${idx}" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e2e8f0;">
                         <div style="flex: 1;">
                             <strong>${detection.icon} ${file.name}</strong>
                             <div style="font-size: 0.85em; color: #718096; margin-top: 4px;">
                                 ${detection.category !== 'unknown'
-                                    ? `✓ Detected: <strong>${detection.category}</strong> (${detection.type}) | ${(file.size / 1024).toFixed(1)} KB`
+                                    ? `✓ Detected: <strong>${detection.category}</strong> (${detection.type}) | ${(file.size / 1024).toFixed(1)} KB<br>
+                                       <span style="color: #48bb78;">Auto-values:</span>
+                                       Coverage: <strong>${detection.coverage}</strong> |
+                                       Formality: <strong>${detection.formality}</strong> |
+                                       Tags: <strong>${detection.tags.join(', ')}</strong>`
                                     : `⚠️ Unknown type - will skip | ${(file.size / 1024).toFixed(1)} KB`}
                             </div>
                         </div>

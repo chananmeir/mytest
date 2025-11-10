@@ -244,6 +244,149 @@ def auto_position_clothing(image_file, category_dir, item_name):
     return canvas
 
 
+def generate_clothing_defaults(filename, category):
+    """
+    Generate smart defaults for clothing item based on filename and category.
+
+    Returns dict with: coverage, formality, tags, description, slot
+    """
+    lower_name = filename.lower()
+
+    # Determine slot and type
+    if 'bra' in lower_name:
+        slot = 'bra'
+        coverage = 30  # Low coverage
+        formality = 40  # Can be casual or dressy
+        base_tags = ['sexy', 'revealing']
+        desc_type = 'bra'
+    elif 'panties' in lower_name or 'thong' in lower_name:
+        slot = 'panties'
+        coverage = 25 if 'thong' in lower_name else 40
+        formality = 40
+        base_tags = ['sexy', 'revealing'] if 'thong' in lower_name else ['revealing']
+        desc_type = 'thong' if 'thong' in lower_name else 'panties'
+    elif 'shirt' in lower_name or 'blouse' in lower_name or 'top' in lower_name:
+        slot = 'top'
+        coverage = 60
+        formality = 50
+        base_tags = ['casual']
+        desc_type = 'blouse' if 'blouse' in lower_name else 'shirt' if 'shirt' in lower_name else 'top'
+    elif 'pants' in lower_name or 'jeans' in lower_name:
+        slot = 'bottom'
+        coverage = 70
+        formality = 40
+        base_tags = ['casual', 'comfortable']
+        desc_type = 'jeans' if 'jeans' in lower_name else 'pants'
+    elif 'skirt' in lower_name:
+        slot = 'bottom'
+        coverage = 40 if 'mini' in lower_name else 60
+        formality = 50
+        base_tags = ['revealing'] if 'mini' in lower_name else ['modest']
+        desc_type = 'mini skirt' if 'mini' in lower_name else 'skirt'
+    elif 'dress' in lower_name:
+        slot = 'dress'
+        coverage = 65
+        formality = 65
+        base_tags = ['elegant']
+        desc_type = 'dress'
+    elif 'shorts' in lower_name:
+        slot = 'bottom'
+        coverage = 35
+        formality = 20
+        base_tags = ['casual', 'athletic']
+        desc_type = 'shorts'
+    elif 'leggings' in lower_name:
+        slot = 'bottom'
+        coverage = 70
+        formality = 25
+        base_tags = ['athletic', 'comfortable']
+        desc_type = 'leggings'
+    elif 'jacket' in lower_name or 'coat' in lower_name:
+        slot = 'outerwear'
+        coverage = 85
+        formality = 60
+        base_tags = ['formal'] if 'coat' in lower_name else ['casual']
+        desc_type = 'coat' if 'coat' in lower_name else 'jacket'
+    elif 'sweater' in lower_name:
+        slot = 'top'
+        coverage = 75
+        formality = 40
+        base_tags = ['comfortable', 'modest']
+        desc_type = 'sweater'
+    else:
+        slot = 'top'
+        coverage = 50
+        formality = 50
+        base_tags = ['casual']
+        desc_type = 'clothing item'
+
+    # Detect additional tags from filename
+    tags = base_tags.copy()
+
+    if 'lace' in lower_name:
+        tags.append('elegant')
+        tags.append('sexy')
+        formality += 10
+    if 'leather' in lower_name:
+        tags.append('bold')
+        formality += 5
+    if 'silk' in lower_name or 'satin' in lower_name:
+        tags.append('elegant')
+        formality += 15
+    if 'sports' in lower_name or 'athletic' in lower_name:
+        tags.append('athletic')
+        formality = max(10, formality - 20)
+    if 'formal' in lower_name or 'evening' in lower_name:
+        tags.append('formal')
+        formality = max(formality, 70)
+    if 'casual' in lower_name:
+        tags.append('casual')
+        formality = min(formality, 40)
+    if 'sexy' in lower_name or 'revealing' in lower_name:
+        tags.append('sexy')
+        if 'revealing' not in tags:
+            tags.append('revealing')
+        coverage = min(coverage, 40)
+    if 'modest' in lower_name:
+        tags.append('modest')
+        coverage = max(coverage, 60)
+    if 'comfortable' in lower_name or 'comfy' in lower_name:
+        tags.append('comfortable')
+
+    # Detect colors for description
+    colors = []
+    for color in ['red', 'blue', 'black', 'white', 'pink', 'green', 'yellow', 'purple', 'orange', 'gray', 'grey', 'brown']:
+        if color in lower_name:
+            colors.append(color)
+
+    color_desc = colors[0].capitalize() + ' ' if colors else ''
+
+    # Generate description
+    description = f"{color_desc}{desc_type}"
+    if 'lace' in lower_name:
+        description += ' with lace details'
+    elif 'leather' in lower_name:
+        description += ' in leather'
+    elif 'silk' in lower_name:
+        description += ' in silk'
+
+    # Ensure formality and coverage are in valid range
+    coverage = max(0, min(100, coverage))
+    formality = max(0, min(100, formality))
+
+    # Remove duplicates from tags
+    tags = list(set(tags))
+
+    return {
+        'slot': slot,
+        'coverage': coverage,
+        'formality': formality,
+        'tags': tags,
+        'description': description,
+        'suggestibility_factor': 1.0
+    }
+
+
 # ==================== ROUTES ====================
 
 @asset_manager.route('/')
@@ -484,6 +627,9 @@ def api_smart_clothing_upload():
         # Use secure filename
         secure_name = secure_filename(filename)
 
+        # Generate item ID from filename (remove extension)
+        item_id = os.path.splitext(secure_name)[0]
+
         # Auto-position the clothing item
         positioned_image = auto_position_clothing(file, category, secure_name)
 
@@ -491,12 +637,40 @@ def api_smart_clothing_upload():
         filepath = os.path.join(upload_dir, secure_name)
         positioned_image.save(filepath, 'PNG')
 
+        # Generate smart defaults for database entry
+        defaults = generate_clothing_defaults(secure_name, category)
+
+        # Create database entry
+        item_data = {
+            'id': item_id,
+            'name': defaults['description'],  # Use generated description as name
+            'category': category,
+            'slot': defaults['slot'],
+            'image_path': f"{category}/{secure_name}",
+            'description': defaults['description'],
+            'tags': defaults['tags'],
+            'coverage': defaults['coverage'],
+            'formality': defaults['formality'],
+            'suggestibility_factor': defaults['suggestibility_factor']
+        }
+
+        # Add to clothing_items.py
+        db_success, db_message = add_clothing_item_to_file(item_data)
+
         return jsonify({
             'success': True,
-            'message': f'Smart upload successful! {secure_name} auto-positioned',
+            'message': f'Smart upload successful! {secure_name} auto-positioned and added to database',
             'path': f'/static/images/shared_clothing/{category}/{secure_name}',
             'category': category,
-            'filename': secure_name
+            'filename': secure_name,
+            'item_id': item_id,
+            'database_added': db_success,
+            'database_message': db_message,
+            'auto_values': {
+                'coverage': defaults['coverage'],
+                'formality': defaults['formality'],
+                'tags': defaults['tags']
+            }
         })
 
     except Exception as e:
