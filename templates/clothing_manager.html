@@ -381,6 +381,94 @@
             color: #742a2a;
             border: 1px solid #fc8181;
         }
+
+        /* Tooltip styles */
+        .help-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 18px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 5px;
+            position: relative;
+        }
+
+        .help-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 25px;
+            top: -5px;
+            background: #2d3748;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: normal;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            min-width: 200px;
+            max-width: 400px;
+            white-space: normal;
+            line-height: 1.4;
+        }
+
+        .help-icon:hover::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 5px;
+            border: 5px solid transparent;
+            border-right-color: #2d3748;
+            z-index: 1001;
+        }
+
+        .production-guide {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 6px;
+        }
+
+        .production-guide summary {
+            cursor: pointer;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .production-guide .guide-content {
+            margin-top: 15px;
+            line-height: 1.6;
+            color: #4a5568;
+        }
+
+        .production-guide h4 {
+            color: #667eea;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+
+        .production-guide ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .production-guide code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -443,6 +531,80 @@
             <div class="content">
                 <div id="alertContainer"></div>
 
+                <!-- Production Guide -->
+                <details class="production-guide">
+                    <summary>📚 How to Create Clothing Items & Generate Images</summary>
+                    <div class="guide-content">
+                        <h4>Creating Clothing Items</h4>
+                        <p>When adding a new clothing item, fill in all required fields. Each item needs a unique ID, display name, category, and slot assignment.</p>
+
+                        <h4>Generating Clothing Images with AI</h4>
+                        <p><strong>Recommended Tools:</strong> Midjourney, DALL-E 3, Stable Diffusion</p>
+
+                        <p><strong>Image Requirements:</strong></p>
+                        <ul>
+                            <li><strong>Format:</strong> PNG with transparency (alpha channel)</li>
+                            <li><strong>Size:</strong> 512x512 to 1024x1024 pixels (consistent with character base images)</li>
+                            <li><strong>Background:</strong> Transparent - item should be isolated from background</li>
+                            <li><strong>Perspective:</strong> Front-facing, centered, as if worn on a body</li>
+                        </ul>
+
+                        <p><strong>AI Generation Tips by Category:</strong></p>
+
+                        <p><strong>Underwear (Bras, Panties):</strong></p>
+                        <ul>
+                            <li>Prompt: "Front view of [color] [material] [item], isolated on transparent background, product photography, centered, high detail"</li>
+                            <li>Example: "Front view of black lace bra, isolated on transparent background, product photography, centered, high detail"</li>
+                            <li>Add descriptors: "delicate lace", "satin ribbon", "underwire", "push-up style"</li>
+                        </ul>
+
+                        <p><strong>Tops (Shirts, Blouses):</strong></p>
+                        <ul>
+                            <li>Prompt: "Front view of [style] [color] [type], flat lay product shot, transparent background, centered"</li>
+                            <li>Example: "Front view of casual white t-shirt, flat lay product shot, transparent background, centered"</li>
+                            <li>Specify details: "v-neck", "button-down", "sleeveless", "cropped"</li>
+                        </ul>
+
+                        <p><strong>Bottoms (Pants, Skirts):</strong></p>
+                        <ul>
+                            <li>Prompt: "Front view of [style] [color] [item], product photography, transparent background, symmetrical"</li>
+                            <li>Example: "Front view of blue denim jeans, product photography, transparent background, symmetrical"</li>
+                            <li>Include: "high-waisted", "pleated skirt", "mini/midi/maxi length"</li>
+                        </ul>
+
+                        <p><strong>Dresses:</strong></p>
+                        <ul>
+                            <li>Prompt: "Front view of [style] dress in [color], elegant product shot, transparent background, full length visible"</li>
+                            <li>Example: "Front view of evening dress in red, elegant product shot, transparent background, full length visible"</li>
+                            <li>Specify: "cocktail dress", "maxi dress", "A-line", "bodycon"</li>
+                        </ul>
+
+                        <p><strong>Post-Processing:</strong></p>
+                        <ul>
+                            <li>Use remove.bg or Photoshop to ensure clean transparent background</li>
+                            <li>Remove any shadows or reflections from the floor/surface</li>
+                            <li>Ensure item is perfectly centered in the canvas</li>
+                            <li>Resize to match your character sprite dimensions</li>
+                        </ul>
+
+                        <p><strong>Coverage & Formality Guide:</strong></p>
+                        <ul>
+                            <li><strong>Coverage 0-20:</strong> Thongs, bikinis, very revealing items</li>
+                            <li><strong>Coverage 20-40:</strong> Bras, panties, short skirts, crop tops</li>
+                            <li><strong>Coverage 40-60:</strong> T-shirts, jeans, casual dresses</li>
+                            <li><strong>Coverage 60-80:</strong> Long dresses, sweaters, conservative clothing</li>
+                            <li><strong>Coverage 80-100:</strong> Coats, full-body coverage</li>
+                        </ul>
+                        <ul>
+                            <li><strong>Formality 0-20:</strong> Gym wear, pajamas, loungewear</li>
+                            <li><strong>Formality 20-40:</strong> Casual everyday (jeans, t-shirts)</li>
+                            <li><strong>Formality 40-60:</strong> Smart casual (blouses, khakis)</li>
+                            <li><strong>Formality 60-80:</strong> Business attire (suits, dress shirts)</li>
+                            <li><strong>Formality 80-100:</strong> Formal wear (evening gowns, tuxedos)</li>
+                        </ul>
+                    </div>
+                </details>
+
                 <div>
                     <h3>Clothing Items <span id="itemCount" style="color: #a0aec0; font-weight: normal;"></span></h3>
                 </div>
@@ -466,18 +628,18 @@
 
             <form id="itemForm" onsubmit="saveItem(event)">
                 <div class="form-group">
-                    <label>Item ID *</label>
+                    <label>Item ID *<span class="help-icon" data-tooltip="Unique code name (no spaces). Example: bra_lace_red. Use lowercase with underscores.">?</span></label>
                     <input type="text" id="itemId" required placeholder="e.g., bra_lace_red">
                 </div>
 
                 <div class="form-group">
-                    <label>Name *</label>
+                    <label>Name *<span class="help-icon" data-tooltip="Display name players will see. Example: Red Lace Bra. Can include spaces and capitals.">?</span></label>
                     <input type="text" id="itemName" required placeholder="e.g., Red Lace Bra">
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Category *</label>
+                        <label>Category *<span class="help-icon" data-tooltip="Type of clothing: underwear (bras/panties), tops (shirts), bottoms (pants/skirts), dresses, outerwear (jackets), accessories (jewelry).">?</span></label>
                         <select id="itemCategory" required>
                             <option value="">Select...</option>
                             <option value="underwear">Underwear</option>
@@ -490,7 +652,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Slot *</label>
+                        <label>Slot *<span class="help-icon" data-tooltip="Body part this item occupies. Examples: bra, panties, top, bottom, dress (replaces top+bottom), shoes, jewelry.">?</span></label>
                         <select id="itemSlot" required>
                             <option value="">Select...</option>
                             <option value="bra">Bra</option>
@@ -506,17 +668,17 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Description *</label>
+                    <label>Description *<span class="help-icon" data-tooltip="Brief description of the item. Example: Elegant red lace bra with ribbon details.">?</span></label>
                     <textarea id="itemDescription" required placeholder="Describe the clothing item..."></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label>Image Path</label>
+                    <label>Image Path<span class="help-icon" data-tooltip="Where the image will be saved. Format: category/filename.png. Leave blank to auto-generate. Example: underwear/bra_lace_red.png">?</span></label>
                     <input type="text" id="itemImagePath" placeholder="e.g., underwear/bra_lace_red.png">
                 </div>
 
                 <div class="form-group">
-                    <label>Tags (press Enter to add)</label>
+                    <label>Tags (press Enter to add)<span class="help-icon" data-tooltip="Keywords describing style. Type a word and press Enter. Examples: sexy, modest, formal, casual, revealing, elegant, comfortable.">?</span></label>
                     <div class="tag-input-container" id="tagContainer">
                         <input type="text" id="tagInput" placeholder="Add tags..." onkeydown="handleTagInput(event)">
                     </div>
@@ -524,7 +686,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Coverage: <span id="coverageValue" class="range-value">50</span></label>
+                    <label>Coverage: <span id="coverageValue" class="range-value">50</span><span class="help-icon" data-tooltip="How much body this covers. 0-20=very revealing (thong), 20-40=low (bra/short skirt), 40-60=moderate (t-shirt), 60-80=high (sweater), 80-100=full (coat).">?</span></label>
                     <div class="range-container">
                         <span>0</span>
                         <input type="range" id="itemCoverage" min="0" max="100" value="50" oninput="updateRangeValue('coverage')">
@@ -533,7 +695,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Formality: <span id="formalityValue" class="range-value">50</span></label>
+                    <label>Formality: <span id="formalityValue" class="range-value">50</span><span class="help-icon" data-tooltip="How formal/dressy. 0-20=very casual (gym/pajamas), 20-40=casual (jeans/t-shirt), 40-60=smart casual (blouse), 60-80=formal (suit), 80-100=very formal (gown/tuxedo).">?</span></label>
                     <div class="range-container">
                         <span>0</span>
                         <input type="range" id="itemFormality" min="0" max="100" value="50" oninput="updateRangeValue('formality')">
@@ -542,7 +704,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Suggestibility Factor</label>
+                    <label>Suggestibility Factor<span class="help-icon" data-tooltip="Hypnosis multiplier. 0.5=harder to suggest, 1.0=normal, 1.5-2.0=easier to suggest wearing/removing. Used in game's hypnosis mechanics.">?</span></label>
                     <input type="number" id="itemSuggestibility" step="0.1" value="1.0" min="0" max="3">
                 </div>
 
