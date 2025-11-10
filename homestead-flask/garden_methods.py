@@ -398,7 +398,7 @@ BED_TEMPLATES = [
         'method': 'square-foot',
         'bedSize': {'width': 4, 'length': 8},
         'description': 'Plant 1/4 every 2 weeks for continuous harvest',
-        'succession': true,
+        'succession': True,
         'successionInterval': 14,  # days
         'successionPlantings': 4,
         'plants': [
