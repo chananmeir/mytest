@@ -35,6 +35,12 @@ def garden_planner():
     beds = GardenBed.query.all()
     return render_template('garden_planner.html', beds=beds, plants=PLANT_DATABASE)
 
+@app.route('/visual-designer')
+def visual_designer():
+    """Visual garden designer page"""
+    beds = GardenBed.query.all()
+    return render_template('visual_designer.html', beds=beds, plants=PLANT_DATABASE)
+
 @app.route('/api/garden-beds', methods=['GET', 'POST'])
 def garden_beds():
     """Get all garden beds or create new one"""
@@ -79,13 +85,16 @@ def garden_bed(bed_id):
 def add_planted_item():
     """Add a plant to a garden bed"""
     data = request.json
+    position = data.get('position', {})
     item = PlantedItem(
         plant_id=data['plantId'],
         garden_bed_id=data['gardenBedId'],
         planted_date=datetime.fromisoformat(data.get('plantedDate', datetime.now().isoformat())),
         quantity=data.get('quantity', 1),
         status=data.get('status', 'planned'),
-        notes=data.get('notes', '')
+        notes=data.get('notes', ''),
+        position_x=position.get('x', 0),
+        position_y=position.get('y', 0)
     )
     db.session.add(item)
     db.session.commit()
