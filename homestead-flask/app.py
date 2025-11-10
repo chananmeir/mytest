@@ -1,0 +1,330 @@
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
+from models import db, GardenBed, PlantedItem, PlantingEvent, WinterPlan, CompostPile, CompostIngredient, Settings
+from plant_database import PLANT_DATABASE, COMPOST_MATERIALS, get_plant_by_id, get_winter_hardy_plants
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+import os
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///homestead.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
+
+db.init_app(app)
+
+# Create database tables
+with app.app_context():
+    db.create_all()
+    # Set default frost dates if not set
+    if not Settings.get_setting('last_frost_date'):
+        Settings.set_setting('last_frost_date', '2024-04-15')
+    if not Settings.get_setting('first_frost_date'):
+        Settings.set_setting('first_frost_date', '2024-10-15')
+
+@app.route('/')
+def index():
+    """Main dashboard"""
+    return render_template('index.html')
+
+# ==================== GARDEN PLANNER ROUTES ====================
+
+@app.route('/garden-planner')
+def garden_planner():
+    """Garden planner page"""
+    beds = GardenBed.query.all()
+    return render_template('garden_planner.html', beds=beds, plants=PLANT_DATABASE)
+
+@app.route('/api/garden-beds', methods=['GET', 'POST'])
+def garden_beds():
+    """Get all garden beds or create new one"""
+    if request.method == 'POST':
+        data = request.json
+        bed = GardenBed(
+            name=data['name'],
+            width=data['width'],
+            length=data['length'],
+            location=data.get('location', ''),
+            sun_exposure=data.get('sunExposure', 'full')
+        )
+        db.session.add(bed)
+        db.session.commit()
+        return jsonify(bed.to_dict()), 201
+
+    beds = GardenBed.query.all()
+    return jsonify([bed.to_dict() for bed in beds])
+
+@app.route('/api/garden-beds/<int:bed_id>', methods=['GET', 'PUT', 'DELETE'])
+def garden_bed(bed_id):
+    """Get, update, or delete a specific garden bed"""
+    bed = GardenBed.query.get_or_404(bed_id)
+
+    if request.method == 'DELETE':
+        db.session.delete(bed)
+        db.session.commit()
+        return '', 204
+
+    if request.method == 'PUT':
+        data = request.json
+        bed.name = data.get('name', bed.name)
+        bed.width = data.get('width', bed.width)
+        bed.length = data.get('length', bed.length)
+        bed.location = data.get('location', bed.location)
+        bed.sun_exposure = data.get('sunExposure', bed.sun_exposure)
+        db.session.commit()
+
+    return jsonify(bed.to_dict())
+
+@app.route('/api/planted-items', methods=['POST'])
+def add_planted_item():
+    """Add a plant to a garden bed"""
+    data = request.json
+    item = PlantedItem(
+        plant_id=data['plantId'],
+        garden_bed_id=data['gardenBedId'],
+        planted_date=datetime.fromisoformat(data.get('plantedDate', datetime.now().isoformat())),
+        quantity=data.get('quantity', 1),
+        status=data.get('status', 'planned'),
+        notes=data.get('notes', '')
+    )
+    db.session.add(item)
+    db.session.commit()
+    return jsonify(item.to_dict()), 201
+
+@app.route('/api/planted-items/<int:item_id>', methods=['PUT', 'DELETE'])
+def planted_item(item_id):
+    """Update or delete a planted item"""
+    item = PlantedItem.query.get_or_404(item_id)
+
+    if request.method == 'DELETE':
+        db.session.delete(item)
+        db.session.commit()
+        return '', 204
+
+    data = request.json
+    item.status = data.get('status', item.status)
+    item.notes = data.get('notes', item.notes)
+    if 'harvestDate' in data and data['harvestDate']:
+        item.harvest_date = datetime.fromisoformat(data['harvestDate'])
+    db.session.commit()
+    return jsonify(item.to_dict())
+
+# ==================== PLANTING CALENDAR ROUTES ====================
+
+@app.route('/planting-calendar')
+def planting_calendar():
+    """Planting calendar page"""
+    events = PlantingEvent.query.order_by(PlantingEvent.seed_start_date).all()
+    last_frost = Settings.get_setting('last_frost_date', '2024-04-15')
+    first_frost = Settings.get_setting('first_frost_date', '2024-10-15')
+    return render_template('planting_calendar.html',
+                         events=events,
+                         plants=PLANT_DATABASE,
+                         last_frost_date=last_frost,
+                         first_frost_date=first_frost)
+
+@app.route('/api/planting-events', methods=['GET', 'POST'])
+def planting_events():
+    """Get all planting events or create new one"""
+    if request.method == 'POST':
+        data = request.json
+        event = PlantingEvent(
+            plant_id=data['plantId'],
+            garden_bed_id=data.get('gardenBedId'),
+            seed_start_date=datetime.fromisoformat(data['seedStartDate']) if data.get('seedStartDate') else None,
+            transplant_date=datetime.fromisoformat(data['transplantDate']) if data.get('transplantDate') else None,
+            direct_seed_date=datetime.fromisoformat(data['directSeedDate']) if data.get('directSeedDate') else None,
+            expected_harvest_date=datetime.fromisoformat(data['expectedHarvestDate']),
+            succession_planting=data.get('successionPlanting', False),
+            succession_interval=data.get('successionInterval'),
+            notes=data.get('notes', '')
+        )
+        db.session.add(event)
+        db.session.commit()
+        return jsonify(event.to_dict()), 201
+
+    events = PlantingEvent.query.all()
+    return jsonify([event.to_dict() for event in events])
+
+@app.route('/api/planting-events/<int:event_id>', methods=['PUT', 'DELETE'])
+def planting_event(event_id):
+    """Update or delete a planting event"""
+    event = PlantingEvent.query.get_or_404(event_id)
+
+    if request.method == 'DELETE':
+        db.session.delete(event)
+        db.session.commit()
+        return '', 204
+
+    data = request.json
+    event.completed = data.get('completed', event.completed)
+    event.notes = data.get('notes', event.notes)
+    db.session.commit()
+    return jsonify(event.to_dict())
+
+@app.route('/api/frost-dates', methods=['GET', 'POST'])
+def frost_dates():
+    """Get or update frost dates"""
+    if request.method == 'POST':
+        data = request.json
+        Settings.set_setting('last_frost_date', data['lastFrostDate'])
+        Settings.set_setting('first_frost_date', data['firstFrostDate'])
+        return jsonify({'success': True})
+
+    return jsonify({
+        'lastFrostDate': Settings.get_setting('last_frost_date', '2024-04-15'),
+        'firstFrostDate': Settings.get_setting('first_frost_date', '2024-10-15')
+    })
+
+# ==================== WINTER GARDEN ROUTES ====================
+
+@app.route('/winter-garden')
+def winter_garden():
+    """Winter garden planning page"""
+    plans = WinterPlan.query.all()
+    winter_plants = get_winter_hardy_plants()
+    return render_template('winter_garden.html', plans=plans, plants=winter_plants)
+
+@app.route('/api/winter-plans', methods=['GET', 'POST'])
+def winter_plans():
+    """Get all winter plans or create new one"""
+    if request.method == 'POST':
+        data = request.json
+        plan = WinterPlan(
+            garden_bed_id=data['gardenBedId'],
+            technique=data['technique'],
+            protection_layers=data.get('protectionLayers', 1),
+            harvest_window_start=datetime.fromisoformat(data['harvestWindow']['start']),
+            harvest_window_end=datetime.fromisoformat(data['harvestWindow']['end']),
+            notes=data.get('notes', '')
+        )
+        plan.set_plant_list(data.get('plantList', []))
+        db.session.add(plan)
+        db.session.commit()
+        return jsonify(plan.to_dict()), 201
+
+    plans = WinterPlan.query.all()
+    return jsonify([plan.to_dict() for plan in plans])
+
+@app.route('/api/winter-plans/<int:plan_id>', methods=['DELETE'])
+def winter_plan(plan_id):
+    """Delete a winter plan"""
+    plan = WinterPlan.query.get_or_404(plan_id)
+    db.session.delete(plan)
+    db.session.commit()
+    return '', 204
+
+# ==================== WEATHER ROUTES ====================
+
+@app.route('/weather')
+def weather():
+    """Weather and alerts page"""
+    # Mock weather data for now
+    return render_template('weather.html')
+
+# ==================== COMPOST TRACKER ROUTES ====================
+
+@app.route('/compost-tracker')
+def compost_tracker():
+    """Compost tracker page"""
+    piles = CompostPile.query.all()
+    return render_template('compost_tracker.html',
+                         piles=piles,
+                         materials=COMPOST_MATERIALS)
+
+@app.route('/api/compost-piles', methods=['GET', 'POST'])
+def compost_piles():
+    """Get all compost piles or create new one"""
+    if request.method == 'POST':
+        data = request.json
+        pile = CompostPile(
+            name=data['name'],
+            location=data['location'],
+            width=data['size']['width'],
+            length=data['size']['length'],
+            height=data['size']['height'],
+            estimated_ready_date=datetime.now() + timedelta(days=90)
+        )
+        db.session.add(pile)
+        db.session.commit()
+        return jsonify(pile.to_dict()), 201
+
+    piles = CompostPile.query.all()
+    return jsonify([pile.to_dict() for pile in piles])
+
+@app.route('/api/compost-piles/<int:pile_id>', methods=['GET', 'PUT', 'DELETE'])
+def compost_pile(pile_id):
+    """Get, update, or delete a compost pile"""
+    pile = CompostPile.query.get_or_404(pile_id)
+
+    if request.method == 'DELETE':
+        db.session.delete(pile)
+        db.session.commit()
+        return '', 204
+
+    if request.method == 'PUT':
+        data = request.json
+        pile.status = data.get('status', pile.status)
+        pile.moisture = data.get('moisture', pile.moisture)
+        if data.get('lastTurned'):
+            pile.last_turned = datetime.now()
+        db.session.commit()
+
+    return jsonify(pile.to_dict())
+
+@app.route('/api/compost-piles/<int:pile_id>/ingredients', methods=['POST'])
+def add_compost_ingredient(pile_id):
+    """Add ingredient to compost pile"""
+    pile = CompostPile.query.get_or_404(pile_id)
+    data = request.json
+
+    material = COMPOST_MATERIALS.get(data['material'])
+    if not material:
+        return jsonify({'error': 'Invalid material'}), 400
+
+    ingredient = CompostIngredient(
+        compost_pile_id=pile_id,
+        name=data['material'],
+        amount=data['amount'],
+        type=material['type'],
+        cn_ratio=material['cnRatio']
+    )
+    db.session.add(ingredient)
+
+    # Recalculate C:N ratio
+    total_carbon = 0
+    total_nitrogen = 0
+    for ing in pile.ingredients:
+        carbon = (ing.cn_ratio * ing.amount) / 31
+        nitrogen = ing.amount / 31
+        total_carbon += carbon
+        total_nitrogen += nitrogen
+
+    # Add new ingredient
+    carbon = (ingredient.cn_ratio * ingredient.amount) / 31
+    nitrogen = ingredient.amount / 31
+    total_carbon += carbon
+    total_nitrogen += nitrogen
+
+    pile.cn_ratio = total_carbon / total_nitrogen if total_nitrogen > 0 else 30
+
+    db.session.commit()
+    return jsonify(pile.to_dict())
+
+# ==================== API ROUTES ====================
+
+@app.route('/api/plants')
+def get_plants():
+    """Get all plants"""
+    return jsonify(PLANT_DATABASE)
+
+@app.route('/api/plants/<plant_id>')
+def get_plant(plant_id):
+    """Get specific plant"""
+    plant = get_plant_by_id(plant_id)
+    if plant:
+        return jsonify(plant)
+    return jsonify({'error': 'Plant not found'}), 404
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
