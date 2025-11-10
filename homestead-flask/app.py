@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, send_file
 from flask_sqlalchemy import SQLAlchemy
-from models import db, GardenBed, PlantedItem, PlantingEvent, WinterPlan, CompostPile, CompostIngredient, Settings, Photo, HarvestRecord, SeedInventory
+from models import db, GardenBed, PlantedItem, PlantingEvent, WinterPlan, CompostPile, CompostIngredient, Settings, Photo, HarvestRecord, SeedInventory, Property, PlacedStructure
 from plant_database import PLANT_DATABASE, COMPOST_MATERIALS, get_plant_by_id, get_winter_hardy_plants
+from structures_database import STRUCTURES_DATABASE, STRUCTURE_CATEGORIES, get_structure_by_id
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from werkzeug.utils import secure_filename
@@ -555,6 +556,114 @@ def export_garden_plan(bed_id):
     p.save()
     buffer.seek(0)
     return send_file(buffer, as_attachment=True, download_name=f"{bed.name}_plan.pdf", mimetype='application/pdf')
+
+# ==================== PROPERTY DESIGNER ROUTES ====================
+
+@app.route('/property-designer')
+def property_designer():
+    """Property designer page - master homestead layout"""
+    properties = Property.query.all()
+    return render_template('property_designer.html',
+                         properties=properties,
+                         structures=STRUCTURES_DATABASE,
+                         categories=STRUCTURE_CATEGORIES)
+
+@app.route('/api/properties', methods=['GET', 'POST'])
+def properties():
+    """Get all properties or create new one"""
+    if request.method == 'POST':
+        data = request.json
+        prop = Property(
+            name=data['name'],
+            width=data['width'],
+            length=data['length'],
+            address=data.get('address', ''),
+            zone=data.get('zone', ''),
+            soil_type=data.get('soilType', ''),
+            slope=data.get('slope', 'flat'),
+            notes=data.get('notes', '')
+        )
+        db.session.add(prop)
+        db.session.commit()
+        return jsonify(prop.to_dict()), 201
+
+    props = Property.query.all()
+    return jsonify([p.to_dict() for p in props])
+
+@app.route('/api/properties/<int:property_id>', methods=['GET', 'PUT', 'DELETE'])
+def property_detail(property_id):
+    """Get, update, or delete a specific property"""
+    prop = Property.query.get_or_404(property_id)
+
+    if request.method == 'DELETE':
+        db.session.delete(prop)
+        db.session.commit()
+        return '', 204
+
+    if request.method == 'PUT':
+        data = request.json
+        prop.name = data.get('name', prop.name)
+        prop.width = data.get('width', prop.width)
+        prop.length = data.get('length', prop.length)
+        prop.address = data.get('address', prop.address)
+        prop.zone = data.get('zone', prop.zone)
+        prop.soil_type = data.get('soilType', prop.soil_type)
+        prop.slope = data.get('slope', prop.slope)
+        prop.notes = data.get('notes', prop.notes)
+        db.session.commit()
+
+    return jsonify(prop.to_dict())
+
+@app.route('/api/placed-structures', methods=['POST'])
+def add_placed_structure():
+    """Place a structure on the property"""
+    data = request.json
+    position = data.get('position', {})
+
+    structure = PlacedStructure(
+        property_id=data['propertyId'],
+        structure_id=data['structureId'],
+        name=data.get('name', ''),
+        position_x=position.get('x', 0),
+        position_y=position.get('y', 0),
+        rotation=data.get('rotation', 0),
+        notes=data.get('notes', ''),
+        cost=data.get('cost')
+    )
+    db.session.add(structure)
+    db.session.commit()
+    return jsonify(structure.to_dict()), 201
+
+@app.route('/api/placed-structures/<int:structure_id>', methods=['PUT', 'DELETE'])
+def placed_structure(structure_id):
+    """Update or delete a placed structure"""
+    structure = PlacedStructure.query.get_or_404(structure_id)
+
+    if request.method == 'DELETE':
+        db.session.delete(structure)
+        db.session.commit()
+        return '', 204
+
+    if request.method == 'PUT':
+        data = request.json
+        structure.name = data.get('name', structure.name)
+        position = data.get('position', {})
+        structure.position_x = position.get('x', structure.position_x)
+        structure.position_y = position.get('y', structure.position_y)
+        structure.rotation = data.get('rotation', structure.rotation)
+        structure.notes = data.get('notes', structure.notes)
+        structure.cost = data.get('cost', structure.cost)
+        db.session.commit()
+
+    return jsonify(structure.to_dict())
+
+@app.route('/api/structures')
+def get_structures():
+    """Get all available structure types"""
+    return jsonify({
+        'structures': STRUCTURES_DATABASE,
+        'categories': STRUCTURE_CATEGORIES
+    })
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
