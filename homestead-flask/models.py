@@ -321,3 +321,221 @@ class PlacedStructure(db.Model):
             'builtDate': self.built_date.isoformat() if self.built_date else None,
             'cost': self.cost
         }
+
+class Chicken(db.Model):
+    """Track individual chickens or flocks"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))  # Name or flock ID
+    breed = db.Column(db.String(100))
+    quantity = db.Column(db.Integer, default=1)  # Number of birds
+    hatch_date = db.Column(db.DateTime)
+    purpose = db.Column(db.String(50))  # eggs, meat, dual-purpose
+    sex = db.Column(db.String(20))  # hen, rooster, mixed
+    status = db.Column(db.String(20), default='active')  # active, sold, deceased
+    coop_location = db.Column(db.String(100))
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    egg_records = db.relationship('EggProduction', backref='flock', lazy=True, cascade='all, delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'breed': self.breed,
+            'quantity': self.quantity,
+            'hatchDate': self.hatch_date.isoformat() if self.hatch_date else None,
+            'purpose': self.purpose,
+            'sex': self.sex,
+            'status': self.status,
+            'coopLocation': self.coop_location,
+            'notes': self.notes,
+            'ageWeeks': self.get_age_weeks()
+        }
+
+    def get_age_weeks(self):
+        if not self.hatch_date:
+            return None
+        delta = datetime.utcnow() - self.hatch_date
+        return int(delta.days / 7)
+
+class EggProduction(db.Model):
+    """Daily egg production records"""
+    id = db.Column(db.Integer, primary_key=True)
+    chicken_id = db.Column(db.Integer, db.ForeignKey('chicken.id'), nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    eggs_collected = db.Column(db.Integer, nullable=False)
+    eggs_sold = db.Column(db.Integer, default=0)
+    eggs_eaten = db.Column(db.Integer, default=0)
+    eggs_incubated = db.Column(db.Integer, default=0)
+    notes = db.Column(db.Text)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'chickenId': self.chicken_id,
+            'date': self.date.isoformat() if self.date else None,
+            'eggsCollected': self.eggs_collected,
+            'eggsSold': self.eggs_sold,
+            'eggsEaten': self.eggs_eaten,
+            'eggsIncubated': self.eggs_incubated,
+            'notes': self.notes
+        }
+
+class Beehive(db.Model):
+    """Track beehives and honey production"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)  # Hive name/number
+    type = db.Column(db.String(50))  # Langstroth, Top Bar, Warre, etc.
+    install_date = db.Column(db.DateTime)
+    queen_marked = db.Column(db.Boolean, default=False)
+    queen_color = db.Column(db.String(20))  # Year color marking
+    status = db.Column(db.String(20), default='active')  # active, swarmed, dead, combined
+    location = db.Column(db.String(100))
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    inspections = db.relationship('HiveInspection', backref='hive', lazy=True, cascade='all, delete-orphan')
+    harvests = db.relationship('HoneyHarvest', backref='hive', lazy=True, cascade='all, delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'type': self.type,
+            'installDate': self.install_date.isoformat() if self.install_date else None,
+            'queenMarked': self.queen_marked,
+            'queenColor': self.queen_color,
+            'status': self.status,
+            'location': self.location,
+            'notes': self.notes
+        }
+
+class HiveInspection(db.Model):
+    """Beehive inspection records"""
+    id = db.Column(db.Integer, primary_key=True)
+    beehive_id = db.Column(db.Integer, db.ForeignKey('beehive.id'), nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    queen_seen = db.Column(db.Boolean)
+    eggs_seen = db.Column(db.Boolean)
+    brood_pattern = db.Column(db.String(20))  # excellent, good, spotty, poor
+    temperament = db.Column(db.String(20))  # calm, defensive, aggressive
+    population = db.Column(db.String(20))  # strong, medium, weak
+    honey_stores = db.Column(db.String(20))  # full, medium, low
+    pests_diseases = db.Column(db.Text)
+    actions_taken = db.Column(db.Text)
+    notes = db.Column(db.Text)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'beehiveId': self.beehive_id,
+            'date': self.date.isoformat() if self.date else None,
+            'queenSeen': self.queen_seen,
+            'eggsSeen': self.eggs_seen,
+            'broodPattern': self.brood_pattern,
+            'temperament': self.temperament,
+            'population': self.population,
+            'honeyStores': self.honey_stores,
+            'pestsDiseas': self.pests_diseases,
+            'actionsTaken': self.actions_taken,
+            'notes': self.notes
+        }
+
+class HoneyHarvest(db.Model):
+    """Honey harvest records"""
+    id = db.Column(db.Integer, primary_key=True)
+    beehive_id = db.Column(db.Integer, db.ForeignKey('beehive.id'), nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    frames_harvested = db.Column(db.Integer)
+    honey_weight = db.Column(db.Float)  # in pounds
+    wax_weight = db.Column(db.Float)  # in pounds
+    notes = db.Column(db.Text)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'beehiveId': self.beehive_id,
+            'date': self.date.isoformat() if self.date else None,
+            'framesHarvested': self.frames_harvested,
+            'honeyWeight': self.honey_weight,
+            'waxWeight': self.wax_weight,
+            'notes': self.notes
+        }
+
+class Livestock(db.Model):
+    """General livestock tracking (goats, sheep, pigs, etc.)"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    species = db.Column(db.String(50), nullable=False)  # goat, sheep, pig, cow, etc.
+    breed = db.Column(db.String(100))
+    tag_number = db.Column(db.String(50))  # Ear tag or ID
+    birth_date = db.Column(db.DateTime)
+    sex = db.Column(db.String(20))  # male, female, wether, etc.
+    purpose = db.Column(db.String(50))  # dairy, meat, fiber, breeding, pet
+    sire = db.Column(db.String(100))  # Father's name/ID
+    dam = db.Column(db.String(100))  # Mother's name/ID
+    status = db.Column(db.String(20), default='active')  # active, sold, butchered, deceased
+    location = db.Column(db.String(100))
+    weight = db.Column(db.Float)  # Current weight in lbs
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    health_records = db.relationship('HealthRecord', backref='animal', lazy=True, cascade='all, delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'species': self.species,
+            'breed': self.breed,
+            'tagNumber': self.tag_number,
+            'birthDate': self.birth_date.isoformat() if self.birth_date else None,
+            'sex': self.sex,
+            'purpose': self.purpose,
+            'sire': self.sire,
+            'dam': self.dam,
+            'status': self.status,
+            'location': self.location,
+            'weight': self.weight,
+            'notes': self.notes,
+            'ageMonths': self.get_age_months()
+        }
+
+    def get_age_months(self):
+        if not self.birth_date:
+            return None
+        delta = datetime.utcnow() - self.birth_date
+        return int(delta.days / 30)
+
+class HealthRecord(db.Model):
+    """Health and vet records for livestock"""
+    id = db.Column(db.Integer, primary_key=True)
+    livestock_id = db.Column(db.Integer, db.ForeignKey('livestock.id'), nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # vaccination, deworming, illness, injury, checkup
+    treatment = db.Column(db.String(200))
+    medication = db.Column(db.String(100))
+    dosage = db.Column(db.String(50))
+    veterinarian = db.Column(db.String(100))
+    cost = db.Column(db.Float)
+    next_due_date = db.Column(db.DateTime)  # For vaccinations/dewormings
+    notes = db.Column(db.Text)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'livestockId': self.livestock_id,
+            'date': self.date.isoformat() if self.date else None,
+            'type': self.type,
+            'treatment': self.treatment,
+            'medication': self.medication,
+            'dosage': self.dosage,
+            'veterinarian': self.veterinarian,
+            'cost': self.cost,
+            'nextDueDate': self.next_due_date.isoformat() if self.next_due_date else None,
+            'notes': self.notes
+        }
