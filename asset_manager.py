@@ -315,6 +315,55 @@ def api_delete_clothing(item_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@asset_manager.route('/api/clothing/upload-image', methods=['POST'])
+def api_upload_clothing_image():
+    """Upload image for a specific clothing item"""
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    item_id = request.form.get('item_id')
+    image_path = request.form.get('image_path')
+
+    if not item_id or not image_path:
+        return jsonify({'success': False, 'error': 'Missing item_id or image_path'}), 400
+
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'error': f'Invalid file type. Allowed: {", ".join(ALLOWED_EXTENSIONS)}'}), 400
+
+    try:
+        # Parse the image_path to get directory and filename
+        # e.g., "underwear/bra_lace_black.png" -> dir: "underwear", file: "bra_lace_black.png"
+        path_parts = image_path.split('/')
+        if len(path_parts) == 2:
+            category_dir = path_parts[0]
+            target_filename = path_parts[1]
+        else:
+            # If no directory, just use the filename
+            category_dir = 'other'
+            target_filename = image_path
+
+        # Upload to shared_clothing directory
+        upload_dir = os.path.join(UPLOAD_FOLDER, 'shared_clothing', category_dir)
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # Save with the exact filename from image_path
+        filepath = os.path.join(upload_dir, target_filename)
+        file.save(filepath)
+
+        return jsonify({
+            'success': True,
+            'message': f'Image uploaded successfully for {item_id}',
+            'path': f'/static/images/shared_clothing/{category_dir}/{target_filename}'
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @asset_manager.route('/api/upload/image', methods=['POST'])
 def api_upload_image():
     """Upload image file"""

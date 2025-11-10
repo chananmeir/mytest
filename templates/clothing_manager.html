@@ -554,6 +554,47 @@
         </div>
     </div>
 
+    <!-- Upload Image Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="uploadModalTitle">Upload Image</h2>
+                <button class="close-btn" onclick="closeUploadModal()">&times;</button>
+            </div>
+            <div style="margin-bottom: 20px; padding: 15px; background: #f7fafc; border-radius: 8px;">
+                <div style="font-weight: bold; margin-bottom: 5px;" id="uploadItemName"></div>
+                <div style="color: #718096; font-size: 0.9em;">
+                    File will be saved as: <code id="uploadFileName" style="background: white; padding: 2px 6px; border-radius: 3px;"></code>
+                </div>
+                <div style="color: #718096; font-size: 0.9em; margin-top: 8px;">
+                    📁 Location: <code style="background: white; padding: 2px 6px; border-radius: 3px;">shared_clothing/</code>
+                </div>
+            </div>
+            <form id="uploadImageForm" onsubmit="handleImageUpload(event)">
+                <input type="hidden" id="uploadItemId">
+                <input type="hidden" id="uploadImagePath">
+
+                <div class="form-group">
+                    <label>Image File *</label>
+                    <input type="file" id="uploadFile" accept="image/png,image/jpg,image/jpeg,image/webp" required
+                           style="width: 100%; padding: 10px; border: 2px dashed #cbd5e0; border-radius: 8px; background: #f7fafc;">
+                    <div style="margin-top: 8px; font-size: 0.85em; color: #718096;">
+                        Recommended: PNG with transparency. The file will be renamed to match the clothing item.
+                    </div>
+                </div>
+
+                <div id="imagePreview" style="margin: 20px 0; text-align: center; display: none;">
+                    <img id="previewImg" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeUploadModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success" style="flex: 1;">Upload Image</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         let allItems = {};
         let currentTags = [];
@@ -610,7 +651,7 @@
             grid.innerHTML = items.map(item => `
                 <div class="item-card">
                     <div class="item-image">
-                        ${item.image_path ? `<img src="/static/images/characters/general/${item.image_path}" onerror="this.style.display='none'" alt="${item.name}">` : '👔'}
+                        ${item.image_path ? `<img src="/static/images/shared_clothing/${item.image_path}" onerror="this.style.display='none'" alt="${item.name}">` : '👔'}
                     </div>
                     <div class="item-details">
                         <div class="item-name">${item.name}</div>
@@ -634,6 +675,7 @@
                         </div>
                         <div class="item-actions">
                             <button class="btn btn-secondary" onclick="viewItem('${item.id}')">View</button>
+                            <button class="btn btn-success" onclick="uploadImageForItem('${item.id}', '${item.name}', '${item.image_path}')">Upload Image</button>
                             <button class="btn btn-danger" onclick="deleteItem('${item.id}', '${item.name}')">Delete</button>
                         </div>
                     </div>
@@ -767,6 +809,82 @@
             container.appendChild(alert);
 
             setTimeout(() => alert.remove(), 5000);
+        }
+
+        function uploadImageForItem(itemId, itemName, imagePath) {
+            // Set modal info
+            document.getElementById('uploadItemId').value = itemId;
+            document.getElementById('uploadItemName').textContent = itemName;
+            document.getElementById('uploadImagePath').value = imagePath;
+
+            // Extract filename from path
+            const filename = imagePath.split('/').pop();
+            document.getElementById('uploadFileName').textContent = filename;
+
+            // Reset form
+            document.getElementById('uploadImageForm').reset();
+            document.getElementById('uploadItemId').value = itemId;
+            document.getElementById('uploadImagePath').value = imagePath;
+            document.getElementById('imagePreview').style.display = 'none';
+
+            // Add file preview handler
+            document.getElementById('uploadFile').onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('previewImg').src = e.target.result;
+                        document.getElementById('imagePreview').style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            // Show modal
+            document.getElementById('uploadModal').classList.add('active');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+        }
+
+        async function handleImageUpload(event) {
+            event.preventDefault();
+
+            const itemId = document.getElementById('uploadItemId').value;
+            const imagePath = document.getElementById('uploadImagePath').value;
+            const file = document.getElementById('uploadFile').files[0];
+
+            if (!file) {
+                showAlert('Please select a file', 'error');
+                return;
+            }
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('item_id', itemId);
+            formData.append('image_path', imagePath);
+
+            try {
+                const response = await fetch('/assets/api/clothing/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    closeUploadModal();
+                    loadItems(); // Reload to show new image
+                } else {
+                    showAlert('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showAlert('Upload failed. Please try again.', 'error');
+            }
         }
 
         // Initialize
