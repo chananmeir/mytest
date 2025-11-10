@@ -935,3 +935,8 @@ def health_records():
     records = HealthRecord.query.order_by(HealthRecord.date.desc()).limit(50).all()
     return jsonify([r.to_dict() for r in records])
 
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True, host='0.0.0.0', port=5000)
