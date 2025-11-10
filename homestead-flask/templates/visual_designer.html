@@ -207,6 +207,32 @@
     </div>
 </div>
 
+<!-- Planting Density Calculator -->
+<div class="row mb-4" id="densityCalculatorSection" style="display: none;">
+    <div class="col-12">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="bi bi-calculator"></i> Planting Density Calculator - How many plants fit?</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Select Plant:</label>
+                        <select class="form-select form-select-sm" id="densityPlant">
+                            <option value="">Choose plant...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <div id="densityResult" class="alert alert-success mb-0" style="display: none;">
+                            <!-- Results appear here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Garden Grid -->
 <div class="row mb-4" id="gridSection" style="display: none;">
     <div class="col-12">
@@ -284,18 +310,59 @@
             </div>
             <div class="modal-body">
                 <form id="addBedForm">
+                    <!-- Template Selection (Optional) -->
                     <div class="mb-3">
-                        <label class="form-label">Bed Name</label>
+                        <label class="form-label"><i class="bi bi-lightning-fill text-warning"></i> Quick Start with Template (Optional)</label>
+                        <select class="form-select" id="bedTemplate" onchange="loadTemplate()">
+                            <option value="">Create blank bed</option>
+                            <optgroup label="Square Foot Gardening">
+                                <option value="sfg-4x4-beginner">SFG 4x4 Beginner Mix</option>
+                                <option value="sfg-4x4-tomato-heavy">SFG 4x4 Tomato Lover</option>
+                            </optgroup>
+                            <optgroup label="Row Gardening">
+                                <option value="row-3x10-classic">Row Garden 3x10 Classic</option>
+                            </optgroup>
+                            <optgroup label="Intensive">
+                                <option value="intensive-4x8-production">Intensive 4x8 High Production</option>
+                            </optgroup>
+                            <optgroup label="Succession Planting">
+                                <option value="salad-greens-succession">Succession Salad Greens</option>
+                            </optgroup>
+                        </select>
+                        <small class="text-muted">Templates auto-fill plants and dimensions</small>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label">Bed Name *</label>
                         <input type="text" class="form-control" id="bedName" required>
                     </div>
+
+                    <!-- Planning Method Selection -->
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-diagram-3"></i> Planning Method *</label>
+                        <select class="form-select" id="bedMethod" onchange="updateMethodInfo()" required>
+                            <option value="square-foot">Square Foot Gardening (SFG)</option>
+                            <option value="row">Row Gardening (Traditional)</option>
+                            <option value="intensive">Intensive/Bio-intensive</option>
+                            <option value="raised-bed">Raised Bed (Flexible)</option>
+                            <option value="permaculture">Permaculture Zones</option>
+                            <option value="container">Container Gardening</option>
+                        </select>
+                        <div id="methodInfo" class="alert alert-info mt-2" style="font-size: 0.85em;">
+                            <strong>Square Foot Gardening:</strong> 1 ft grid squares, perfect for beginners. Easy tracking and maximum space efficiency.
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Width (feet)</label>
-                            <input type="number" class="form-control" id="bedWidth" value="4" min="2" max="20" required>
+                            <label class="form-label">Width (feet) *</label>
+                            <input type="number" class="form-control" id="bedWidth" value="4" min="2" max="20" step="0.5" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Length (feet)</label>
-                            <input type="number" class="form-control" id="bedLength" value="8" min="2" max="30" required>
+                            <label class="form-label">Length (feet) *</label>
+                            <input type="number" class="form-control" id="bedLength" value="8" min="2" max="30" step="0.5" required>
                         </div>
                     </div>
                     <div class="row">
@@ -309,7 +376,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Location</label>
-                            <input type="text" class="form-control" id="bedLocation" placeholder="e.g., Backyard" required>
+                            <input type="text" class="form-control" id="bedLocation" placeholder="e.g., Backyard">
                         </div>
                     </div>
                 </form>
@@ -425,8 +492,9 @@ function loadBed() {
     createGrid(width, length);
     loadExistingPlants(bedId);
     loadPlantPalette();
+    initDensityCalculator();
 
-    $('#plantPaletteSection, #gridSection').show();
+    $('#plantPaletteSection, #gridSection, #densityCalculatorSection').show();
 }
 
 // Create grid
@@ -696,6 +764,103 @@ function clearGrid() {
     }
 }
 
+// Initialize density calculator
+function initDensityCalculator() {
+    const dropdown = $('#densityPlant');
+    dropdown.empty().append('<option value="">Choose plant...</option>');
+
+    // Populate with all plants
+    plants.forEach(plant => {
+        dropdown.append(`<option value="${plant.id}">${plant.name}</option>`);
+    });
+
+    // Calculate density when plant is selected
+    dropdown.off('change').on('change', function() {
+        calculatePlantDensity($(this).val());
+    });
+}
+
+// Calculate planting density
+function calculatePlantDensity(plantId) {
+    if (!plantId || !currentBed) {
+        $('#densityResult').hide();
+        return;
+    }
+
+    $.ajax({
+        url: '/api/spacing-calculator',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            plantId: plantId,
+            bedWidth: currentBed.width,
+            bedLength: currentBed.length,
+            method: currentBed.planningMethod || 'square-foot'
+        }),
+        success: function(result) {
+            const plant = plants.find(p => p.id === plantId);
+            let html = `<strong>${plant.name}</strong> in ${currentBed.width}' × ${currentBed.length}' bed using <strong>${result.method}</strong> method:<br>`;
+
+            if (result.method === 'square-foot') {
+                html += `<i class="bi bi-check-circle text-success"></i> <strong>${result.perSquare}</strong> plants per square foot = <strong>${result.totalPlants} total plants</strong>`;
+            } else if (result.method === 'row') {
+                html += `<i class="bi bi-check-circle text-success"></i> ${result.numRows} rows × ${result.plantsPerRow} plants = <strong>${result.totalPlants} total plants</strong><br>`;
+                html += `<small>Row spacing: ${result.rowSpacing}", Plant spacing: ${result.plantSpacing}"</small>`;
+            } else if (result.method === 'intensive') {
+                html += `<i class="bi bi-check-circle text-success"></i> Hexagonal spacing at ${result.spacing}" = <strong>${result.totalPlants} total plants</strong>`;
+            }
+
+            $('#densityResult').html(html).show();
+        },
+        error: function() {
+            $('#densityResult').html('<i class="bi bi-exclamation-triangle"></i> Unable to calculate spacing for this plant.').show();
+        }
+    });
+}
+
+// Method info descriptions
+const METHOD_INFO = {
+    'square-foot': '<strong>Square Foot Gardening (SFG):</strong> 1 ft grid squares, perfect for beginners. Easy tracking and maximum space efficiency. Ideal for 3x3, 4x4, or 4x8 beds.',
+    'row': '<strong>Row Gardening:</strong> Traditional method with rows and paths between. Good for larger spaces and mechanical cultivation. Rows are 12-36" apart.',
+    'intensive': '<strong>Intensive/Bio-intensive:</strong> Hexagonal spacing for maximum yield. Requires 24" deep double-dug beds. Best for experienced gardeners focused on sustainability.',
+    'raised-bed': '<strong>Raised Bed:</strong> Flexible method for various heights (6-24"+). Better drainage, warmer soil, and easier access. Can use any planting method inside.',
+    'permaculture': '<strong>Permaculture Zones:</strong> Zone-based planning with perennials and guilds. Mimics nature with low maintenance. Focus on mature plant size and companion planting.',
+    'container': '<strong>Container Gardening:</strong> Pots, buckets, and containers. Perfect for patios, balconies, or renters. Mobile and flexible - move with sun or bring indoors.'
+};
+
+// Update method info when method changes
+function updateMethodInfo() {
+    const method = $('#bedMethod').val();
+    const info = METHOD_INFO[method] || '';
+    $('#methodInfo').html(info);
+
+    // Update default dimensions based on method
+    if (method === 'square-foot') {
+        $('#bedWidth').val(4);
+        $('#bedLength').val(4);
+    } else if (method === 'row') {
+        $('#bedWidth').val(3);
+        $('#bedLength').val(10);
+    } else if (method === 'intensive') {
+        $('#bedWidth').val(4);
+        $('#bedLength').val(8);
+    }
+}
+
+// Load template and auto-fill form
+function loadTemplate() {
+    const templateId = $('#bedTemplate').val();
+    if (!templateId) return;
+
+    $.get('/api/bed-templates/' + templateId, function(template) {
+        $('#bedName').val(template.name);
+        $('#bedWidth').val(template.bedSize.width);
+        $('#bedLength').val(template.bedSize.length);
+        $('#bedMethod').val(template.method);
+        updateMethodInfo();
+    });
+}
+
 // Create new bed
 function createBed() {
     const data = {
@@ -703,7 +868,8 @@ function createBed() {
         width: parseFloat($('#bedWidth').val()),
         length: parseFloat($('#bedLength').val()),
         location: $('#bedLocation').val(),
-        sunExposure: $('#bedSun').val()
+        sunExposure: $('#bedSun').val(),
+        planningMethod: $('#bedMethod').val()
     };
 
     $.ajax({

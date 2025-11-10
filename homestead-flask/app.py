@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from models import db, GardenBed, PlantedItem, PlantingEvent, WinterPlan, CompostPile, CompostIngredient, Settings, Photo, HarvestRecord, SeedInventory, Property, PlacedStructure, Chicken, EggProduction, Beehive, HiveInspection, HoneyHarvest, Livestock, HealthRecord
 from plant_database import PLANT_DATABASE, COMPOST_MATERIALS, get_plant_by_id, get_winter_hardy_plants
 from structures_database import STRUCTURES_DATABASE, STRUCTURE_CATEGORIES, get_structure_by_id
+from garden_methods import GARDEN_METHODS, BED_TEMPLATES, PLANT_GUILDS, get_sfg_quantity, get_row_spacing, get_intensive_spacing, calculate_plants_per_bed, get_methods_list, get_template_by_id, get_guild_by_id
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from werkzeug.utils import secure_filename
@@ -59,12 +60,19 @@ def garden_beds():
     """Get all garden beds or create new one"""
     if request.method == 'POST':
         data = request.json
+        planning_method = data.get('planningMethod', 'square-foot')
+
+        # Get grid size based on method
+        grid_size = GARDEN_METHODS.get(planning_method, {}).get('gridSize', 12)
+
         bed = GardenBed(
             name=data['name'],
             width=data['width'],
             length=data['length'],
             location=data.get('location', ''),
-            sun_exposure=data.get('sunExposure', 'full')
+            sun_exposure=data.get('sunExposure', 'full'),
+            planning_method=planning_method,
+            grid_size=grid_size
         )
         db.session.add(bed)
         db.session.commit()
@@ -90,9 +98,142 @@ def garden_bed(bed_id):
         bed.length = data.get('length', bed.length)
         bed.location = data.get('location', bed.location)
         bed.sun_exposure = data.get('sunExposure', bed.sun_exposure)
+        bed.planning_method = data.get('planningMethod', bed.planning_method)
+        bed.grid_size = data.get('gridSize', bed.grid_size)
         db.session.commit()
 
     return jsonify(bed.to_dict())
+
+# ==================== GARDEN PLANNING METHODS ROUTES ====================
+
+@app.route('/api/garden-methods')
+def get_garden_methods():
+    """Get all available garden planning methods"""
+    return jsonify({
+        'methods': get_methods_list(),
+        'details': GARDEN_METHODS
+    })
+
+@app.route('/api/garden-methods/<method_id>')
+def get_garden_method(method_id):
+    """Get details for a specific garden planning method"""
+    method = GARDEN_METHODS.get(method_id)
+    if not method:
+        return jsonify({'error': 'Method not found'}), 404
+    return jsonify(method)
+
+@app.route('/api/bed-templates')
+def get_bed_templates():
+    """Get all bed templates"""
+    return jsonify(BED_TEMPLATES)
+
+@app.route('/api/bed-templates/<template_id>')
+def get_bed_template(template_id):
+    """Get a specific bed template"""
+    template = get_template_by_id(template_id)
+    if not template:
+        return jsonify({'error': 'Template not found'}), 404
+    return jsonify(template)
+
+@app.route('/api/plant-guilds')
+def get_plant_guilds():
+    """Get all plant guilds"""
+    return jsonify(PLANT_GUILDS)
+
+@app.route('/api/plant-guilds/<guild_id>')
+def get_plant_guild(guild_id):
+    """Get a specific plant guild"""
+    guild = get_guild_by_id(guild_id)
+    if not guild:
+        return jsonify({'error': 'Guild not found'}), 404
+    return jsonify(guild)
+
+@app.route('/api/spacing-calculator', methods=['POST'])
+def calculate_spacing():
+    """Calculate plant spacing and quantity for a bed"""
+    data = request.json
+    plant_id = data.get('plantId')
+    bed_width = data.get('bedWidth')
+    bed_length = data.get('bedLength')
+    method = data.get('method', 'square-foot')
+
+    if method == 'square-foot':
+        quantity = get_sfg_quantity(plant_id)
+        squares = bed_width * bed_length
+        total = squares * quantity
+        return jsonify({
+            'method': 'square-foot',
+            'perSquare': quantity,
+            'totalSquares': squares,
+            'totalPlants': total,
+            'gridSize': 12
+        })
+
+    elif method == 'row':
+        spacing = get_row_spacing(plant_id)
+        bed_width_inches = bed_width * 12
+        bed_length_inches = bed_length * 12
+        num_rows = int(bed_width_inches / spacing['rowSpacing'])
+        plants_per_row = int(bed_length_inches / spacing['plantSpacing'])
+        total = num_rows * plants_per_row
+        return jsonify({
+            'method': 'row',
+            'rowSpacing': spacing['rowSpacing'],
+            'plantSpacing': spacing['plantSpacing'],
+            'numRows': num_rows,
+            'plantsPerRow': plants_per_row,
+            'totalPlants': total
+        })
+
+    elif method == 'intensive':
+        spacing_inches = get_intensive_spacing(plant_id)
+        total = calculate_plants_per_bed(bed_width, bed_length, plant_id, 'intensive')
+        return jsonify({
+            'method': 'intensive',
+            'spacing': spacing_inches,
+            'totalPlants': total,
+            'pattern': 'hexagonal'
+        })
+
+    return jsonify({'error': 'Invalid method'}), 400
+
+@app.route('/api/apply-template', methods=['POST'])
+def apply_template():
+    """Apply a bed template to create a new bed with pre-populated plants"""
+    data = request.json
+    template_id = data.get('templateId')
+    custom_name = data.get('name')
+
+    template = get_template_by_id(template_id)
+    if not template:
+        return jsonify({'error': 'Template not found'}), 404
+
+    # Create the bed
+    bed = GardenBed(
+        name=custom_name or template['name'],
+        width=template['bedSize']['width'],
+        length=template['bedSize']['length'],
+        planning_method=template['method'],
+        grid_size=GARDEN_METHODS[template['method']]['gridSize']
+    )
+    db.session.add(bed)
+    db.session.flush()  # Get the bed ID
+
+    # Add the plants from template
+    if 'plants' in template:
+        for plant_data in template['plants']:
+            item = PlantedItem(
+                garden_bed_id=bed.id,
+                plant_id=plant_data['plantId'],
+                position_row=plant_data['position']['row'],
+                position_col=plant_data['position']['col'],
+                quantity=plant_data['quantity'],
+                planted_date=datetime.utcnow()
+            )
+            db.session.add(item)
+
+    db.session.commit()
+    return jsonify(bed.to_dict()), 201
 
 @app.route('/api/planted-items', methods=['POST'])
 def add_planted_item():

@@ -11,6 +11,8 @@ class GardenBed(db.Model):
     length = db.Column(db.Float, nullable=False)
     location = db.Column(db.String(200))
     sun_exposure = db.Column(db.String(20))  # full, partial, shade
+    planning_method = db.Column(db.String(50), default='square-foot')  # square-foot, row, intensive, raised-bed, permaculture, container
+    grid_size = db.Column(db.Integer, default=12)  # inches per grid cell
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -24,6 +26,8 @@ class GardenBed(db.Model):
             'length': self.length,
             'location': self.location,
             'sunExposure': self.sun_exposure,
+            'planningMethod': self.planning_method,
+            'gridSize': self.grid_size,
             'plants': [item.to_dict() for item in self.planted_items]
         }
 
