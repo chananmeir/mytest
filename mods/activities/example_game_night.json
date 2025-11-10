@@ -1,0 +1,113 @@
+{
+  "metadata": {
+    "mod_id": "activity_family_game_night",
+    "name": "Family Game Night",
+    "version": "1.0.0",
+    "author": "Example Modder",
+    "description": "Host a family game night to build rapport with multiple family members at once. Creates bonding opportunities and can be used to subtly plant suggestions during relaxed moments.",
+    "mod_type": "activity",
+    "dependencies": [],
+    "compatible_game_version": "1.0",
+    "tags": ["activity", "family", "social", "group"]
+  },
+  "activity_data": {
+    "activity_id": "family_game_night",
+    "name": "Host Family Game Night",
+    "description": "Gather the family for board games and fun. Everyone participates, creating a relaxed atmosphere perfect for bonding... or manipulation.",
+    "duration_minutes": 120,
+    "available_locations": ["living_room", "family_room"],
+    "available_times": ["evening"],
+    "sp_cost": 2,
+    "money_cost": 0,
+    "participants": {
+      "required": ["player"],
+      "optional": ["Ruth", "Tom", "Dawn", "Melanie", "Derek", "Vanessa"]
+    },
+    "rapport_effects": {
+      "all_participants": 2,
+      "if_player_wins": {
+        "Ruth": 1,
+        "Tom": 1
+      },
+      "if_player_loses_gracefully": {
+        "Dawn": 2,
+        "Melanie": 1
+      }
+    },
+    "emotional_effects": {
+      "all_participants": "relaxed"
+    },
+    "suspicion_effects": {
+      "all_participants": -5
+    },
+    "special_mechanics": {
+      "phs_opportunity": true,
+      "phs_success_bonus": 15,
+      "phs_detection_risk": 20,
+      "description": "During relaxed game play, participants are more receptive to subtle suggestions",
+      "allows_group_suggestion": true,
+      "max_group_suggestion_targets": 3
+    },
+    "unlock_conditions": {
+      "min_game_day": 2,
+      "min_average_rapport": 5,
+      "required_time": "evening",
+      "cooldown_hours": 48
+    },
+    "dialogue": {
+      "start": "You suggest a family game night. Everyone seems interested!",
+      "during": {
+        "positive": [
+          "Everyone's laughing and having a great time!",
+          "Ruth: 'This was a wonderful idea!'",
+          "Tom: 'We should do this more often.'"
+        ],
+        "phs_opportunity": "During a quiet moment between rounds, you lean in close to {target}...",
+        "high_tension": "The competitive spirit is making things a bit tense..."
+      },
+      "end": {
+        "success": "What a great evening! Everyone had fun and feels closer to you.",
+        "phs_success": "You successfully planted a suggestion during the relaxed atmosphere. No one noticed.",
+        "phs_caught": "{observer} gives you a strange look. Did they notice something odd?",
+        "partial": "The game night was fun, but not everyone participated fully."
+      }
+    },
+    "outcomes": [
+      {
+        "outcome_id": "great_success",
+        "probability": 30,
+        "conditions": {
+          "min_average_rapport": 8
+        },
+        "effects": {
+          "rapport_bonus": 1,
+          "sp_gain": 3,
+          "unlock_followup": "family_game_night_tradition"
+        },
+        "message": "The night was such a success that game nights might become a family tradition!"
+      },
+      {
+        "outcome_id": "argument_breaks_out",
+        "probability": 15,
+        "conditions": {
+          "max_average_rapport": 4,
+          "or_alliance_present": true
+        },
+        "effects": {
+          "rapport_loss": -2,
+          "suspicion_gain": 5,
+          "emotional_state_change": "frustrated"
+        },
+        "message": "Competitive tensions boil over into a real argument. The mood is ruined."
+      },
+      {
+        "outcome_id": "normal_fun",
+        "probability": 55,
+        "effects": {
+          "as_defined": true
+        },
+        "message": "A pleasant evening with the family. Everyone had fun!"
+      }
+    ]
+  }
+}

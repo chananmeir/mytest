@@ -1,0 +1,535 @@
+{
+  "metadata": {
+    "mod_id": "scenario_weekend_cabin",
+    "name": "Weekend at the Cabin",
+    "version": "1.0.0",
+    "author": "Example Modder",
+    "description": "A 3-day weekend getaway to a remote family cabin. Isolated location creates unique opportunities and challenges. Can you manipulate the entire family before returning home?",
+    "mod_type": "scenario",
+    "dependencies": [],
+    "compatible_game_version": "1.0",
+    "tags": ["scenario", "challenge", "story", "isolated"]
+  },
+  "scenario_data": {
+    "scenario_id": "weekend_cabin_getaway",
+    "title": "Weekend at the Cabin",
+    "subtitle": "3 days. 1 cabin. Unlimited opportunities.",
+    "description": "The family has decided to spend a long weekend at Ruth's family cabin in the mountains. No neighbors, no internet, no escape. It's just you and the family... and your hypnotic powers.",
+    "duration_days": 3,
+    "difficulty": "intermediate",
+    "starting_conditions": {
+      "game_day": 1,
+      "game_time": "09:00",
+      "location": "cabin_main_room",
+      "player_sp": 20,
+      "player_money": 100,
+      "characters": {
+        "Ruth": {
+          "rapport": 7,
+          "suspicion": 10,
+          "emotional_state": "relaxed",
+          "present": true
+        },
+        "Tom": {
+          "rapport": 6,
+          "suspicion": 5,
+          "emotional_state": "comfortable",
+          "present": true
+        },
+        "Dawn": {
+          "rapport": 5,
+          "suspicion": 15,
+          "emotional_state": "cautious",
+          "present": true
+        },
+        "Melanie": {
+          "rapport": 8,
+          "suspicion": 8,
+          "emotional_state": "excited",
+          "present": true
+        },
+        "Derek": {
+          "rapport": 6,
+          "suspicion": 3,
+          "emotional_state": "bored",
+          "present": true
+        },
+        "Vanessa": {
+          "rapport": 4,
+          "suspicion": 20,
+          "emotional_state": "annoyed",
+          "present": true
+        }
+      },
+      "initial_phs": 0,
+      "initial_alliances": 0
+    },
+    "objectives": {
+      "primary": [
+        {
+          "id": "cabin_master",
+          "title": "Cabin Master",
+          "description": "Plant at least 5 PHS before the weekend ends",
+          "type": "phs_count",
+          "target": 5,
+          "reward_sp": 10,
+          "reward_money": 0
+        }
+      ],
+      "secondary": [
+        {
+          "id": "universal_trust",
+          "title": "Universal Trust",
+          "description": "Have 10+ rapport with every family member",
+          "type": "rapport_threshold",
+          "target": 10,
+          "characters": "all",
+          "reward_sp": 15,
+          "reward_money": 0
+        },
+        {
+          "id": "zero_suspicion",
+          "title": "Master of Stealth",
+          "description": "Keep all suspicion below 20% for entire weekend",
+          "type": "suspicion_threshold",
+          "target": 20,
+          "mode": "max",
+          "reward_sp": 20,
+          "reward_money": 0
+        },
+        {
+          "id": "all_scenes_complete",
+          "title": "Story Explorer",
+          "description": "Experience all 8 cabin scenes",
+          "type": "scenes_complete",
+          "target": 8,
+          "reward_sp": 5,
+          "reward_money": 0
+        }
+      ],
+      "hidden": [
+        {
+          "id": "secret_romance",
+          "title": "Forbidden Connection",
+          "description": "Achieve 15+ rapport with Dawn (she's usually resistant)",
+          "type": "rapport_threshold",
+          "target": 15,
+          "characters": ["Dawn"],
+          "reward_sp": 25,
+          "reward_money": 0
+        }
+      ]
+    },
+    "custom_locations": [
+      {
+        "id": "cabin_main_room",
+        "name": "Cabin Main Room",
+        "description": "Rustic living room with fireplace, comfortable couches, and family photos on the walls",
+        "privacy_level": 2,
+        "typical_occupants": ["Ruth", "Tom"],
+        "activities_available": ["talk", "hypnosis", "fireplace_chat", "board_games"]
+      },
+      {
+        "id": "cabin_kitchen",
+        "name": "Cabin Kitchen",
+        "description": "Small but cozy kitchen. Cooking together is a bonding opportunity",
+        "privacy_level": 4,
+        "typical_occupants": ["Ruth", "Melanie"],
+        "activities_available": ["talk", "cook_together", "coffee_chat"]
+      },
+      {
+        "id": "cabin_deck",
+        "name": "Deck Overlooking Lake",
+        "description": "Beautiful deck with stunning lake views. Very private",
+        "privacy_level": 8,
+        "typical_occupants": [],
+        "activities_available": ["talk", "hypnosis", "stargazing", "morning_coffee"],
+        "special": "High privacy - perfect for manipulation"
+      },
+      {
+        "id": "cabin_dock",
+        "name": "Boat Dock",
+        "description": "Weathered dock extending into the lake. Peaceful and isolated",
+        "privacy_level": 9,
+        "typical_occupants": ["Derek"],
+        "activities_available": ["talk", "hypnosis", "fishing", "swimming"],
+        "special": "Maximum privacy when alone"
+      },
+      {
+        "id": "hiking_trail",
+        "name": "Mountain Trail",
+        "description": "Hiking trail through the woods. Pairs often walk together",
+        "privacy_level": 10,
+        "typical_occupants": [],
+        "activities_available": ["talk", "hypnosis", "hike"],
+        "special": "Perfect for one-on-one PHS (no witnesses possible)"
+      },
+      {
+        "id": "shared_bedroom",
+        "name": "Shared Bedroom",
+        "description": "You're sharing a bedroom with Derek. Late night conversations possible",
+        "privacy_level": 7,
+        "typical_occupants": ["Derek"],
+        "time_restrictions": ["night"],
+        "activities_available": ["talk", "hypnosis", "late_night_chat"]
+      }
+    ],
+    "scenes": [
+      {
+        "scene_id": "arrival",
+        "title": "Arrival at the Cabin",
+        "trigger": "scenario_start",
+        "description": "The family arrives at the cabin. Everyone's unpacking and settling in. First impressions matter.",
+        "participants": ["Ruth", "Tom", "Dawn", "Melanie", "Derek", "Vanessa"],
+        "location": "cabin_main_room",
+        "duration_minutes": 30,
+        "forced": true,
+        "choices": [
+          {
+            "id": "help_everyone",
+            "text": "Help everyone unpack and get settled",
+            "effects": {
+              "rapport": {"all": 1},
+              "emotional_state": {"all": "grateful"}
+            }
+          },
+          {
+            "id": "help_ruth_only",
+            "text": "Focus on helping Ruth (show special attention)",
+            "effects": {
+              "rapport": {"Ruth": 3},
+              "suspicion": {"Dawn": 5, "Vanessa": 3}
+            }
+          },
+          {
+            "id": "explore_alone",
+            "text": "Explore the cabin while others unpack",
+            "effects": {
+              "rapport": {"all": -1},
+              "unlock_location": "cabin_attic",
+              "find_item": "old_family_photos"
+            }
+          }
+        ]
+      },
+      {
+        "scene_id": "first_night_campfire",
+        "title": "Campfire Stories",
+        "trigger": "day_1_evening",
+        "description": "The family gathers around a campfire. Stories are being shared in the flickering firelight.",
+        "participants": ["all"],
+        "location": "cabin_deck",
+        "duration_minutes": 60,
+        "forced": false,
+        "phs_opportunity": true,
+        "phs_bonus": 20,
+        "choices": [
+          {
+            "id": "share_emotional_story",
+            "text": "Share a deep, emotional story from your past",
+            "sp_cost": 3,
+            "effects": {
+              "rapport": {"all": 2},
+              "emotional_state": {"all": "moved"}
+            }
+          },
+          {
+            "id": "plant_group_phs",
+            "text": "Plant group suggestion in the firelight [8 SP]",
+            "sp_cost": 8,
+            "requires_rapport": 7,
+            "effects": {
+              "phs_planted": ["Ruth", "Tom", "Melanie"],
+              "detection_risk": 30
+            }
+          },
+          {
+            "id": "listen_quietly",
+            "text": "Just listen and enjoy the moment",
+            "effects": {
+              "sp_gain": 5,
+              "emotional_state": {"player": "peaceful"}
+            }
+          }
+        ]
+      },
+      {
+        "scene_id": "dawn_morning_dock",
+        "title": "Dawn's Morning Meditation",
+        "trigger": "day_2_morning_if_rapport_dawn_gte_7",
+        "description": "You find Dawn alone on the dock at sunrise, meditating. She doesn't notice you approach.",
+        "participants": ["Dawn"],
+        "location": "cabin_dock",
+        "duration_minutes": 15,
+        "forced": false,
+        "rare": true,
+        "phs_opportunity": true,
+        "phs_bonus": 35,
+        "detection_risk": 15,
+        "choices": [
+          {
+            "id": "join_meditation",
+            "text": "Quietly join her meditation",
+            "effects": {
+              "rapport": {"Dawn": 4},
+              "emotional_state": {"Dawn": "peaceful"},
+              "unlock_scene": "dawn_trust_conversation"
+            }
+          },
+          {
+            "id": "phs_during_trance",
+            "text": "Plant PHS while she's in meditative trance [5 SP]",
+            "sp_cost": 5,
+            "effects": {
+              "phs_planted": ["Dawn"],
+              "phs_type": "deep",
+              "detection_risk": 15
+            }
+          },
+          {
+            "id": "leave_her_alone",
+            "text": "Respect her privacy and leave",
+            "effects": {
+              "rapport": {"Dawn": 1},
+              "karma_good": 1
+            }
+          }
+        ]
+      },
+      {
+        "scene_id": "hiking_accident",
+        "title": "The Twisted Ankle",
+        "trigger": "day_2_if_activity_hike",
+        "description": "During a hike, [random_character] twists their ankle. They need help getting back.",
+        "participants": ["random"],
+        "location": "hiking_trail",
+        "duration_minutes": 45,
+        "forced": false,
+        "crisis": true,
+        "choices": [
+          {
+            "id": "carry_them_back",
+            "text": "Carry them back to the cabin (heroic)",
+            "effects": {
+              "rapport": {"target": 5, "observers": 2},
+              "emotional_state": {"target": "grateful"},
+              "sp_cost": 5
+            }
+          },
+          {
+            "id": "phs_while_helping",
+            "text": "Plant PHS while they're vulnerable [4 SP]",
+            "sp_cost": 4,
+            "effects": {
+              "phs_planted": ["target"],
+              "phs_bonus": 25,
+              "detection_risk": 25,
+              "rapport": {"target": 3}
+            }
+          },
+          {
+            "id": "get_help",
+            "text": "Run back to get help",
+            "effects": {
+              "rapport": {"target": 1},
+              "time_cost": 30
+            }
+          }
+        ]
+      },
+      {
+        "scene_id": "vanessa_confrontation",
+        "trigger": "if_vanessa_suspicion_gte_35",
+        "description": "Vanessa corners you alone. 'I've been watching you. You're manipulating everyone, aren't you?'",
+        "participants": ["Vanessa"],
+        "location": "random_private",
+        "duration_minutes": 20,
+        "forced": true,
+        "crisis": true,
+        "high_stakes": true,
+        "choices": [
+          {
+            "id": "deny_everything",
+            "text": "Deny everything and act offended",
+            "success_chance": 40,
+            "effects_success": {
+              "suspicion": {"Vanessa": -10},
+              "rapport": {"Vanessa": -2}
+            },
+            "effects_failure": {
+              "suspicion": {"Vanessa": 20},
+              "alliance_formed": ["Vanessa", "Dawn"],
+              "game_over_risk": 30
+            }
+          },
+          {
+            "id": "phs_emergency",
+            "text": "Emergency PHS to make her forget [10 SP]",
+            "sp_cost": 10,
+            "requires_rapport": 5,
+            "success_chance": 60,
+            "effects_success": {
+              "phs_planted": ["Vanessa"],
+              "phs_type": "forget_suspicion",
+              "suspicion": {"Vanessa": 0}
+            },
+            "effects_failure": {
+              "suspicion": {"Vanessa": 40},
+              "rapport": {"Vanessa": -5},
+              "alert_all": true,
+              "game_over": true
+            }
+          },
+          {
+            "id": "partial_truth",
+            "text": "Admit you've been trying to help, not manipulate",
+            "success_chance": 70,
+            "requires_rapport": 8,
+            "effects_success": {
+              "suspicion": {"Vanessa": -15},
+              "rapport": {"Vanessa": 3},
+              "emotional_state": {"Vanessa": "understanding"}
+            },
+            "effects_failure": {
+              "suspicion": {"Vanessa": 10},
+              "rapport": {"Vanessa": -3}
+            }
+          }
+        ]
+      },
+      {
+        "scene_id": "last_night_together",
+        "title": "Last Night at the Cabin",
+        "trigger": "day_3_evening",
+        "description": "The final evening. Tomorrow you return to normal life. Everyone's gathered one last time.",
+        "participants": ["all"],
+        "location": "cabin_main_room",
+        "duration_minutes": 90,
+        "forced": true,
+        "finale": true,
+        "choices": [
+          {
+            "id": "heartfelt_speech",
+            "text": "Give heartfelt speech about family bonding",
+            "effects": {
+              "rapport": {"all": 3},
+              "suspicion": {"all": -5},
+              "scenario_bonus": "family_harmony"
+            }
+          },
+          {
+            "id": "final_phs_push",
+            "text": "One last group manipulation [15 SP]",
+            "sp_cost": 15,
+            "effects": {
+              "phs_planted": ["all_vulnerable"],
+              "detection_risk": 40,
+              "high_reward": true
+            }
+          },
+          {
+            "id": "reflect_quietly",
+            "text": "Just enjoy the moment without manipulation",
+            "effects": {
+              "sp_gain": 10,
+              "karma_good": 3,
+              "unlock_ending": "pure_family_bond"
+            }
+          }
+        ]
+      }
+    ],
+    "win_conditions": [
+      {
+        "id": "standard_win",
+        "name": "Successful Weekend",
+        "requirements": {
+          "min_phs": 3,
+          "max_game_over": 0,
+          "complete_scenario": true
+        },
+        "rewards": {
+          "sp": 20,
+          "money": 0,
+          "unlock_achievement": "cabin_manipulator"
+        }
+      },
+      {
+        "id": "perfect_win",
+        "name": "Perfect Cabin Master",
+        "requirements": {
+          "min_phs": 6,
+          "min_average_rapport": 10,
+          "max_average_suspicion": 15,
+          "all_primary_objectives": true,
+          "all_secondary_objectives": true
+        },
+        "rewards": {
+          "sp": 50,
+          "money": 0,
+          "unlock_achievement": "cabin_master_perfect",
+          "unlock_scenario": "scenario_week_long_vacation"
+        }
+      }
+    ],
+    "fail_conditions": [
+      {
+        "id": "exposed",
+        "name": "Caught and Exposed",
+        "trigger": "suspicion_threshold_exceeded",
+        "threshold": 60,
+        "description": "Your manipulation has been exposed. The family is turning against you."
+      },
+      {
+        "id": "alliance_intervention",
+        "name": "Family Intervention",
+        "trigger": "alliance_strength_gte_70",
+        "description": "Family members have banded together against you. The weekend ends early."
+      }
+    ],
+    "special_rules": {
+      "isolated_location": {
+        "no_visitors": true,
+        "no_leaving": true,
+        "description": "No one can leave or arrive. It's just you and the family."
+      },
+      "enhanced_observation": {
+        "description": "Living in close quarters means everyone notices more",
+        "observation_chance_modifier": 15
+      },
+      "time_pressure": {
+        "description": "Only 3 days to accomplish your goals",
+        "time_limited": true,
+        "max_game_days": 3
+      },
+      "privacy_opportunities": {
+        "description": "Isolated locations provide better PHS opportunities",
+        "location_bonus": {
+          "hiking_trail": 25,
+          "cabin_dock": 20,
+          "cabin_deck": 15
+        }
+      }
+    },
+    "custom_events": [
+      {
+        "event_id": "cabin_thunderstorm",
+        "probability": 30,
+        "trigger": "any_evening",
+        "description": "A thunderstorm knocks out power. Candles and darkness create atmosphere.",
+        "effects": {
+          "phs_bonus_all": 20,
+          "detection_risk_reduction": 15,
+          "emotional_vulnerability_increase": true
+        }
+      },
+      {
+        "event_id": "supply_run_needed",
+        "probability": 20,
+        "trigger": "day_2",
+        "description": "Someone needs to drive to town for supplies. Good opportunity for one-on-one time.",
+        "creates_opportunity": true
+      }
+    ]
+  }
+}

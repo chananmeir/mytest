@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI Elements Manager</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .header {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: #333; font-size: 2em; }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-success { background: #48bb78; color: white; }
+        .btn-danger { background: #f56565; color: white; }
+        .btn-secondary { background: #cbd5e0; color: #2d3748; }
+
+        .main-grid { display: grid; grid-template-columns: 300px 1fr; gap: 25px; }
+        .sidebar {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        .sidebar h3 { margin-bottom: 15px; color: #333; }
+        .filter-section { margin-bottom: 25px; }
+        .filter-section label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: 600;
+        }
+        .filter-section select, .filter-section input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .content {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .category-section {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+        .category-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .elements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .element-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .element-card:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            transform: translateY(-3px);
+        }
+        .element-preview {
+            width: 100%;
+            height: 150px;
+            background: #f7fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 10px;
+        }
+        .element-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .element-details {
+            padding: 12px;
+        }
+        .element-filename {
+            font-weight: bold;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            color: #2d3748;
+            word-break: break-all;
+        }
+        .element-category {
+            font-size: 0.8em;
+            color: #718096;
+            margin-bottom: 10px;
+        }
+        .element-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .element-actions button {
+            flex: 1;
+            padding: 6px;
+            font-size: 0.8em;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .modal-header h2 { color: #333; }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #a0aec0;
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 600;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+        .alert {
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        .alert-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #a0aec0;
+        }
+        .empty-state-icon { font-size: 4em; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 UI Elements Manager</h1>
+            <div>
+                <button class="btn btn-secondary" onclick="location.href='/assets'">← Back to Assets</button>
+                <button class="btn btn-primary" onclick="openUploadModal()">+ Upload UI Element</button>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="sidebar">
+                <h3>Filters</h3>
+                <div class="filter-section">
+                    <label>Category</label>
+                    <select id="filterCategory" onchange="applyFilters()">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div class="filter-section">
+                    <label>Search</label>
+                    <input type="text" id="searchBox" placeholder="Search filenames..." oninput="applyFilters()">
+                </div>
+            </div>
+
+            <div class="content">
+                <div id="alertContainer"></div>
+
+                <details style="background: #f0f4ff; border-left: 4px solid #667eea; padding: 15px; margin-bottom: 20px; border-radius: 6px;">
+                    <summary style="cursor: pointer; font-weight: bold; color: #667eea; margin-bottom: 10px;">📚 How to Create UI Elements</summary>
+                    <div style="margin-top: 15px; line-height: 1.6; color: #4a5568;">
+                        <p style="margin-bottom: 10px;"><strong>UI elements enhance your game interface:</strong></p>
+                        <ul style="margin-left: 20px; margin-bottom: 15px;">
+                            <li><strong>Icons:</strong> Small symbols (32x32 to 128x128 px) - stats, items, actions</li>
+                            <li><strong>Buttons:</strong> Interactive elements with normal/hover/pressed states</li>
+                            <li><strong>Dialogs:</strong> Message boxes and popup windows</li>
+                            <li><strong>Indicators:</strong> Progress bars, status meters, notification badges</li>
+                            <li><strong>Menus:</strong> Navigation elements, dropdown lists</li>
+                            <li><strong>Panels:</strong> Container backgrounds, frames, borders</li>
+                        </ul>
+
+                        <p style="margin-bottom: 10px;"><strong>Design Tips:</strong></p>
+                        <ul style="margin-left: 20px; margin-bottom: 15px;">
+                            <li><strong>Always use PNG with transparency</strong> for UI elements</li>
+                            <li>Keep icons simple and recognizable at small sizes</li>
+                            <li>Use consistent color palette across all UI elements</li>
+                            <li>Design buttons in multiple states (normal, hover, active, disabled)</li>
+                            <li>Ensure good contrast against game backgrounds</li>
+                        </ul>
+
+                        <p style="background: #fff3cd; padding: 10px; border-radius: 4px; border-left: 3px solid #ffc107;">
+                            💡 <strong>Tip:</strong> Use tools like Figma, Canva, or AI generators (DALL-E, Midjourney) with prompts like
+                            "minimalist icon of [object], flat design, transparent background, 128x128 pixels"
+                        </p>
+                    </div>
+                </details>
+
+                <div id="elementsContainer">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎯</div>
+                        <p>Loading UI elements...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload UI Element</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="uploadForm" onsubmit="uploadElement(event)">
+                <div class="form-group">
+                    <label>Category *</label>
+                    <select id="uploadCategory" required>
+                        <option value="icons">Icons</option>
+                        <option value="buttons">Buttons</option>
+                        <option value="dialogs">Dialog Boxes</option>
+                        <option value="indicators">Status Indicators</option>
+                        <option value="menus">Menus</option>
+                        <option value="panels">Panels</option>
+                        <option value="overlays">Overlays</option>
+                        <option value="misc">Miscellaneous</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Image File *</label>
+                    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                        <p>📁 Click to select UI element image</p>
+                        <small id="fileName" style="color: #667eea;"></small>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="updateFileName()" required>
+                </div>
+                <small style="color: #a0aec0;">Recommended: PNG with transparent background</small>
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success" style="flex: 1;">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allElements = {};
+        let filteredData = {};
+
+        async function loadElements() {
+            try {
+                const response = await fetch('/assets/api/ui/list');
+                const data = await response.json();
+
+                if (data.success) {
+                    allElements = data.elements;
+                    populateFilters();
+                    displayElements();
+                }
+            } catch (error) {
+                showAlert('Error loading UI elements: ' + error.message, 'error');
+            }
+        }
+
+        function populateFilters() {
+            const catFilter = document.getElementById('filterCategory');
+            const categories = Object.keys(allElements);
+
+            catFilter.innerHTML = '<option value="">All Categories</option>';
+            categories.forEach(cat => {
+                catFilter.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+        }
+
+        function applyFilters() {
+            const catFilter = document.getElementById('filterCategory').value;
+            const search = document.getElementById('searchBox').value.toLowerCase();
+
+            filteredData = {};
+
+            Object.keys(allElements).forEach(category => {
+                if (catFilter && category !== catFilter) return;
+
+                const images = allElements[category].filter(img =>
+                    !search || img.filename.toLowerCase().includes(search)
+                );
+
+                if (images.length > 0) {
+                    filteredData[category] = images;
+                }
+            });
+
+            displayElements();
+        }
+
+        function displayElements() {
+            const container = document.getElementById('elementsContainer');
+            const dataToShow = Object.keys(filteredData).length > 0 ? filteredData : allElements;
+
+            if (Object.keys(dataToShow).length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎯</div>
+                        <p>No UI elements found</p>
+                        <button class="btn btn-primary" onclick="openUploadModal()" style="margin-top: 15px;">Upload First UI Element</button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            Object.keys(dataToShow).forEach(category => {
+                const images = dataToShow[category];
+                html += `
+                    <div class="category-section">
+                        <h3>${category.charAt(0).toUpperCase() + category.slice(1)} (${images.length})</h3>
+                        <div class="elements-grid">
+                `;
+
+                images.forEach(img => {
+                    html += `
+                        <div class="element-card">
+                            <div class="element-preview">
+                                <img src="${img.path}" alt="${img.filename}">
+                            </div>
+                            <div class="element-details">
+                                <div class="element-filename">${img.filename}</div>
+                                <div class="element-category">${category}</div>
+                                <div class="element-actions">
+                                    <button class="btn btn-secondary" onclick="copyPath('${img.path}')">Copy</button>
+                                    <button class="btn btn-danger" onclick="deleteElement('${category}', '${img.filename}')">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div></div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function openUploadModal() {
+            document.getElementById('uploadModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+            document.getElementById('uploadForm').reset();
+            document.getElementById('fileName').textContent = '';
+        }
+
+        function updateFileName() {
+            const fileInput = document.getElementById('fileInput');
+            const fileName = document.getElementById('fileName');
+            if (fileInput.files.length > 0) {
+                fileName.textContent = fileInput.files[0].name;
+            }
+        }
+
+        async function uploadElement(event) {
+            event.preventDefault();
+
+            const formData = new FormData();
+            formData.append('file', document.getElementById('fileInput').files[0]);
+            formData.append('category', document.getElementById('uploadCategory').value);
+
+            try {
+                const response = await fetch('/assets/api/ui/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    closeModal();
+                    loadElements();
+                } else {
+                    showAlert('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error uploading UI element: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteElement(category, filename) {
+            if (!confirm(`Delete ${filename}?`)) return;
+
+            try {
+                const response = await fetch('/assets/api/ui/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({category, filename})
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    loadElements();
+                } else {
+                    showAlert('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error deleting UI element: ' + error.message, 'error');
+            }
+        }
+
+        function copyPath(path) {
+            navigator.clipboard.writeText(path);
+            showAlert('Path copied to clipboard!', 'success');
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        loadElements();
+    </script>
+</body>
+</html>
