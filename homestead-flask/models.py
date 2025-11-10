@@ -188,3 +188,78 @@ class Settings(db.Model):
             setting = Settings(key=key, value=value)
             db.session.add(setting)
         db.session.commit()
+
+class Photo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), nullable=False)
+    filepath = db.Column(db.String(500), nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    plant_id = db.Column(db.String(50))  # Optional: link to plant
+    garden_bed_id = db.Column(db.Integer, db.ForeignKey('garden_bed.id'))
+    planted_item_id = db.Column(db.Integer, db.ForeignKey('planted_item.id'))
+    caption = db.Column(db.Text)
+    category = db.Column(db.String(50))  # 'garden', 'plant', 'harvest', 'pest'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'filename': self.filename,
+            'filepath': self.filepath,
+            'uploadedAt': self.uploaded_at.isoformat() if self.uploaded_at else None,
+            'plantId': self.plant_id,
+            'gardenBedId': self.garden_bed_id,
+            'plantedItemId': self.planted_item_id,
+            'caption': self.caption,
+            'category': self.category
+        }
+
+class HarvestRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    plant_id = db.Column(db.String(50), nullable=False)
+    planted_item_id = db.Column(db.Integer, db.ForeignKey('planted_item.id'))
+    harvest_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    quantity = db.Column(db.Float, nullable=False)  # Weight in lbs or count
+    unit = db.Column(db.String(20), default='lbs')  # lbs, oz, count
+    notes = db.Column(db.Text)
+    quality = db.Column(db.String(20))  # excellent, good, fair, poor
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'plantId': self.plant_id,
+            'plantedItemId': self.planted_item_id,
+            'harvestDate': self.harvest_date.isoformat() if self.harvest_date else None,
+            'quantity': self.quantity,
+            'unit': self.unit,
+            'notes': self.notes,
+            'quality': self.quality
+        }
+
+class SeedInventory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    plant_id = db.Column(db.String(50), nullable=False)
+    variety = db.Column(db.String(100), nullable=False)
+    brand = db.Column(db.String(100))
+    quantity = db.Column(db.Integer)  # Number of seeds/packets
+    purchase_date = db.Column(db.DateTime)
+    expiration_date = db.Column(db.DateTime)
+    germination_rate = db.Column(db.Float)  # Percentage
+    location = db.Column(db.String(100))  # Storage location
+    price = db.Column(db.Float)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'plantId': self.plant_id,
+            'variety': self.variety,
+            'brand': self.brand,
+            'quantity': self.quantity,
+            'purchaseDate': self.purchase_date.isoformat() if self.purchase_date else None,
+            'expirationDate': self.expiration_date.isoformat() if self.expiration_date else None,
+            'germinationRate': self.germination_rate,
+            'location': self.location,
+            'price': self.price,
+            'notes': self.notes
+        }

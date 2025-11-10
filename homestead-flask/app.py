@@ -1,15 +1,27 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_file
 from flask_sqlalchemy import SQLAlchemy
-from models import db, GardenBed, PlantedItem, PlantingEvent, WinterPlan, CompostPile, CompostIngredient, Settings
+from models import db, GardenBed, PlantedItem, PlantingEvent, WinterPlan, CompostPile, CompostIngredient, Settings, Photo, HarvestRecord, SeedInventory
 from plant_database import PLANT_DATABASE, COMPOST_MATERIALS, get_plant_by_id, get_winter_hardy_plants
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from werkzeug.utils import secure_filename
+from PIL import Image
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
 import os
+import io
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///homestead.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+# Create upload folder if it doesn't exist
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
 
@@ -334,6 +346,215 @@ def get_plant(plant_id):
     if plant:
         return jsonify(plant)
     return jsonify({'error': 'Plant not found'}), 404
+
+# ==================== PHOTO UPLOAD ROUTES ====================
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/photos')
+def photos():
+    """Photo gallery page"""
+    photos = Photo.query.order_by(Photo.uploaded_at.desc()).all()
+    return render_template('photos.html', photos=photos)
+
+@app.route('/api/photos', methods=['GET', 'POST'])
+def api_photos():
+    """Get all photos or upload new one"""
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            # Add timestamp to filename to avoid conflicts
+            name, ext = os.path.splitext(filename)
+            filename = f"{name}_{int(datetime.now().timestamp())}{ext}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+            # Save and optimize image
+            img = Image.open(file)
+            # Resize if too large
+            max_size = (1920, 1920)
+            img.thumbnail(max_size, Image.Resampling.LANCZOS)
+            img.save(filepath, optimize=True, quality=85)
+
+            photo = Photo(
+                filename=filename,
+                filepath=f"/static/uploads/{filename}",
+                caption=request.form.get('caption', ''),
+                category=request.form.get('category', 'garden'),
+                garden_bed_id=request.form.get('gardenBedId') or None
+            )
+            db.session.add(photo)
+            db.session.commit()
+            return jsonify(photo.to_dict()), 201
+
+        return jsonify({'error': 'Invalid file type'}), 400
+
+    photos = Photo.query.all()
+    return jsonify([photo.to_dict() for photo in photos])
+
+@app.route('/api/photos/<int:photo_id>', methods=['DELETE'])
+def delete_photo(photo_id):
+    """Delete a photo"""
+    photo = Photo.query.get_or_404(photo_id)
+    # Delete file from filesystem
+    filepath = os.path.join('static/uploads', photo.filename)
+    if os.path.exists(filepath):
+        os.remove(filepath)
+    db.session.delete(photo)
+    db.session.commit()
+    return '', 204
+
+# ==================== HARVEST TRACKER ROUTES ====================
+
+@app.route('/harvest-tracker')
+def harvest_tracker():
+    """Harvest tracker page"""
+    records = HarvestRecord.query.order_by(HarvestRecord.harvest_date.desc()).all()
+    return render_template('harvest_tracker.html', records=records, plants=PLANT_DATABASE)
+
+@app.route('/api/harvests', methods=['GET', 'POST'])
+def api_harvests():
+    """Get all harvest records or create new one"""
+    if request.method == 'POST':
+        data = request.json
+        record = HarvestRecord(
+            plant_id=data['plantId'],
+            planted_item_id=data.get('plantedItemId'),
+            harvest_date=datetime.fromisoformat(data.get('harvestDate', datetime.now().isoformat())),
+            quantity=data['quantity'],
+            unit=data.get('unit', 'lbs'),
+            quality=data.get('quality', 'good'),
+            notes=data.get('notes', '')
+        )
+        db.session.add(record)
+        db.session.commit()
+        return jsonify(record.to_dict()), 201
+
+    records = HarvestRecord.query.all()
+    return jsonify([record.to_dict() for record in records])
+
+@app.route('/api/harvests/<int:record_id>', methods=['DELETE'])
+def delete_harvest(record_id):
+    """Delete a harvest record"""
+    record = HarvestRecord.query.get_or_404(record_id)
+    db.session.delete(record)
+    db.session.commit()
+    return '', 204
+
+@app.route('/api/harvests/stats')
+def harvest_stats():
+    """Get harvest statistics"""
+    records = HarvestRecord.query.all()
+    stats = {}
+    for record in records:
+        if record.plant_id not in stats:
+            stats[record.plant_id] = {'total': 0, 'count': 0, 'unit': record.unit}
+        stats[record.plant_id]['total'] += record.quantity
+        stats[record.plant_id]['count'] += 1
+    return jsonify(stats)
+
+# ==================== SEED INVENTORY ROUTES ====================
+
+@app.route('/seed-inventory')
+def seed_inventory():
+    """Seed inventory page"""
+    seeds = SeedInventory.query.order_by(SeedInventory.variety).all()
+    return render_template('seed_inventory.html', seeds=seeds, plants=PLANT_DATABASE)
+
+@app.route('/api/seeds', methods=['GET', 'POST'])
+def api_seeds():
+    """Get all seed inventory or add new seed"""
+    if request.method == 'POST':
+        data = request.json
+        seed = SeedInventory(
+            plant_id=data['plantId'],
+            variety=data['variety'],
+            brand=data.get('brand', ''),
+            quantity=data.get('quantity', 0),
+            purchase_date=datetime.fromisoformat(data['purchaseDate']) if data.get('purchaseDate') else None,
+            expiration_date=datetime.fromisoformat(data['expirationDate']) if data.get('expirationDate') else None,
+            germination_rate=data.get('germinationRate'),
+            location=data.get('location', ''),
+            price=data.get('price'),
+            notes=data.get('notes', '')
+        )
+        db.session.add(seed)
+        db.session.commit()
+        return jsonify(seed.to_dict()), 201
+
+    seeds = SeedInventory.query.all()
+    return jsonify([seed.to_dict() for seed in seeds])
+
+@app.route('/api/seeds/<int:seed_id>', methods=['PUT', 'DELETE'])
+def seed_item(seed_id):
+    """Update or delete seed inventory"""
+    seed = SeedInventory.query.get_or_404(seed_id)
+
+    if request.method == 'DELETE':
+        db.session.delete(seed)
+        db.session.commit()
+        return '', 204
+
+    data = request.json
+    seed.quantity = data.get('quantity', seed.quantity)
+    seed.germination_rate = data.get('germinationRate', seed.germination_rate)
+    seed.notes = data.get('notes', seed.notes)
+    db.session.commit()
+    return jsonify(seed.to_dict())
+
+# ==================== PDF EXPORT ROUTE ====================
+
+@app.route('/api/export-garden-plan/<int:bed_id>')
+def export_garden_plan(bed_id):
+    """Export garden plan as PDF"""
+    bed = GardenBed.query.get_or_404(bed_id)
+
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    # Title
+    p.setFont("Helvetica-Bold", 24)
+    p.drawString(1*inch, height - 1*inch, f"Garden Plan: {bed.name}")
+
+    # Bed info
+    p.setFont("Helvetica", 12)
+    y = height - 1.5*inch
+    p.drawString(1*inch, y, f"Size: {bed.width}' x {bed.length}'")
+    p.drawString(1*inch, y - 0.3*inch, f"Location: {bed.location}")
+    p.drawString(1*inch, y - 0.6*inch, f"Sun Exposure: {bed.sun_exposure}")
+
+    # Plants list
+    y -= 1.2*inch
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(1*inch, y, "Plants:")
+
+    y -= 0.4*inch
+    p.setFont("Helvetica", 10)
+    for item in bed.planted_items:
+        plant = get_plant_by_id(item.plant_id)
+        if plant:
+            p.drawString(1.2*inch, y, f"• {plant['name']} - Position: ({item.position_x}, {item.position_y}) - Status: {item.status}")
+            y -= 0.3*inch
+            if y < 1*inch:  # New page if needed
+                p.showPage()
+                y = height - 1*inch
+                p.setFont("Helvetica", 10)
+
+    # Footer
+    p.setFont("Helvetica", 8)
+    p.drawString(1*inch, 0.5*inch, f"Generated by Homestead Tracker - {datetime.now().strftime('%Y-%m-%d')}")
+
+    p.save()
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name=f"{bed.name}_plan.pdf", mimetype='application/pdf')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

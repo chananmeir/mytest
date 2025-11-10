@@ -115,6 +115,21 @@
                             <i class="bi bi-recycle"></i> Compost
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'harvest_tracker' %}active{% endif %}" href="/harvest-tracker">
+                            <i class="bi bi-basket"></i> Harvests
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'seed_inventory' %}active{% endif %}" href="/seed-inventory">
+                            <i class="bi bi-seeds"></i> Seeds
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'photos' %}active{% endif %}" href="/photos">
+                            <i class="bi bi-camera"></i> Photos
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>

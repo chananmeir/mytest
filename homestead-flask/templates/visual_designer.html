@@ -263,6 +263,13 @@
                 <li><strong>Save your layout</strong> when you're done</li>
             </ol>
             <p class="mb-0"><strong>Tip:</strong> The grid represents 1-foot squares. Plant spacing is automatically calculated!</p>
+            <hr>
+            <h6>🌿 Companion Planting Indicators:</h6>
+            <ul class="mb-0">
+                <li><strong class="text-success">Green border + ✅</strong> = Good companion plants nearby</li>
+                <li><strong class="text-danger">Red border + ⚠️</strong> = Incompatible plants nearby</li>
+                <li>You'll be warned before placing incompatible plants together!</li>
+            </ul>
         </div>
     </div>
 </div>
@@ -447,7 +454,7 @@ function createGrid(width, length) {
 
             cell.on('click', function() {
                 const existing = gridData.find(p => p.x === x && p.y === y);
-                if (existing) {
+                if (existing && existing.plant) {
                     showPlantDetails(existing, $(this));
                 }
             });
@@ -456,6 +463,81 @@ function createGrid(width, length) {
             gridData.push({ x, y, plant: null });
         }
     }
+}
+
+// Get adjacent plants
+function getAdjacentPlants(x, y) {
+    const adjacent = [];
+    const directions = [
+        {dx: -1, dy: 0},  // left
+        {dx: 1, dy: 0},   // right
+        {dx: 0, dy: -1},  // up
+        {dx: 0, dy: 1}    // down
+    ];
+
+    directions.forEach(dir => {
+        const adjX = x + dir.dx;
+        const adjY = y + dir.dy;
+        const adjCell = gridData.find(p => p.x === adjX && p.y === adjY);
+        if (adjCell && adjCell.plant) {
+            adjacent.push({
+                x: adjX,
+                y: adjY,
+                plant: adjCell.plant
+            });
+        }
+    });
+
+    return adjacent;
+}
+
+// Check companion planting relationships
+function checkCompanionPlants(x, y, plant) {
+    const adjacent = getAdjacentPlants(x, y);
+    const warnings = [];
+    const goods = [];
+
+    adjacent.forEach(adj => {
+        // Check if incompatible
+        if (plant.incompatiblePlants && plant.incompatiblePlants.includes(adj.plant.id)) {
+            warnings.push(`❌ ${plant.name} is incompatible with ${adj.plant.name}`);
+        }
+        // Check if good companion
+        else if (plant.companionPlants && plant.companionPlants.includes(adj.plant.id)) {
+            goods.push(`✅ ${plant.name} grows well with ${adj.plant.name}`);
+        }
+    });
+
+    return { warnings, goods };
+}
+
+// Update companion indicators on all cells
+function updateCompanionIndicators() {
+    gridData.forEach(item => {
+        if (item.plant) {
+            const cell = $(`.grid-cell[data-x="${item.x}"][data-y="${item.y}"]`);
+            const companions = checkCompanionPlants(item.x, item.y, item.plant);
+
+            // Remove existing indicators
+            cell.find('.companion-indicator').remove();
+
+            // Add visual indicators
+            if (companions.warnings.length > 0) {
+                cell.css('border-color', '#dc3545');
+                cell.css('border-width', '3px');
+                const indicator = $('<div class="companion-indicator" style="position: absolute; top: 2px; right: 2px; font-size: 1rem;">⚠️</div>');
+                cell.append(indicator);
+            } else if (companions.goods.length > 0) {
+                cell.css('border-color', '#28a745');
+                cell.css('border-width', '3px');
+                const indicator = $('<div class="companion-indicator" style="position: absolute; top: 2px; right: 2px; font-size: 1rem;">✅</div>');
+                cell.append(indicator);
+            } else {
+                cell.css('border-color', '#2d7a3e');
+                cell.css('border-width', '2px');
+            }
+        }
+    });
 }
 
 // Place plant on grid
@@ -468,11 +550,33 @@ function placePlant(x, y, plant) {
         return;
     }
 
+    // Check companion planting
+    const companions = checkCompanionPlants(x, y, plant);
+
+    // Show warnings for incompatible plants
+    if (companions.warnings.length > 0) {
+        const warningMsg = '⚠️ Warning: Incompatible plants nearby!\n\n' +
+                          companions.warnings.join('\n') +
+                          '\n\nPlace anyway?';
+        if (!confirm(warningMsg)) {
+            return;
+        }
+    }
+
+    // Show good companion info
+    if (companions.goods.length > 0) {
+        const goodMsg = '✅ Good companions nearby!\n\n' + companions.goods.join('\n');
+        setTimeout(() => alert(goodMsg), 100);
+    }
+
     const icon = getPlantIcon(plant.name);
     cell.addClass('occupied').html(`<span class="plant-icon" title="${plant.name}">${icon}</span>`);
 
     existing.plant = plant;
     updatePlantCount();
+
+    // Update companion indicators for adjacent cells
+    updateCompanionIndicators();
 }
 
 // Remove plant from grid
@@ -481,14 +585,36 @@ function removePlant(x, y) {
     const existing = gridData.find(p => p.x === x && p.y === y);
 
     cell.removeClass('occupied').empty();
+    cell.css('border-color', '#8b4513');
+    cell.css('border-width', '1px');
     existing.plant = null;
     updatePlantCount();
+
+    // Update companion indicators for remaining plants
+    updateCompanionIndicators();
 }
 
 // Show plant details
 function showPlantDetails(gridItem, cellElement) {
     const plant = gridItem.plant;
-    const msg = `Plant: ${plant.name}\nPosition: (${gridItem.x}, ${gridItem.y})\nDays to Maturity: ${plant.daysToMaturity}\n\nRemove this plant?`;
+    const companions = checkCompanionPlants(gridItem.x, gridItem.y, plant);
+
+    let msg = `🌱 Plant: ${plant.name}\n`;
+    msg += `📍 Position: (${gridItem.x}, ${gridItem.y})\n`;
+    msg += `⏱️ Days to Maturity: ${plant.daysToMaturity}\n`;
+    msg += `📏 Spacing: ${plant.spacing}"\n`;
+
+    if (companions.goods.length > 0) {
+        msg += `\n✅ Good Companions Nearby:\n`;
+        companions.goods.forEach(g => msg += `  ${g}\n`);
+    }
+
+    if (companions.warnings.length > 0) {
+        msg += `\n⚠️ Incompatible Plants Nearby:\n`;
+        companions.warnings.forEach(w => msg += `  ${w}\n`);
+    }
+
+    msg += '\n\nRemove this plant?';
 
     if (confirm(msg)) {
         removePlant(gridItem.x, gridItem.y);
