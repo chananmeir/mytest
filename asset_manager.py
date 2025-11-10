@@ -514,8 +514,18 @@ def api_upload_character_image():
     if not allowed_file(file.filename):
         return jsonify({'success': False, 'error': f'Invalid file type'}), 400
 
-    # Create directory
-    upload_dir = os.path.join(UPLOAD_FOLDER, 'characters', character, category)
+    # Check if this is shared clothing (all characters can use)
+    is_shared = character.lower() in ['shared', 'general', 'shared_clothing']
+
+    if is_shared:
+        # Upload to shared_clothing directory
+        upload_dir = os.path.join(UPLOAD_FOLDER, 'shared_clothing', category)
+        path_prefix = 'shared_clothing'
+    else:
+        # Upload to character-specific directory
+        upload_dir = os.path.join(UPLOAD_FOLDER, 'characters', character, category)
+        path_prefix = f'characters/{character}'
+
     os.makedirs(upload_dir, exist_ok=True)
 
     # Save file
@@ -525,8 +535,9 @@ def api_upload_character_image():
 
     return jsonify({
         'success': True,
-        'message': 'Character image uploaded successfully',
-        'path': f'/static/images/characters/{character}/{category}/{filename}'
+        'message': f'{"Shared clothing" if is_shared else "Character"} image uploaded successfully',
+        'path': f'/static/images/{path_prefix}/{category}/{filename}',
+        'is_shared': is_shared
     })
 
 
