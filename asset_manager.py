@@ -12,6 +12,8 @@ from dataclasses import dataclass, asdict
 from flask import Blueprint, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import shutil
+from PIL import Image
+import io
 
 # Create blueprint
 asset_manager = Blueprint('asset_manager', __name__, url_prefix='/assets')
@@ -153,6 +155,93 @@ def add_clothing_item_to_file(item_data: Dict) -> tuple[bool, str]:
 
     except Exception as e:
         return False, f"Error adding item: {str(e)}"
+
+
+def auto_position_clothing(image_file, category_dir, item_name):
+    """
+    Automatically position clothing item on a 1024x1536 canvas
+    based on the clothing category/type.
+
+    Args:
+        image_file: Uploaded file object
+        category_dir: Category directory (e.g., 'underwear', 'tops', 'bottoms')
+        item_name: Name of the item (e.g., 'bra_lace_black.png')
+
+    Returns:
+        PIL Image object positioned correctly on canvas
+    """
+    # Standard canvas size matching character sprites
+    CANVAS_WIDTH = 1024
+    CANVAS_HEIGHT = 1536
+
+    # Positioning zones (y-coordinates)
+    POSITIONS = {
+        'bra': {'y_center': 420, 'max_height': 250},
+        'panties': {'y_center': 820, 'max_height': 200},
+        'top': {'y_center': 450, 'max_height': 500},
+        'bottom': {'y_center': 1150, 'max_height': 600},
+        'dress': {'y_center': 700, 'max_height': 1100},
+        'shoes': {'y_center': 1480, 'max_height': 100},
+        'outerwear': {'y_center': 500, 'max_height': 700},
+        'accessories': {'y_center': 350, 'max_height': 150},
+    }
+
+    # Determine clothing type from category_dir and item_name
+    clothing_type = 'top'  # default
+
+    if 'underwear' in category_dir:
+        if 'bra' in item_name.lower():
+            clothing_type = 'bra'
+        elif 'panties' in item_name.lower() or 'thong' in item_name.lower():
+            clothing_type = 'panties'
+    elif 'tops' in category_dir or 'top' in category_dir:
+        clothing_type = 'top'
+    elif 'bottoms' in category_dir or 'bottom' in category_dir:
+        clothing_type = 'bottom'
+    elif 'dresses' in category_dir or 'dress' in category_dir:
+        clothing_type = 'dress'
+    elif 'shoes' in category_dir or 'shoe' in item_name.lower():
+        clothing_type = 'shoes'
+    elif 'outerwear' in category_dir:
+        clothing_type = 'outerwear'
+    elif 'accessories' in category_dir:
+        clothing_type = 'accessories'
+
+    # Get positioning info
+    pos_info = POSITIONS.get(clothing_type, POSITIONS['top'])
+
+    # Open the uploaded image
+    img = Image.open(image_file).convert('RGBA')
+
+    # Calculate scaling to fit within max_height while maintaining aspect ratio
+    max_height = pos_info['max_height']
+    max_width = CANVAS_WIDTH * 0.8  # Don't make it wider than 80% of canvas
+
+    # Calculate scale factor
+    width_scale = max_width / img.width
+    height_scale = max_height / img.height
+    scale = min(width_scale, height_scale, 1.0)  # Don't upscale if already small enough
+
+    # Resize image
+    new_width = int(img.width * scale)
+    new_height = int(img.height * scale)
+    img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+    # Create transparent canvas
+    canvas = Image.new('RGBA', (CANVAS_WIDTH, CANVAS_HEIGHT), (0, 0, 0, 0))
+
+    # Calculate position (center horizontally, position vertically based on type)
+    x_pos = (CANVAS_WIDTH - new_width) // 2
+    y_center = pos_info['y_center']
+    y_pos = y_center - (new_height // 2)
+
+    # Ensure it doesn't go off canvas
+    y_pos = max(0, min(y_pos, CANVAS_HEIGHT - new_height))
+
+    # Paste the clothing item onto the canvas
+    canvas.paste(img_resized, (x_pos, y_pos), img_resized)
+
+    return canvas
 
 
 # ==================== ROUTES ====================
@@ -350,14 +439,18 @@ def api_upload_clothing_image():
         upload_dir = os.path.join(UPLOAD_FOLDER, 'shared_clothing', category_dir)
         os.makedirs(upload_dir, exist_ok=True)
 
-        # Save with the exact filename from image_path
+        # Auto-position the clothing item on a proper canvas
+        positioned_image = auto_position_clothing(file, category_dir, target_filename)
+
+        # Save the positioned image
         filepath = os.path.join(upload_dir, target_filename)
-        file.save(filepath)
+        positioned_image.save(filepath, 'PNG')
 
         return jsonify({
             'success': True,
-            'message': f'Image uploaded successfully for {item_id}',
-            'path': f'/static/images/shared_clothing/{category_dir}/{target_filename}'
+            'message': f'Image uploaded and auto-positioned successfully for {item_id}',
+            'path': f'/static/images/shared_clothing/{category_dir}/{target_filename}',
+            'auto_positioned': True
         })
 
     except Exception as e:
@@ -577,16 +670,34 @@ def api_upload_character_image():
 
     os.makedirs(upload_dir, exist_ok=True)
 
-    # Save file
     filename = secure_filename(file.filename)
     filepath = os.path.join(upload_dir, filename)
-    file.save(filepath)
+
+    # Auto-position if this is a clothing category
+    clothing_categories = ['underwear', 'tops', 'bottoms', 'dresses', 'outerwear', 'accessories']
+    should_auto_position = is_shared or any(cat in category.lower() for cat in clothing_categories)
+
+    if should_auto_position:
+        try:
+            # Auto-position the clothing item
+            positioned_image = auto_position_clothing(file, category, filename)
+            positioned_image.save(filepath, 'PNG')
+            message = f'{"Shared clothing" if is_shared else "Character clothing"} image uploaded and auto-positioned successfully'
+        except Exception as e:
+            # If auto-positioning fails, fall back to direct save
+            file.save(filepath)
+            message = f'{"Shared clothing" if is_shared else "Character"} image uploaded successfully (auto-positioning skipped: {str(e)})'
+    else:
+        # For expressions, base images, etc. - save directly without positioning
+        file.save(filepath)
+        message = f'{"Shared" if is_shared else "Character"} image uploaded successfully'
 
     return jsonify({
         'success': True,
-        'message': f'{"Shared clothing" if is_shared else "Character"} image uploaded successfully',
+        'message': message,
         'path': f'/static/images/{path_prefix}/{category}/{filename}',
-        'is_shared': is_shared
+        'is_shared': is_shared,
+        'auto_positioned': should_auto_position
     })
 
 
