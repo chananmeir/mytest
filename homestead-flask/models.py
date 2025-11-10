@@ -263,3 +263,61 @@ class SeedInventory(db.Model):
             'price': self.price,
             'notes': self.notes
         }
+
+class Property(db.Model):
+    """Represents the entire homestead property/lot"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    width = db.Column(db.Float, nullable=False)  # Width in feet
+    length = db.Column(db.Float, nullable=False)  # Length in feet
+    address = db.Column(db.String(200))
+    zone = db.Column(db.String(10))  # USDA hardiness zone
+    soil_type = db.Column(db.String(50))  # clay, loam, sandy, etc.
+    slope = db.Column(db.String(20))  # flat, gentle, steep
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    structures = db.relationship('PlacedStructure', backref='property', lazy=True, cascade='all, delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'width': self.width,
+            'length': self.length,
+            'address': self.address,
+            'zone': self.zone,
+            'soilType': self.soil_type,
+            'slope': self.slope,
+            'notes': self.notes,
+            'acreage': round((self.width * self.length) / 43560, 2),  # Convert sq ft to acres
+            'structures': [s.to_dict() for s in self.structures]
+        }
+
+class PlacedStructure(db.Model):
+    """Represents a structure placed on the property"""
+    id = db.Column(db.Integer, primary_key=True)
+    property_id = db.Column(db.Integer, db.ForeignKey('property.id'), nullable=False)
+    structure_id = db.Column(db.String(50), nullable=False)  # Reference to structures_database
+    name = db.Column(db.String(100))  # Custom name for this instance
+    position_x = db.Column(db.Float, nullable=False)  # X position on property (feet from left)
+    position_y = db.Column(db.Float, nullable=False)  # Y position on property (feet from top)
+    rotation = db.Column(db.Integer, default=0)  # 0, 90, 180, 270 degrees
+    notes = db.Column(db.Text)
+    built_date = db.Column(db.DateTime)
+    cost = db.Column(db.Float)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'propertyId': self.property_id,
+            'structureId': self.structure_id,
+            'name': self.name,
+            'position': {'x': self.position_x, 'y': self.position_y},
+            'rotation': self.rotation,
+            'notes': self.notes,
+            'builtDate': self.built_date.isoformat() if self.built_date else None,
+            'cost': self.cost
+        }
